@@ -1,0 +1,446 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Abit - Gestión de alquileres</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+        header {
+            background: #222;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+        }
+        header img {
+            height: 50px;
+            margin-right: 15px;
+        }
+        .menu {
+            width: 220px;
+            float: left;
+            height: 100vh;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .menu button {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .content {
+            margin-left: 240px;
+            padding: 20px;
+        }
+        .seccion {
+            display: none;
+        }
+        .seccion.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <img src="{% static 'alquileres/logo.png' %}" alt="Logo Abit" />
+    <h3>Abit - Gestión de Alquileres de Trajes</h3>
+</header>
+
+<div class="menu">
+    <button data-seccion="crear_alquiler">Crear Alquiler</button>
+    <button data-seccion="cargar_traje">Cargar Traje</button>
+    <button data-seccion="ver_alquileres">Ver Alquileres</button>
+    <button data-seccion="ver_disponibilidad">Disponibilidad</button>
+    <button data-seccion="ver_devoluciones">Devoluciones</button>
+    <button data-seccion="gastos">Gastos y Reportes</button>
+</div>
+
+<div class="content">
+    <!-- Crear Alquiler -->
+    <div id="crear_alquiler" class="seccion {% if seccion == 'crear_alquiler' %}active{% endif %}">
+        <h4>Crear Nuevo Alquiler</h4>
+        {% if error and seccion == 'crear_alquiler' %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        {% if mensaje and seccion == 'crear_alquiler' %}
+        <div class="alert alert-info">{{ mensaje }}</div>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_alquiler" />
+            <div class="mb-3">
+                <label>Nombre Cliente *</label>
+                <input type="text" name="nombre" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Celular Cliente *</label>
+                <input type="tel" name="celular" class="form-control" required />
+            </div>
+            <label>Prendas *</label>
+            <div class="mb-3">
+                <select name="prendas" class="form-select" multiple required>
+                    {% for traje in prendas %}
+                    <option value="{{ traje.codigo }}">{{ traje.prenda }} - {{ traje.codigo }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted">Usa Ctrl/Cmd para seleccionar varias prendas</small>
+            </div>
+            <div class="mb-3">
+                <label>Ruedo Pantalón (opcional)</label>
+                <input type="text" name="ruedo_pantalon" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Ruedo Saco (opcional)</label>
+                <input type="text" name="ruedo_saco" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Fecha Visita (reserva) *</label>
+                <input type="date" name="fecha_visita" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Fecha Retiro *</label>
+                <input type="date" name="fecha_retiro" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Fecha Devolución *</label>
+                <input type="date" name="fecha_devolucion" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Fecha Evento (opcional)</label>
+                <input type="date" name="fecha_evento" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Total a Abonar *</label>
+                <input type="number" step="0.01" name="total" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Seña *</label>
+                <input type="number" step="0.01" name="sena" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Método de Pago de la Señá *</label>
+                <select name="metodo_sena" class="form-select" required>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label>Saldo Restante *</label>
+                <input type="number" step="0.01" name="saldo" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Método de Pago del Saldo *</label>
+                <select name="metodo_saldo" class="form-select" required>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label>Notas (opcional)</label>
+                <textarea name="notas" class="form-control"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Crear Alquiler</button>
+        </form>
+
+        {% if mensaje and seccion == 'crear_alquiler' %}
+        <div class="alert alert-info mt-3">
+            <h5>Mensaje para WhatsApp:</h5>
+            <pre>{{ mensaje }}</pre>
+            <a href="{{ url_wsp }}" target="_blank" class="btn btn-primary">Abrir WhatsApp</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Cargar Traje -->
+    <div id="cargar_traje" class="seccion {% if seccion == 'cargar_traje' %}active{% endif %}">
+        <h4>Cargar Nuevo Traje</h4>
+        {% if error and seccion == 'cargar_traje' %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        {% if mensaje and seccion == 'cargar_traje' %}
+            <div class="alert alert-success">{{ mensaje }}</div>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="cargar_traje" />
+            <div class="mb-3">
+                <label>Código (ej: SA-001) *</label>
+                <input type="text" name="codigo" pattern="[A-Za-z]{2}-\d{3}" class="form-control" required title="Dos letras, un guión, tres números" />
+            </div>
+            <div class="mb-3">
+                <label>Prenda *</label>
+                <select name="prenda" class="form-select" required>
+                    <option value="">-- Seleccione prenda --</option>
+                    <option>Saco</option>
+                    <option>Pantalón</option>
+                    <option>Chaleco</option>
+                    <option>Camisa</option>
+                    <option>Corbata</option>
+                    <option>Cinturón</option>
+                    <option>Moño</option>
+                    <option>Pañuelo</option>
+                    <option>Zapato</option>
+                    <option>Tirador</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label>Marca *</label>
+                <input type="text" name="marca" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Talle *</label>
+                <input type="text" name="talle" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Color *</label>
+                <input type="text" name="color" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Estado</label>
+                <select name="estado" class="form-select">
+                    <option selected>Disponible</option>
+                    <option>Reservado</option>
+                    <option>Mantenimiento</option>
+                    <option>Dañado</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success">Guardar Traje</button>
+        </form>
+    </div>
+
+    <!-- Ver Alquileres -->
+    <div id="ver_alquileres" class="seccion {% if seccion == 'ver_alquileres' %}active{% endif %}">
+        <h4>Alquileres Registrados</h4>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Celular</th>
+                    <th>Prendas</th>
+                    <th>Fecha Retiro</th>
+                    <th>Fecha Devolución</th>
+                    <th>Total Abonado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alquiler in alquileres %}
+                <tr>
+                    <td>{{ alquiler.id }}</td>
+                    <td>{{ alquiler.nombre_cliente }}</td>
+                    <td>{{ alquiler.celular_cliente }}</td>
+                    <td>
+                        {% for traje in alquiler.prendas.all %}
+                        {{ traje.prenda }} ({{ traje.codigo }})<br/>
+                        {% endfor %}
+                    </td>
+                    <td>{{ alquiler.fecha_retiro }}</td>
+                    <td>{{ alquiler.fecha_devolucion }}</td>
+                    <td>${{ alquiler.total_a_abonar }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center">No hay alquileres registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Ver Disponibilidad -->
+    <div id="ver_disponibilidad" class="seccion {% if seccion == 'ver_disponibilidad' %}active{% endif %}">
+        <h4>Consultar Disponibilidad de Trajes</h4>
+        {% if error and seccion == 'ver_disponibilidad' %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="ver_disponibilidad" />
+            <div class="mb-3">
+                <label>Fecha Inicio *</label>
+                <input type="date" name="fecha_inicio" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Fecha Fin *</label>
+                <input type="date" name="fecha_fin" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Consultar</button>
+        </form>
+
+        {% if prendas_no_disponibles %}
+        <hr>
+        <h5>Trajes NO disponibles en esas fechas:</h5>
+        <ul>
+            {% for traje in prendas_no_disponibles %}
+            <li>{{ traje.prenda }} ({{ traje.codigo }}) - {{ traje.marca }}, Talle: {{ traje.talle }}, Color: {{ traje.color }}</li>
+            {% endfor %}
+        </ul>
+        {% elif seccion == 'ver_disponibilidad' %}
+        <hr>
+        <p>No hay trajes reservados en esas fechas.</p>
+        {% endif %}
+    </div>
+
+    <!-- Ver Devoluciones -->
+    <div id="ver_devoluciones" class="seccion {% if seccion == 'ver_devoluciones' %}active{% endif %}">
+        <h4>Consultar Devoluciones</h4>
+        {% if error and seccion == 'ver_devoluciones' %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="ver_devoluciones" />
+            <div class="mb-3">
+                <label>Fecha de Devolución a Consultar *</label>
+                <input type="date" name="fecha_devolucion" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Consultar</button>
+        </form>
+
+        {% if alquileres_a_devolver %}
+            <hr>
+            <h5>Alquileres a devolver ese día:</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr><th>Cliente</th><th>Celular</th><th>Prendas</th><th>Recordatorio WhatsApp</th></tr>
+                </thead>
+                <tbody>
+                    {% for alquiler in alquileres_a_devolver %}
+                    <tr>
+                        <td>{{ alquiler.nombre_cliente }}</td>
+                        <td>{{ alquiler.celular_cliente }}</td>
+                        <td>
+                            {% for traje in alquiler.prendas.all %}
+                            {{ traje.prenda }} ({{ traje.codigo }})<br/>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% with texto="Recordatorio: Recuerde que debe devolver hoy sus prendas en el horario acordado." %}
+                                <a href="https://api.whatsapp.com/send?phone={{ alquiler.celular_cliente }}&text={{ texto|urlencode }}" target="_blank" class="btn btn-sm btn-success">
+                                    Enviar WhatsApp
+                                </a>
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No hay devoluciones registradas para esta fecha.</p>
+        {% endif %}
+
+        {% if atrasados %}
+            <hr>
+            <h5>Alquileres Atrasados (pendientes de devolución):</h5>
+            <table class="table table-danger">
+                <thead>
+                    <tr><th>Cliente</th><th>Celular</th><th>Fecha Devolución</th></tr>
+                </thead>
+                <tbody>
+                    {% for alquiler in atrasados %}
+                    <tr>
+                        <td>{{ alquiler.nombre_cliente }}</td>
+                        <td>{{ alquiler.celular_cliente }}</td>
+                        <td>{{ alquiler.fecha_devolucion }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No hay alquileres atrasados.</p>
+        {% endif %}
+    </div>
+
+    <!-- Gastos y Reportes -->
+    <div id="gastos" class="seccion {% if seccion == 'gastos' %}active{% endif %}">
+        <h4>Cargar Nuevo Gasto</h4>
+        {% if error and seccion == 'gastos' %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        {% if mensaje and seccion == 'gastos' %}
+            <div class="alert alert-success">{{ mensaje }}</div>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="cargar_gasto" />
+            <div class="mb-3">
+                <label>Fecha *</label>
+                <input type="date" name="fecha_gasto" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Monto *</label>
+                <input type="number" step="0.01" name="monto" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label>Detalle (opcional)</label>
+                <textarea name="detalle" class="form-control"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Agregar Gasto</button>
+        </form>
+
+        <hr>
+        <h5>Listado de Gastos</h5>
+        <table class="table table-striped">
+            <thead>
+                <tr><th>Fecha</th><th>Monto</th><th>Detalle</th></tr>
+            </thead>
+            <tbody>
+                {% for gasto in gastos %}
+                <tr>
+                    <td>{{ gasto.fecha }}</td>
+                    <td>${{ gasto.monto }}</td>
+                    <td>{{ gasto.detalle }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">No hay gastos registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <hr>
+        <h5>Reportes Básicos</h5>
+
+        <h6>Uso por Prenda</h6>
+        <ul>
+            {% for r in reporte_prendas %}
+            <li>{{ r.prenda }}: {{ r.cantidad_alquileres }} alquileres</li>
+            {% endfor %}
+        </ul>
+
+        <h6>Uso por Color</h6>
+        <ul>
+            {% for r in reporte_colores %}
+            <li>{{ r.color }}: {{ r.cantidad_alquileres }} alquileres</li>
+            {% endfor %}
+        </ul>
+
+        <h6>Uso por Talle</h6>
+        <ul>
+            {% for r in reporte_talles %}
+            <li>{{ r.talle }}: {{ r.cantidad_alquileres }} alquileres</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+
+<script>
+    const buttons = document.querySelectorAll('.menu button');
+    const sections = document.querySelectorAll('.seccion');
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const seccion = btn.getAttribute('data-seccion');
+
+            sections.forEach(sec => {
+                if (sec.id === seccion) {
+                    sec.classList.add('active');
+                } else {
+                    sec.classList.remove('active');
+                }
+            });
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
