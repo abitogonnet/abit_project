@@ -1,17 +1,17 @@
 import os
 from pathlib import Path
 
-# Base directory del proyecto
+# Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Clave secreta (usa tu propia clave en producción)
+# Clave secreta (usa una segura en producción)
 SECRET_KEY = 'tu-clave-secreta-aqui'
 
-# Modo debug activado para desarrollo (cambiar a False en producción)
-DEBUG = True
+# Desactiva modo debug en producción
+DEBUG = False
 
-# Hosts permitidos - en desarrollo puede ser vacío
-ALLOWED_HOSTS = []
+# Agrega el dominio de Render a ALLOWED_HOSTS para evitar errores
+ALLOWED_HOSTS = ['abit-project.onrender.com', 'localhost', '127.0.0.1']
 
 # Aplicaciones instaladas
 INSTALLED_APPS = [
@@ -22,10 +22,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'alquileres',  # Registrar tu app aquí
+    'alquileres',
 ]
 
-# Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -36,14 +35,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# URL raíz de la configuración global
 ROOT_URLCONF = 'abit.urls'
 
-# Templates y configuración de directorios
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # Aquí puedes agregar rutas adicionales para templates
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -56,47 +53,35 @@ TEMPLATES = [
     },
 ]
 
-# WSGI
 WSGI_APPLICATION = 'abit.wsgi.application'
 
-# Base de datos (SQLite por defecto)
+# Configura la base de datos; para Render usa PostgreSQL estándar (ajustar en variables de entorno)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', ''),
+        'USER': os.environ.get('DB_USER', ''),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', ''),
+        'PORT': os.environ.get('DB_PORT', ''),
     }
 }
 
-# Validación de contraseñas (puedes modificar)
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    # Puedes dejar validadores si quieres.
 ]
 
-# Idioma y zona horaria (cambia según prefieras)
 LANGUAGE_CODE = 'es-es'
 TIME_ZONE = 'UTC'
+
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
-# Configuración para archivos estáticos (CSS, JS, imágenes)
 STATIC_URL = '/static/'
 
-# Opcional: carpetas adicionales donde Django busca archivos estáticos
+# Añade la carpeta estática de la app
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'alquileres/static'),
+    os.path.join(BASE_DIR, 'alquileres', 'static'),
 ]
 
-# Valor por defecto para campo auto incrementable
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
