@@ -141,8 +141,6 @@ body{
   color-scheme: dark; /* ayuda a Chrome/Edge */
 }
 .ab-sel:focus{border-color: var(--acc);}
-
-/* En algunos navegadores esto mejora opciones */
 .ab-sel option{
   background:#0f1420;
   color:#e8e8e8;
@@ -201,12 +199,15 @@ body{
 }
 .ab-table tr:hover td{background: rgba(15,20,32,.35);}
 
-/* wrapper para scroll horizontal en móvil (si lo usás) */
+/* wrapper para scroll horizontal SOLO cuando lo pedís */
 .ab-table-wrap{
   width:100%;
   overflow:auto;
   -webkit-overflow-scrolling: touch;
   border-radius:12px;
+}
+.ab-table-wrap .ab-table{
+  min-width: 680px; /* ✅ solo tablas dentro del wrap scrollean si hace falta */
 }
 
 /* pre (mensaje cliente) */
@@ -222,7 +223,7 @@ body{
   -webkit-overflow-scrolling: touch;
 }
 
-/* helpers mobile */
+/* helpers */
 .ab-mob-full{width:auto;}
 .ab-mob-stack{flex-wrap:wrap;}
 
@@ -231,7 +232,7 @@ body{
    ========================= */
 @media (max-width: 720px){
 
-  /* nav: pasa a columna y se vuelve "topbar" */
+  /* nav */
   .ab-nav{
     flex-direction:column;
     align-items:stretch;
@@ -243,7 +244,7 @@ body{
     justify-content:space-between;
   }
 
-  /* botón menú visible en mobile */
+  /* botón menú visible */
   .ab-menu-btn{
     display:inline-flex;
     align-items:center;
@@ -251,7 +252,7 @@ body{
     width:100%;
   }
 
-  /* links: por defecto ocultos, se abren con .is-open (JS) */
+  /* links: oculto por defecto */
   .ab-links{
     display:none;
     flex-direction:column;
@@ -283,13 +284,8 @@ body{
     font-size:16px;
   }
 
-  /* botones/acciones full-width en mobile */
+  /* botones/acciones full-width */
   .ab-mob-full{width:100%;}
   .ab-mob-stack{flex-direction:column; align-items:stretch;}
-
-  /* tablas: permitir scroll si son anchas */
-  .ab-table{
-    min-width: 680px;
-  }
 }
 
