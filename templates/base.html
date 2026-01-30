@@ -1,0 +1,41 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABITO</title>
+  <link rel="stylesheet" href="{% static 'css/abito.css' %}">
+</head>
+<body>
+  <div class="ab-wrap">
+    <div class="ab-nav">
+      <div class="ab-brand">
+        <span class="ab-dot"></span>
+        <span>ABITO</span>
+      </div>
+
+      <div class="ab-links">
+        <a class="ab-link" href="{% url 'alquileres:home' %}">Inicio</a>
+        <a class="ab-link" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
+        <a class="ab-link" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
+        <a class="ab-link" href="{% url 'prendas:crear' %}">Crear prenda</a>
+        <a class="ab-link" href="{% url 'prendas:stock' %}">Stock</a>
+
+        <a class="ab-link" href="{% url 'gastos:home' %}">Gastos</a>
+        <a class="ab-link" href="{% url 'reportes:home' %}">Reportes</a>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for m in messages %}
+        <div class="ab-msg {% if m.tags == 'success' %}ok{% elif m.tags == 'error' %}err{% endif %}">
+          {{ m }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
