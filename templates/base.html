@@ -5,62 +5,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ABITO</title>
-
-  <!-- CSS principal -->
   <link rel="stylesheet" href="{% static 'css/abito.css' %}">
-
-  <!-- Fix mobile + selects (desplegables) legibles -->
-  <style>
-    /* ====== SELECTS (para que no quede blanco con texto blanco) ====== */
-    select.ab-sel, .ab-sel select, select {
-      background: #0f1420 !important;
-      color: #e8e8e8 !important;
-      border: 1px solid #2a3245 !important;
-    }
-    select.ab-sel option, select option {
-      background: #0f1420 !important;
-      color: #e8e8e8 !important;
-    }
-
-    /* ====== NAV responsive ====== */
-    .ab-wrap{ max-width: 1100px; margin: 0 auto; padding: 16px; }
-    .ab-nav{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px; flex-wrap:wrap;
-      margin-bottom: 14px;
-    }
-    .ab-links{ display:flex; gap:10px; flex-wrap:wrap; }
-    .ab-link{
-      display:inline-block;
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.12);
-      text-decoration:none;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 720px){
-      .ab-wrap{ padding: 12px; }
-      .ab-links{ width:100%; }
-      .ab-link{ flex: 1 1 auto; text-align:center; }
-      .ab-brand{ width:100%; display:flex; justify-content:center; }
-    }
-  </style>
 </head>
-
 <body>
   <div class="ab-wrap">
-
-    {# ✅ URLs “seguros”: si alguna no existe, NO rompe #}
-    {% url 'alquileres:home' as url_home %}
-    {% url 'alquileres:crear' as url_crear_alq %}
-    {% url 'alquileres:ver' as url_ver_alq %}
-    {% url 'prendas:crear' as url_crear_prenda %}
-    {% url 'prendas:stock' as url_stock %}
-    {% url 'gastos:home' as url_gastos_home %}
-    {% url 'gastos:crear' as url_gastos_crear %}
-    {% url 'reportes:home' as url_reportes_home %}
-
     <div class="ab-nav">
       <div class="ab-brand">
         <span class="ab-dot"></span>
@@ -68,18 +16,14 @@
       </div>
 
       <div class="ab-links">
-        {% if url_home %}<a class="ab-link" href="{{ url_home }}">Inicio</a>{% endif %}
-        {% if url_crear_alq %}<a class="ab-link" href="{{ url_crear_alq }}">Crear alquiler</a>{% endif %}
-        {% if url_ver_alq %}<a class="ab-link" href="{{ url_ver_alq }}">Ver alquileres</a>{% endif %}
-        {% if url_crear_prenda %}<a class="ab-link" href="{{ url_crear_prenda }}">Crear prenda</a>{% endif %}
-        {% if url_stock %}<a class="ab-link" href="{{ url_stock }}">Stock</a>{% endif %}
+        <a class="ab-link" href="{% url 'alquileres:home' %}">Inicio</a>
+        <a class="ab-link" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
+        <a class="ab-link" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
+        <a class="ab-link" href="{% url 'prendas:crear' %}">Crear prenda</a>
+        <a class="ab-link" href="{% url 'prendas:stock' %}">Stock</a>
 
-        {# Gastos: si todavía no tenés gastos/crear, no pasa nada #}
-        {% if url_gastos_home %}<a class="ab-link" href="{{ url_gastos_home }}">Gastos</a>{% endif %}
-        {% if url_gastos_crear %}<a class="ab-link" href="{{ url_gastos_crear }}">+ Gasto</a>{% endif %}
-
-        {# Reportes: si no existe reportes:home, no se muestra y no rompe #}
-        {% if url_reportes_home %}<a class="ab-link" href="{{ url_reportes_home }}">Reportes</a>{% endif %}
+        <a class="ab-link" href="{% url 'gastos:home' %}">Gastos</a>
+        <a class="ab-link" href="{% url 'reportes:home' %}">Reportes</a>
       </div>
     </div>
 
