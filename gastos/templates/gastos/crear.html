@@ -7,7 +7,7 @@
       <p class="ab-sub">Proceso 4 — cargar y guardar un gasto</p>
     </div>
     <div class="ab-row">
-      <a class="ab-btn2" href="{% url 'gastos:home' %}">Volver</a>
+      <a class="ab-btn2 ab-mob-full" href="{% url 'gastos:home' %}">Volver</a>
     </div>
   </div>
 
@@ -29,9 +29,10 @@
       {% endif %}
 
       <div class="ab-hr"></div>
-      <div class="ab-row">
-        <button class="ab-btn" type="submit">Guardar gasto</button>
-        <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
+
+      <div class="ab-row ab-mob-stack">
+        <button class="ab-btn ab-mob-full" type="submit">Guardar gasto</button>
+        <a class="ab-btn2 ab-mob-full" href="{% url 'gastos:home' %}">Cancelar</a>
       </div>
 
       <datalist id="dl_gasto_cat">
