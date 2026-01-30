@@ -1,138 +1,104 @@
-{% load static %}
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ABITO - Crear prenda</title>
-
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
-  <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial; background:#0f1115; color:#e8e8e8; margin:0;}
-    .ab-wrap{max-width:980px; margin:24px auto; padding:0 16px;}
-    .ab-card{background:#151922; border:1px solid #232a3a; border-radius:14px; padding:18px;}
-    .ab-top{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;}
-    .ab-title{font-size:20px; font-weight:700;}
-    .ab-btn{background:#2dd4bf; color:#0b1220; border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer;}
-    .ab-btn2{background:#334155; color:#e8e8e8; border:1px solid #475569; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer;}
-    .ab-grid{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
-    .ab-row{display:flex; flex-direction:column; gap:6px;}
-    label{font-size:13px; color:#b7c0d3;}
-    .ab-inp,.ab-sel{background:#0f1420; border:1px solid #2a3245; color:#e8e8e8; border-radius:10px; padding:10px; outline:none;}
-    .ab-inp:focus,.ab-sel:focus{border-color:#2dd4bf;}
-    .ab-actions{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;}
-    .ab-msg{margin:10px 0; padding:10px 12px; border-radius:10px; border:1px solid #2a3245;}
-    .ab-msg.success{border-color:#2dd4bf;}
-    .ab-msg.info{border-color:#7dd3fc;}
-    .ab-msg.error{border-color:#fb7185;}
-    .ab-msg.ok{border-color:#2dd4bf;}
-    .ab-msg.err{border-color:#fb7185;}
-    .ab-small{color:#9aa6bf; font-size:12px; margin-top:6px;}
-    .ab-err{color:#fb7185; font-size:13px;}
-    @media (max-width: 800px){ .ab-grid{grid-template-columns:1fr;} }
-    a{color:#7dd3fc; text-decoration:none;}
-  </style>
-</head>
-
-<body>
-  <div class="ab-wrap">
-
-    <div class="ab-top">
-      <div class="ab-title">Crear prenda</div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <a class="ab-btn2" href="{% url 'alquileres:home' %}">Home</a>
-        <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
-      </div>
+{% extends "base.html" %}
+{% block content %}
+<div class="ab-card">
+  <div class="ab-head">
+    <div>
+      <h1 class="ab-title">Crear prenda</h1>
+      <p class="ab-sub">Generá el código y confirmá la prenda para guardarla</p>
     </div>
+    <div class="ab-row">
+      <a class="ab-btn2 ab-mob-full" href="{% url 'prendas:stock' %}">Ver stock</a>
+    </div>
+  </div>
 
-    <div class="ab-card">
+  <div class="ab-body">
 
-      {% if messages %}
-        {% for m in messages %}
-          <div class="ab-msg {% if m.tags %}{{ m.tags }}{% endif %}">
-            {{ m }}
-          </div>
-        {% endfor %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="ab-msg {% if m.tags == 'success' %}ok{% elif m.tags == 'error' %}err{% endif %}">
+          {{ m }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+
+      <div class="ab-grid">
+
+        <div class="col-6">
+          <label class="ab-lab">Categoría</label>
+          {{ form.categoria }}
+          {% if form.categoria.errors %}<div class="ab-msg err" style="margin-top:8px;">{{ form.categoria.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-6">
+          <label class="ab-lab">Marca</label>
+          {{ form.marca }}
+          {% if form.marca.errors %}<div class="ab-msg err" style="margin-top:8px;">{{ form.marca.errors }}</div>{% endif %}
+          <div class="ab-muted" style="margin-top:6px;">Escribís, pero para que valide tiene que ser del desplegable.</div>
+        </div>
+
+        <div class="col-6">
+          <label class="ab-lab">Color</label>
+          {{ form.color }}
+          {% if form.color.errors %}<div class="ab-msg err" style="margin-top:8px;">{{ form.color.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-6">
+          <label class="ab-lab">Talle</label>
+          {{ form.talle }}
+          {% if form.talle.errors %}<div class="ab-msg err" style="margin-top:8px;">{{ form.talle.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-12">
+          <label class="ab-lab">Notas (opcional)</label>
+          {{ form.notas }}
+          {% if form.notas.errors %}<div class="ab-msg err" style="margin-top:8px;">{{ form.notas.errors }}</div>{% endif %}
+        </div>
+
+      </div>
+
+      {% if codigo_preview %}
+        <div class="ab-msg ok" style="margin-top:14px;">
+          <strong>Código generado:</strong> {{ codigo_preview }}<br>
+          <span class="ab-muted">Ahora tocá “Confirmar prenda” para guardarla.</span>
+        </div>
       {% endif %}
 
-      <form method="post" autocomplete="off">
-        {% csrf_token %}
-
-        <div class="ab-grid">
-
-          <div class="ab-row">
-            <label>Categoría</label>
-            {{ form.categoria }}
-            {% if form.categoria.errors %}<div class="ab-err">{{ form.categoria.errors }}</div>{% endif %}
-          </div>
-
-          <div class="ab-row">
-            <label>Marca</label>
-            {{ form.marca }}
-            {% if form.marca.errors %}<div class="ab-err">{{ form.marca.errors }}</div>{% endif %}
-            <div class="ab-small">Escribís, pero para que valide tiene que ser del desplegable.</div>
-          </div>
-
-          <div class="ab-row">
-            <label>Color</label>
-            {{ form.color }}
-            {% if form.color.errors %}<div class="ab-err">{{ form.color.errors }}</div>{% endif %}
-          </div>
-
-          <div class="ab-row">
-            <label>Talle</label>
-            {{ form.talle }}
-            {% if form.talle.errors %}<div class="ab-err">{{ form.talle.errors }}</div>{% endif %}
-          </div>
-
-          <div class="ab-row" style="grid-column: 1 / -1;">
-            <label>Notas (opcional)</label>
-            {{ form.notas }}
-            {% if form.notas.errors %}<div class="ab-err">{{ form.notas.errors }}</div>{% endif %}
-          </div>
-
+      {% if form.non_field_errors %}
+        <div class="ab-msg err" style="margin-top:14px;">
+          {{ form.non_field_errors }}
         </div>
+      {% endif %}
 
-        {% if codigo_preview %}
-          <div class="ab-msg ok" style="margin-top:14px;">
-            <b>Código generado:</b> {{ codigo_preview }} <br>
-            <span class="ab-small">Ahora tocá “Confirmar prenda” para guardarla.</span>
-          </div>
-        {% endif %}
+      <div class="ab-hr"></div>
 
-        {% if form.non_field_errors %}
-          <div class="ab-msg err">
-            {{ form.non_field_errors }}
-          </div>
-        {% endif %}
+      <div class="ab-row ab-mob-stack">
+        <button class="ab-btn2 ab-mob-full" type="submit" name="accion" value="generar">Crear código</button>
+        <button class="ab-btn ab-mob-full" type="submit" name="accion" value="confirmar">Confirmar prenda</button>
+      </div>
 
-        <div class="ab-actions">
-          <button class="ab-btn2" type="submit" name="accion" value="generar">Crear código</button>
-          <button class="ab-btn" type="submit" name="accion" value="confirmar">Confirmar prenda</button>
-        </div>
+      <!-- DATALISTS -->
+      <datalist id="dl_marcas">
+        {% for b in brands %}
+          <option value="{{ b }}"></option>
+        {% endfor %}
+      </datalist>
 
-        <!-- DATALISTS -->
-        <datalist id="dl_marcas">
-          {% for b in brands %}
-            <option value="{{ b }}"></option>
-          {% endfor %}
-        </datalist>
+      <datalist id="dl_colores">
+        {% for c in colores_traje %}<option value="{{ c }}"></option>{% endfor %}
+        {% for c in colores_zapatos %}<option value="{{ c }}"></option>{% endfor %}
+        {% for c in colores_chaleco %}<option value="{{ c }}"></option>{% endfor %}
+      </datalist>
 
-        <datalist id="dl_colores">
-          {% for c in colores_traje %}<option value="{{ c }}"></option>{% endfor %}
-          {% for c in colores_zapatos %}<option value="{{ c }}"></option>{% endfor %}
-          {% for c in colores_chaleco %}<option value="{{ c }}"></option>{% endfor %}
-        </datalist>
+      <datalist id="dl_talles">
+        {% for n in talles_nums %}<option value="{{ n }}"></option>{% endfor %}
+        {% for t in talles_letras %}<option value="{{ t }}"></option>{% endfor %}
+        {% for x in tam_nino_adulto %}<option value="{{ x }}"></option>{% endfor %}
+      </datalist>
 
-        <datalist id="dl_talles">
-          {% for n in talles_nums %}<option value="{{ n }}"></option>{% endfor %}
-          {% for t in talles_letras %}<option value="{{ t }}"></option>{% endfor %}
-          {% for x in tam_nino_adulto %}<option value="{{ x }}"></option>{% endfor %}
-        </datalist>
-
-      </form>
-    </div>
-
+    </form>
   </div>
-</body>
-</html>
+</div>
+{% endblock %}
