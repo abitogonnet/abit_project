@@ -7,7 +7,7 @@
       <p class="ab-sub">Proceso 2 — reserva prendas y genera mensaje para el cliente</p>
     </div>
     <div class="ab-row">
-      <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
+      <a class="ab-btn2 ab-mob-full" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
     </div>
   </div>
 
@@ -18,7 +18,7 @@
         <div class="ab-body">
           <div class="ab-row" style="justify-content:space-between;">
             <strong>Mensaje para el cliente (copiar/pegar)</strong>
-            <button class="ab-btn2" type="button" onclick="copyMsg()">Copiar</button>
+            <button class="ab-btn2 ab-mob-full" type="button" onclick="copyMsg()">Copiar</button>
           </div>
           <div class="ab-hr"></div>
           <pre id="msgBox" class="ab-pre">{{ mensaje_cliente }}</pre>
@@ -87,7 +87,7 @@
       </div>
 
       <div class="ab-row" style="margin-bottom:14px;">
-        <button class="ab-btn2" type="button" onclick="toggleP2()">+ Agregar 2da persona</button>
+        <button class="ab-btn2 ab-mob-full" type="button" onclick="toggleP2()">+ Agregar 2da persona</button>
       </div>
 
       <div id="p2Box" class="ab-card" style="border-radius:14px; margin-bottom:14px; display:none;">
@@ -153,9 +153,9 @@
           </div>
 
           <div class="ab-hr"></div>
-          <div class="ab-row">
-            <button class="ab-btn" type="submit">Crear alquiler</button>
-            <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ir a ver alquileres</a>
+          <div class="ab-row ab-mob-stack">
+            <button class="ab-btn ab-mob-full" type="submit">Crear alquiler</button>
+            <a class="ab-btn2 ab-mob-full" href="{% url 'alquileres:ver' %}">Ir a ver alquileres</a>
           </div>
         </div>
       </div>
