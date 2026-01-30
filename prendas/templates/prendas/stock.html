@@ -7,50 +7,62 @@
       <p class="ab-sub">Cambiar estado con desplegable (incluye Dañada → Disponible manual)</p>
     </div>
     <div class="ab-row">
-      <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
+      <a class="ab-btn ab-mob-full" href="{% url 'prendas:crear' %}">Crear prenda</a>
     </div>
   </div>
 
   <div class="ab-body">
-    <table class="ab-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Categoría</th>
-          <th>Marca</th>
-          <th>Color</th>
-          <th>Talle</th>
-          <th>Estado</th>
-          <th>Guardar</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in prendas %}
-        <tr>
-          <td><span class="ab-pill">{{ p.codigo }}</span></td>
-          <td>{{ p.get_categoria_display }}</td>
-          <td class="ab-muted">{{ p.marca }}</td>
-          <td class="ab-muted">{{ p.color }}</td>
-          <td class="ab-muted">{{ p.talle }}</td>
-          <td>
-            <form method="post" style="display:flex; gap:8px; align-items:center;">
+    <div class="ab-table-wrap">
+      <table class="ab-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Categoría</th>
+            <th>Marca</th>
+            <th>Color</th>
+            <th>Talle</th>
+            <th>Estado</th>
+            <th>Guardar</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for p in prendas %}
+          <tr>
+            <td><span class="ab-pill">{{ p.codigo }}</span></td>
+            <td>{{ p.get_categoria_display }}</td>
+            <td class="ab-muted">{{ p.marca }}</td>
+            <td class="ab-muted">{{ p.color }}</td>
+            <td class="ab-muted">{{ p.talle }}</td>
+
+            <!-- Form en una sola fila, y cada control en su columna -->
+            <form method="post">
               {% csrf_token %}
               <input type="hidden" name="prenda_id" value="{{ p.id }}">
-              <select class="ab-sel" name="estado">
-                {% for val, lab in estados %}
-                  <option value="{{ val }}" {% if p.estado == val %}selected{% endif %}>{{ lab }}</option>
-                {% endfor %}
-              </select>
-              <button class="ab-btn2" type="submit">OK</button>
+
+              <td>
+                <select class="ab-sel" name="estado" style="min-width:180px;">
+                  {% for val, lab in estados %}
+                    <option value="{{ val }}" {% if p.estado == val %}selected{% endif %}>{{ lab }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+
+              <td>
+                <button class="ab-btn2" type="submit" style="white-space:nowrap;">OK</button>
+              </td>
             </form>
-          </td>
-          <td class="ab-muted">—</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7" class="ab-muted">No hay prendas cargadas.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+          </tr>
+
+          {% empty %}
+          <tr>
+            <td colspan="7" class="ab-muted">No hay prendas cargadas.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 {% endblock %}
+
