@@ -7,7 +7,7 @@
       <p class="ab-sub">Cuando sacás plata de la cuenta y la dividís entre Tade y Bauti</p>
     </div>
     <div class="ab-row">
-      <a class="ab-btn2" href="{% url 'gastos:home' %}">Volver</a>
+      <a class="ab-btn2 ab-mob-full" href="{% url 'gastos:home' %}">Volver</a>
     </div>
   </div>
 
@@ -20,6 +20,7 @@
         <div class="col-3"><label class="ab-lab">Total</label>{{ form.monto_total }}</div>
         <div class="col-3"><label class="ab-lab">Para Tade</label>{{ form.para_tade }}</div>
         <div class="col-3"><label class="ab-lab">Para Bauti</label>{{ form.para_bauti }}</div>
+
         <div class="col-12"><label class="ab-lab">Notas (opcional)</label>{{ form.notas }}</div>
       </div>
 
@@ -28,9 +29,10 @@
       {% endif %}
 
       <div class="ab-hr"></div>
-      <div class="ab-row">
-        <button class="ab-btn" type="submit">Guardar división</button>
-        <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
+
+      <div class="ab-row ab-mob-stack">
+        <button class="ab-btn ab-mob-full" type="submit">Guardar división</button>
+        <a class="ab-btn2 ab-mob-full" href="{% url 'gastos:home' %}">Cancelar</a>
       </div>
     </form>
   </div>
