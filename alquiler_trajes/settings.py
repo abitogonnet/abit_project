@@ -6,16 +6,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # =========================
 # Core
 # =========================
+import os
+
+# =========================
+# Core
+# =========================
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-cambiar-en-render")
 
 # DEBUG robusto (Render: DEBUG=False)
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-# Hosts (Render: "abit-project.onrender.com,localhost,127.0.0.1")
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
+# Hosts (Render: "tu-dominio.onrender.com,localhost,127.0.0.1")
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    if h.strip()
+]
 
-# CSRF (Render: "https://abit-project.onrender.com")
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+# CSRF (Render: "https://tu-dominio.onrender.com")
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
 
 # =========================
 # Apps
@@ -139,4 +152,5 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
 
