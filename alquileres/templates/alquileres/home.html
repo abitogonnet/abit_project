@@ -10,13 +10,14 @@
 
   <div class="ab-body">
     <div class="ab-grid">
+
       <div class="col-6">
         <div class="ab-card" style="border-radius:14px;">
           <div class="ab-body">
             <h2 style="margin:0 0 8px 0;">Alquileres</h2>
-            <div class="ab-row">
-              <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
-              <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
+            <div class="ab-row ab-mob-stack">
+              <a class="ab-btn ab-mob-full" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
+              <a class="ab-btn2 ab-mob-full" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
             </div>
           </div>
         </div>
@@ -26,9 +27,33 @@
         <div class="ab-card" style="border-radius:14px;">
           <div class="ab-body">
             <h2 style="margin:0 0 8px 0;">Stock</h2>
-            <div class="ab-row">
-              <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
-              <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
+            <div class="ab-row ab-mob-stack">
+              <a class="ab-btn ab-mob-full" href="{% url 'prendas:crear' %}">Crear prenda</a>
+              <a class="ab-btn2 ab-mob-full" href="{% url 'prendas:stock' %}">Ver stock</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="ab-card" style="border-radius:14px;">
+          <div class="ab-body">
+            <h2 style="margin:0 0 8px 0;">Gastos</h2>
+            <div class="ab-row ab-mob-stack">
+              <a class="ab-btn2 ab-mob-full" href="{% url 'gastos:home' %}">Ver gastos</a>
+              <a class="ab-btn ab-mob-full" href="{% url 'gastos:crear' %}">Cargar gasto</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="ab-card" style="border-radius:14px;">
+          <div class="ab-body">
+            <h2 style="margin:0 0 8px 0;">Reportes</h2>
+            <div class="ab-row ab-mob-stack">
+              <a class="ab-btn ab-mob-full" href="{% url 'reportes:home' %}">Ver reportes</a>
+              <a class="ab-btn2 ab-mob-full" href="{% url 'prendas:stock' %}">Ir a stock</a>
             </div>
           </div>
         </div>
