@@ -9,4 +9,3 @@ urlpatterns = [
     path("gastos/", include("gastos.urls")),
     path("reportes/", include("reportes.urls")),
 ]
-
