@@ -6,96 +6,117 @@
       <h1 class="ab-title">Gastos</h1>
       <p class="ab-sub">Cargá gastos y divisiones de bienes</p>
     </div>
-    <div class="ab-row" style="gap:10px;">
-      <a class="ab-btn2" href="{% url 'gastos:crear' %}">+ Cargar gasto</a>
-      <a class="ab-btn" href="{% url 'gastos:division_bienes' %}">+ División de bienes</a>
+
+    <div class="ab-row ab-mob-stack" style="gap:10px;">
+      <a class="ab-btn2 ab-mob-full" href="{% url 'gastos:crear' %}">+ Cargar gasto</a>
+      <a class="ab-btn ab-mob-full" href="{% url 'gastos:division_bienes' %}">+ División de bienes</a>
     </div>
   </div>
 
   <div class="ab-body">
-    <div class="ab-grid" style="grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px;">
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">Gastos (mes)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_gastos_mes }}</div>
+
+    <!-- Resumen -->
+    <div class="ab-grid">
+      <div class="col-3">
+        <div class="ab-card" style="border-radius:14px;">
+          <div class="ab-body">
+            <div class="ab-muted">Gastos (mes)</div>
+            <div style="font-weight:900; font-size:22px;">${{ total_gastos_mes }}</div>
+          </div>
         </div>
       </div>
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">Gastos (total)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_gastos_general }}</div>
+
+      <div class="col-3">
+        <div class="ab-card" style="border-radius:14px;">
+          <div class="ab-body">
+            <div class="ab-muted">Gastos (total)</div>
+            <div style="font-weight:900; font-size:22px;">${{ total_gastos_general }}</div>
+          </div>
         </div>
       </div>
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">División bienes (mes)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_div_mes }}</div>
+
+      <div class="col-3">
+        <div class="ab-card" style="border-radius:14px;">
+          <div class="ab-body">
+            <div class="ab-muted">División bienes (mes)</div>
+            <div style="font-weight:900; font-size:22px;">${{ total_div_mes }}</div>
+          </div>
         </div>
       </div>
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">División bienes (total)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_div_general }}</div>
+
+      <div class="col-3">
+        <div class="ab-card" style="border-radius:14px;">
+          <div class="ab-body">
+            <div class="ab-muted">División bienes (total)</div>
+            <div style="font-weight:900; font-size:22px;">${{ total_div_general }}</div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="ab-hr" style="margin:14px 0;"></div>
 
+    <!-- Últimos gastos -->
     <h2 style="margin:0 0 10px 0;">Últimos gastos</h2>
-    <table class="ab-table">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Categoría</th>
-          <th>Método</th>
-          <th>Descripción</th>
-          <th>Monto</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for g in gastos %}
-        <tr>
-          <td class="ab-muted">{{ g.fecha|date:"d/m/Y" }}</td>
-          <td>{{ g.categoria }}</td>
-          <td class="ab-muted">{{ g.metodo|default:"—" }}</td>
-          <td class="ab-muted">{{ g.descripcion|default:"—" }}</td>
-          <td style="font-weight:900;">${{ g.monto }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="ab-muted">No hay gastos todavía.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="ab-table-wrap">
+      <table class="ab-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Categoría</th>
+            <th>Método</th>
+            <th>Descripción</th>
+            <th>Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in gastos %}
+          <tr>
+            <td class="ab-muted">{{ g.fecha|date:"d/m/Y" }}</td>
+            <td>{{ g.categoria }}</td>
+            <td class="ab-muted">{{ g.metodo|default:"—" }}</td>
+            <td class="ab-muted">{{ g.descripcion|default:"—" }}</td>
+            <td style="font-weight:900;">${{ g.monto }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="ab-muted">No hay gastos todavía.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
     <div class="ab-hr" style="margin:14px 0;"></div>
 
+    <!-- División bienes -->
     <h2 style="margin:0 0 10px 0;">División de bienes</h2>
-    <table class="ab-table">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Total</th>
-          <th>Tade</th>
-          <th>Bauti</th>
-          <th>Notas</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for d in divisiones %}
-        <tr>
-          <td class="ab-muted">{{ d.fecha|date:"d/m/Y" }}</td>
-          <td style="font-weight:900;">${{ d.monto_total }}</td>
-          <td class="ab-muted">${{ d.para_tade }}</td>
-          <td class="ab-muted">${{ d.para_bauti }}</td>
-          <td class="ab-muted">{{ d.notas|default:"—" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="ab-muted">No hay divisiones todavía.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="ab-table-wrap">
+      <table class="ab-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Total</th>
+            <th>Tade</th>
+            <th>Bauti</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in divisiones %}
+          <tr>
+            <td class="ab-muted">{{ d.fecha|date:"d/m/Y" }}</td>
+            <td style="font-weight:900;">${{ d.monto_total }}</td>
+            <td class="ab-muted">${{ d.para_tade }}</td>
+            <td class="ab-muted">${{ d.para_bauti }}</td>
+            <td class="ab-muted">{{ d.notas|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="ab-muted">No hay divisiones todavía.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
   </div>
 </div>
 {% endblock %}
+
