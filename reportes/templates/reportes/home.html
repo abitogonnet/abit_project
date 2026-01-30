@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="ab-card">
+  <div class="ab-head">
+    <div>
+      <h1 class="ab-title">Reportes</h1>
+      <p class="ab-sub">Uso de prendas por fecha de entrega — filtrá mensual o semanal por mes</p>
+    </div>
+  </div>
+
+  <div class="ab-body">
+
+    <!-- FILTRO -->
+    <form method="get" class="ab-card" style="border-radius:14px; margin-bottom:14px;">
+      <div class="ab-body">
+        <div class="ab-grid">
+          <div class="col-4">
+            <label class="ab-lab">Tipo de reporte</label>
+            <select class="ab-sel" name="periodo">
+              <option value="mensual" {% if periodo == "mensual" %}selected{% endif %}>Mensual</option>
+              <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semanal (dentro del mes)</option>
+            </select>
+          </div>
+
+          <div class="col-4">
+            <label class="ab-lab">Mes</label>
+            <input class="ab-inp" type="month" name="ym" value="{{ ym_value }}">
+          </div>
+
+          <div class="col-4" style="display:flex; align-items:end;">
+            <button class="ab-btn2" type="submit">Aplicar filtro</button>
+          </div>
+        </div>
+
+        <div class="ab-hr"></div>
+        <div class="ab-muted">
+          Total de prendas registradas en este período: <b>{{ total_items }}</b>
+        </div>
+      </div>
+    </form>
+
+    {% if total_items == 0 %}
+      <div class="ab-msg err">No hay datos de prendas para ese mes.</div>
+    {% endif %}
+
+    <!-- REPORTES -->
+    {% for b in report %}
+      <div class="ab-card" style="border-radius:14px; margin-bottom:14px;">
+        <div class="ab-body">
+          <h2 style="margin:0 0 10px 0;">{{ b.label }}</h2>
+
+          {% if periodo == "mensual" %}
+
+            <div class="ab-grid">
+              <div class="col-6">
+                <h3 style="margin:0 0 8px 0;">Top por color</h3>
+                <table class="ab-table">
+                  <thead>
+                    <tr><th>Color</th><th>Cant.</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for k,cnt in b.colors_month %}
+                      <tr><td>{{ k }}</td><td>{{ cnt }}</td></tr>
+                    {% empty %}
+                      <tr><td colspan="2" class="ab-muted">Sin datos</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="col-6">
+                <h3 style="margin:0 0 8px 0;">Top por talle</h3>
+                <table class="ab-table">
+                  <thead>
+                    <tr><th>Talle</th><th>Cant.</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for k,cnt in b.talles_month %}
+                      <tr><td>{{ k }}</td><td>{{ cnt }}</td></tr>
+                    {% empty %}
+                      <tr><td colspan="2" class="ab-muted">Sin datos</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          {% else %}
+
+            <div class="ab-grid">
+              <div class="col-6">
+                <h3 style="margin:0 0 8px 0;">Top por color (semanal)</h3>
+                <div class="ab-muted" style="margin-bottom:8px;">Semanas del mes: 1 a {{ b.weeks_n }}</div>
+
+                <table class="ab-table">
+                  <thead>
+                    <tr>
+                      <th>Color</th>
+                      {% for w in "12345"|make_list %}
+                        {% if forloop.counter <= b.weeks_n %}
+                          <th>W{{ forloop.counter }}</th>
+                        {% endif %}
+                      {% endfor %}
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in b.colors_week %}
+                      <tr>
+                        <td>{{ row.key }}</td>
+                        {% for v in row.weeks %}
+                          <td>{{ v }}</td>
+                        {% endfor %}
+                        <td><b>{{ row.total }}</b></td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="7" class="ab-muted">Sin datos</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="col-6">
+                <h3 style="margin:0 0 8px 0;">Top por talle (semanal)</h3>
+                <div class="ab-muted" style="margin-bottom:8px;">Semanas del mes: 1 a {{ b.weeks_n }}</div>
+
+                <table class="ab-table">
+                  <thead>
+                    <tr>
+                      <th>Talle</th>
+                      {% for w in "12345"|make_list %}
+                        {% if forloop.counter <= b.weeks_n %}
+                          <th>W{{ forloop.counter }}</th>
+                        {% endif %}
+                      {% endfor %}
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in b.talles_week %}
+                      <tr>
+                        <td>{{ row.key }}</td>
+                        {% for v in row.weeks %}
+                          <td>{{ v }}</td>
+                        {% endfor %}
+                        <td><b>{{ row.total }}</b></td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="7" class="ab-muted">Sin datos</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          {% endif %}
+
+        </div>
+      </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+{% endblock %}
