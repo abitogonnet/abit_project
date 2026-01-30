@@ -209,6 +209,23 @@ body{
   border-radius:12px;
 }
 
+/* pre (mensaje cliente) */
+.ab-pre{
+  margin:0;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid rgba(35,42,58,.65);
+  background: rgba(15,20,32,.45);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* helpers mobile */
+.ab-mob-full{width:auto;}
+.ab-mob-stack{flex-wrap:wrap;}
+
 /* =========================
    Responsive mobile/tablet
    ========================= */
@@ -265,6 +282,10 @@ body{
     border-radius:14px;
     font-size:16px;
   }
+
+  /* botones/acciones full-width en mobile */
+  .ab-mob-full{width:100%;}
+  .ab-mob-stack{flex-direction:column; align-items:stretch;}
 
   /* tablas: permitir scroll si son anchas */
   .ab-table{
