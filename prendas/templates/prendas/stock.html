@@ -35,23 +35,23 @@
             <td class="ab-muted">{{ p.color }}</td>
             <td class="ab-muted">{{ p.talle }}</td>
 
-            <!-- Form en una sola fila, y cada control en su columna -->
-            <form method="post">
-              {% csrf_token %}
-              <input type="hidden" name="prenda_id" value="{{ p.id }}">
+            <!-- Form válido: todo dentro de una celda -->
+            <td>
+              <form method="post" class="ab-row" style="gap:8px; flex-wrap:nowrap; align-items:center;">
+                {% csrf_token %}
+                <input type="hidden" name="prenda_id" value="{{ p.id }}">
 
-              <td>
                 <select class="ab-sel" name="estado" style="min-width:180px;">
                   {% for val, lab in estados %}
                     <option value="{{ val }}" {% if p.estado == val %}selected{% endif %}>{{ lab }}</option>
                   {% endfor %}
                 </select>
-              </td>
+            </td>
 
-              <td>
+            <td>
                 <button class="ab-btn2" type="submit" style="white-space:nowrap;">OK</button>
-              </td>
-            </form>
+              </form>
+            </td>
           </tr>
 
           {% empty %}
@@ -65,4 +65,3 @@
   </div>
 </div>
 {% endblock %}
-
