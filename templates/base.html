@@ -9,19 +9,25 @@
 </head>
 <body>
   <div class="ab-wrap">
-    <div class="ab-nav">
+
+    <!-- NAV: responsive (desktop = sidebar / mobile = topbar + menu) -->
+    <div class="ab-nav" id="abNav">
       <div class="ab-brand">
         <span class="ab-dot"></span>
         <span>ABITO</span>
       </div>
 
-      <div class="ab-links">
+      <!-- Botón menú (solo se muestra en mobile via CSS) -->
+      <button class="ab-menu-btn" type="button" id="abMenuBtn" aria-expanded="false" aria-controls="abLinks">
+        ☰ Menú
+      </button>
+
+      <div class="ab-links" id="abLinks">
         <a class="ab-link" href="{% url 'alquileres:home' %}">Inicio</a>
         <a class="ab-link" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
         <a class="ab-link" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
         <a class="ab-link" href="{% url 'prendas:crear' %}">Crear prenda</a>
         <a class="ab-link" href="{% url 'prendas:stock' %}">Stock</a>
-
         <a class="ab-link" href="{% url 'gastos:home' %}">Gastos</a>
         <a class="ab-link" href="{% url 'reportes:home' %}">Reportes</a>
       </div>
@@ -35,7 +41,25 @@
       {% endfor %}
     {% endif %}
 
-    {% block content %}{% endblock %}
+    <!-- Contenido -->
+    <div class="ab-content">
+      {% block content %}{% endblock %}
+    </div>
+
   </div>
+
+  <!-- JS mínimo para abrir/cerrar menú en mobile -->
+  <script>
+    (function () {
+      const btn = document.getElementById("abMenuBtn");
+      const links = document.getElementById("abLinks");
+      if (!btn || !links) return;
+
+      btn.addEventListener("click", function () {
+        const isOpen = links.classList.toggle("is-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+    })();
+  </script>
 </body>
 </html>
