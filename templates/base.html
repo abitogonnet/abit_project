@@ -51,13 +51,40 @@
   <!-- JS mínimo para abrir/cerrar menú en mobile -->
   <script>
     (function () {
+      const nav = document.getElementById("abNav");
       const btn = document.getElementById("abMenuBtn");
       const links = document.getElementById("abLinks");
-      if (!btn || !links) return;
+      if (!nav || !btn || !links) return;
 
-      btn.addEventListener("click", function () {
+      function closeMenu(){
+        links.classList.remove("is-open");
+        btn.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleMenu(){
         const isOpen = links.classList.toggle("is-open");
         btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      }
+
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleMenu();
+      });
+
+      // ✅ cerrar al tocar un link
+      links.querySelectorAll("a").forEach(a => {
+        a.addEventListener("click", () => closeMenu());
+      });
+
+      // ✅ cerrar si toco afuera del nav
+      document.addEventListener("click", function (e) {
+        const clickedInside = nav.contains(e.target);
+        if (!clickedInside) closeMenu();
+      });
+
+      // ✅ cerrar con ESC
+      document.addEventListener("keydown", function(e){
+        if(e.key === "Escape") closeMenu();
       });
     })();
   </script>
