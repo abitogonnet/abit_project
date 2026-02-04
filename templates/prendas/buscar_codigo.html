@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ab-card">
+  <div class="ab-head">
+    <div>
+      <h1 class="ab-title">Buscar por código</h1>
+      <p class="ab-sub">Escribí el código (ej: SA-001) y te muestra estado + alquiler activo si existe.</p>
+    </div>
+  </div>
+
+  <div class="ab-body">
+    <form method="get" class="ab-row" style="align-items:flex-end;">
+      <div style="min-width:260px;">
+        <label class="ab-lab">Código</label>
+        <input class="ab-inp" type="text" name="codigo" placeholder="SA-001" value="{{ codigo }}">
+      </div>
+      <button class="ab-btn" type="submit">Buscar</button>
+      <a class="ab-btn2" href="{% url 'prendas:buscar_codigo' %}">Limpiar</a>
+    </form>
+
+    {% if prenda %}
+      <div class="ab-hr"></div>
+
+      <div class="ab-card" style="border-radius:14px;">
+        <div class="ab-body">
+          <div class="ab-row" style="justify-content:space-between;">
+            <div>
+              <div style="font-weight:900; font-size:18px;">
+                <span class="ab-pill">{{ prenda.codigo }}</span>
+                {{ prenda.get_categoria_display }}
+              </div>
+              <div class="ab-muted">
+                {{ prenda.color }} {{ prenda.marca }} talle {{ prenda.talle }}
+              </div>
+            </div>
+
+            <div>
+              <span class="ab-badge ok">Estado: {{ prenda.get_estado_display }}</span>
+            </div>
+          </div>
+
+          {% if alquiler_activo %}
+            <div class="ab-hr"></div>
+            <div style="font-weight:900;">En alquiler activo (no cerrado)</div>
+            <div class="ab-muted" style="margin-top:6px;">
+              <b>Cliente:</b> {{ alquiler_activo.cliente_nombre }} — {{ alquiler_activo.cliente_telefono }}<br>
+              <b>Entrega:</b> {{ alquiler_activo.fecha_entrega|date:"d/m/Y" }} —
+              <b>Devolución:</b> {{ alquiler_activo.fecha_devolucion|date:"d/m/Y" }}<br>
+              <b>Estado alquiler:</b> {{ alquiler_activo.get_estado_alquiler_display }}
+            </div>
+          {% else %}
+            <div class="ab-hr"></div>
+            <div class="ab-muted">No aparece en ningún alquiler activo (no cerrado).</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
