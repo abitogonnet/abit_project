@@ -253,4 +253,3 @@ def retrasados(request):
         "hoy": hoy,
         "retrasos": retrasos,
     })
-
