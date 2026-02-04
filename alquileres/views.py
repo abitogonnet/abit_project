@@ -204,3 +204,53 @@ def ver(request):
         "estados_alquiler": Alquiler.ESTADOS_ALQUILER,
         "estados_saldo": Alquiler.ESTADOS_SALDO,
     })
+
+
+# =========================
+# NUEVO: ENTREGAS
+# =========================
+def entregas(request):
+    hoy = timezone.localdate()
+    hasta_str = request.GET.get("hasta", "")
+    try:
+        hasta = timezone.datetime.strptime(hasta_str, "%Y-%m-%d").date() if hasta_str else (hoy + timezone.timedelta(days=7))
+    except Exception:
+        hasta = hoy + timezone.timedelta(days=7)
+
+    if hasta < hoy:
+        hasta = hoy
+
+    qs = (Alquiler.objects
+          .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
+          .order_by("fecha_entrega", "fecha_devolucion", "id")
+          .prefetch_related("items__prenda"))
+
+    return render(request, "alquileres/entregas.html", {
+        "hoy": hoy,
+        "hasta": hasta,
+        "alquileres": qs,
+    })
+
+
+# =========================
+# NUEVO: RETRASADOS
+# =========================
+def retrasados(request):
+    hoy = timezone.localdate()
+
+    qs = (Alquiler.objects
+          .exclude(estado_alquiler=Alquiler.EST_CERRADO)
+          .filter(fecha_devolucion__lt=hoy)
+          .order_by("fecha_devolucion", "fecha_entrega", "id")
+          .prefetch_related("items__prenda"))
+
+    retrasos = []
+    for a in qs:
+        dias = (hoy - a.fecha_devolucion).days
+        retrasos.append((a, dias))
+
+    return render(request, "alquileres/retrasados.html", {
+        "hoy": hoy,
+        "retrasos": retrasos,
+    })
+
