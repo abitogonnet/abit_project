@@ -20,11 +20,8 @@ body{
   color:#e8e8e8;
 }
 
-/* layout */
 .ab-wrap{max-width:1100px; margin:22px auto; padding:0 16px;}
-.ab-content{display:block;}
 
-/* nav */
 .ab-nav{
   display:flex;
   justify-content:space-between;
@@ -41,7 +38,6 @@ body{
 .ab-dot{width:10px; height:10px; border-radius:999px; background:var(--acc); box-shadow:0 0 0 4px rgba(45,212,191,.12);}
 
 .ab-links{display:flex; gap:10px; flex-wrap:wrap;}
-
 .ab-link{
   color:#e8e8e8;
   text-decoration:none;
@@ -53,21 +49,6 @@ body{
 }
 .ab-link:hover{border-color: rgba(125,211,252,.55);}
 
-/* botón menú (mobile) */
-.ab-menu-btn{
-  display:none; /* desktop: oculto */
-  background: rgba(51,65,85,.35);
-  color:#e8e8e8;
-  border:1px solid rgba(71,85,105,.55);
-  border-radius:12px;
-  padding:10px 12px;
-  font-weight:900;
-  cursor:pointer;
-  white-space:nowrap;
-}
-.ab-menu-btn:hover{border-color: rgba(125,211,252,.55);}
-
-/* cards */
 .ab-card{
   background: var(--card);
   border:1px solid var(--line);
@@ -101,7 +82,6 @@ body{
   font-size:12px;
 }
 
-/* grid */
 .ab-grid{
   display:grid;
   grid-template-columns: repeat(12, 1fr);
@@ -115,7 +95,6 @@ body{
   .col-3,.col-4,.col-6{grid-column: span 12;}
 }
 
-/* forms */
 .ab-lab{display:block; font-size:13px; color:#b7c0d3; margin-bottom:6px;}
 
 .ab-inp{
@@ -146,7 +125,6 @@ body{
   color:#e8e8e8;
 }
 
-/* buttons */
 .ab-btn{
   background: var(--acc);
   color:#0b1220;
@@ -167,7 +145,6 @@ body{
 }
 .ab-btn2:hover{border-color: rgba(125,211,252,.55);}
 
-/* messages */
 .ab-msg{
   margin:12px 0;
   padding:10px 12px;
@@ -178,7 +155,6 @@ body{
 .ab-msg.ok{border-color: var(--acc);}
 .ab-msg.err{border-color: #fb7185;}
 
-/* tables */
 .ab-table{
   width:100%;
   border-collapse:collapse;
@@ -199,93 +175,23 @@ body{
 }
 .ab-table tr:hover td{background: rgba(15,20,32,.35);}
 
-/* wrapper para scroll horizontal SOLO cuando lo pedís */
+/* ✅ para tablas en celular */
 .ab-table-wrap{
   width:100%;
-  overflow:auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius:12px;
-}
-.ab-table-wrap .ab-table{
-  min-width: 680px; /* ✅ solo tablas dentro del wrap scrollean si hace falta */
-}
-
-/* pre (mensaje cliente) */
-.ab-pre{
-  margin:0;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid rgba(35,42,58,.65);
-  background: rgba(15,20,32,.45);
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow:auto;
+  overflow-x:auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* helpers */
-.ab-mob-full{width:auto;}
-.ab-mob-stack{flex-wrap:wrap;}
-
-/* =========================
-   Responsive mobile/tablet
-   ========================= */
-@media (max-width: 720px){
-
-  /* nav */
-  .ab-nav{
-    flex-direction:column;
-    align-items:stretch;
-    gap:10px;
-    padding:12px;
-  }
-
-  .ab-brand{
-    justify-content:space-between;
-  }
-
-  /* botón menú visible */
-  .ab-menu-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:100%;
-  }
-
-  /* links: oculto por defecto */
-  .ab-links{
-    display:none;
-    flex-direction:column;
-    gap:8px;
-  }
-  .ab-links.is-open{
-    display:flex;
-  }
-
-  .ab-link{
-    width:100%;
-    text-align:left;
-    padding:12px 12px;
-    border-radius:14px;
-  }
-
-  /* tipografía y padding para touch */
-  .ab-title{font-size:20px;}
-  .ab-body{padding:14px;}
-
-  .ab-inp, .ab-sel{
-    padding:12px 12px;
-    border-radius:14px;
-    font-size:16px; /* evita zoom raro en iOS */
-  }
-  .ab-btn, .ab-btn2{
-    padding:12px 14px;
-    border-radius:14px;
-    font-size:16px;
-  }
-
-  /* botones/acciones full-width */
-  .ab-mob-full{width:100%;}
-  .ab-mob-stack{flex-direction:column; align-items:stretch;}
+/* ✅ Estados tipo badge (colores) */
+.ab-badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line2);
+  background: rgba(15,20,32,.65);
+  font-weight:900;
+  font-size:12px;
 }
-
+.ab-badge.ok{ border-color: rgba(45,212,191,.55); }
+.ab-badge.warn{ border-color: rgba(251,191,36,.65); }   /* amarillo */
+.ab-badge.danger{ border-color: rgba(251,113,133,.65);} /* rojo */
