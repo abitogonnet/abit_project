@@ -129,25 +129,35 @@ def stock(request):
 
 
 # =========================
-# NUEVO: BUSCAR POR CODIGO
+# NUEVO: BUSCAR POR CODIGO (prefijo + 3 dígitos)
 # =========================
 @require_http_methods(["GET"])
 def buscar_codigo(request):
-    code = (request.GET.get("codigo") or "").strip().upper()
+    prefijo = (request.GET.get("prefijo") or "SA").strip().upper()
+    num_raw = (request.GET.get("num") or "").strip()
+
+    # Normalizar num: puede venir "1" "01" "001"
+    num_digits = "".join([c for c in num_raw if c.isdigit()])[:3]
+
+    codigo = ""
+    if num_digits:
+        codigo = f"{prefijo}-{int(num_digits):03d}"
 
     prenda = None
     alquiler_activo = None
     alquiler_item = None
 
-    if code:
+    if num_raw and not num_digits:
+        messages.error(request, "El número debe ser 1–3 dígitos (ej: 1, 01 o 001).")
+
+    if codigo:
         try:
-            prenda = Prenda.objects.get(codigo__iexact=code)
+            prenda = Prenda.objects.get(codigo__iexact=codigo)
         except Prenda.DoesNotExist:
             prenda = None
-            messages.error(request, "No se encontró una prenda con ese código.")
+            messages.error(request, f"No se encontró una prenda con código {codigo}.")
 
         if prenda:
-            # Si está en algún alquiler no cerrado, lo mostramos
             alquiler_item = (AlquilerItem.objects
                              .select_related("alquiler", "prenda")
                              .filter(prenda=prenda)
@@ -158,7 +168,9 @@ def buscar_codigo(request):
                 alquiler_activo = alquiler_item.alquiler
 
     return render(request, "prendas/buscar_codigo.html", {
-        "codigo": code,
+        "prefijo": prefijo,
+        "num": num_raw,
+        "codigo": codigo,
         "prenda": prenda,
         "alquiler_activo": alquiler_activo,
         "alquiler_item": alquiler_item,
