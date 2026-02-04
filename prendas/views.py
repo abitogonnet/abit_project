@@ -3,6 +3,7 @@ from django.db import IntegrityError, transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
+from alquileres.models import Alquiler, AlquilerItem
 from .models import Prenda
 from .forms import (
     PrendaForm,
@@ -124,4 +125,41 @@ def stock(request):
     return render(request, "prendas/stock.html", {
         "prendas": prendas,
         "estados": Prenda.ESTADOS,
+    })
+
+
+# =========================
+# NUEVO: BUSCAR POR CODIGO
+# =========================
+@require_http_methods(["GET"])
+def buscar_codigo(request):
+    code = (request.GET.get("codigo") or "").strip().upper()
+
+    prenda = None
+    alquiler_activo = None
+    alquiler_item = None
+
+    if code:
+        try:
+            prenda = Prenda.objects.get(codigo__iexact=code)
+        except Prenda.DoesNotExist:
+            prenda = None
+            messages.error(request, "No se encontró una prenda con ese código.")
+
+        if prenda:
+            # Si está en algún alquiler no cerrado, lo mostramos
+            alquiler_item = (AlquilerItem.objects
+                             .select_related("alquiler", "prenda")
+                             .filter(prenda=prenda)
+                             .exclude(alquiler__estado_alquiler=Alquiler.EST_CERRADO)
+                             .order_by("-alquiler__fecha_entrega", "-alquiler__id")
+                             .first())
+            if alquiler_item:
+                alquiler_activo = alquiler_item.alquiler
+
+    return render(request, "prendas/buscar_codigo.html", {
+        "codigo": code,
+        "prenda": prenda,
+        "alquiler_activo": alquiler_activo,
+        "alquiler_item": alquiler_item,
     })
