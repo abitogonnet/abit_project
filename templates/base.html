@@ -9,25 +9,24 @@
 </head>
 <body>
   <div class="ab-wrap">
-
-    <!-- NAV: responsive (desktop = sidebar / mobile = topbar + menu) -->
-    <div class="ab-nav" id="abNav">
+    <div class="ab-nav">
       <div class="ab-brand">
         <span class="ab-dot"></span>
         <span>ABITO</span>
       </div>
 
-      <!-- Botón menú (solo se muestra en mobile via CSS) -->
-      <button class="ab-menu-btn" type="button" id="abMenuBtn" aria-expanded="false" aria-controls="abLinks">
-        ☰ Menú
-      </button>
-
-      <div class="ab-links" id="abLinks">
+      <div class="ab-links">
         <a class="ab-link" href="{% url 'alquileres:home' %}">Inicio</a>
         <a class="ab-link" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
         <a class="ab-link" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
+
+        <a class="ab-link" href="{% url 'alquileres:entregas' %}">Entregas</a>
+        <a class="ab-link" href="{% url 'alquileres:retrasados' %}">Retrasados</a>
+
         <a class="ab-link" href="{% url 'prendas:crear' %}">Crear prenda</a>
         <a class="ab-link" href="{% url 'prendas:stock' %}">Stock</a>
+        <a class="ab-link" href="{% url 'prendas:buscar_codigo' %}">Buscar código</a>
+
         <a class="ab-link" href="{% url 'gastos:home' %}">Gastos</a>
         <a class="ab-link" href="{% url 'reportes:home' %}">Reportes</a>
       </div>
@@ -41,52 +40,7 @@
       {% endfor %}
     {% endif %}
 
-    <!-- Contenido -->
-    <div class="ab-content">
-      {% block content %}{% endblock %}
-    </div>
-
+    {% block content %}{% endblock %}
   </div>
-
-  <!-- JS mínimo para abrir/cerrar menú en mobile -->
-  <script>
-    (function () {
-      const nav = document.getElementById("abNav");
-      const btn = document.getElementById("abMenuBtn");
-      const links = document.getElementById("abLinks");
-      if (!nav || !btn || !links) return;
-
-      function closeMenu(){
-        links.classList.remove("is-open");
-        btn.setAttribute("aria-expanded", "false");
-      }
-
-      function toggleMenu(){
-        const isOpen = links.classList.toggle("is-open");
-        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
-      }
-
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        toggleMenu();
-      });
-
-      // ✅ cerrar al tocar un link
-      links.querySelectorAll("a").forEach(a => {
-        a.addEventListener("click", () => closeMenu());
-      });
-
-      // ✅ cerrar si toco afuera del nav
-      document.addEventListener("click", function (e) {
-        const clickedInside = nav.contains(e.target);
-        if (!clickedInside) closeMenu();
-      });
-
-      // ✅ cerrar con ESC
-      document.addEventListener("keydown", function(e){
-        if(e.key === "Escape") closeMenu();
-      });
-    })();
-  </script>
 </body>
 </html>
