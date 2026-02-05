@@ -28,6 +28,16 @@ class Alquiler(models.Model):
         (SAL_PAG, "Pagado"),
     ]
 
+    # ✅ Métodos de pago
+    MP_EFEC = "EFECTIVO"
+    MP_TRANS = "TRANSFERENCIA"
+    MP_TARJ = "TARJETA"
+    METODOS_PAGO = [
+        (MP_EFEC, "Efectivo"),
+        (MP_TRANS, "Transferencia"),
+        (MP_TARJ, "Tarjeta"),
+    ]
+
     # Datos cliente
     cliente_nombre = models.CharField(max_length=80)
     cliente_telefono = models.CharField(max_length=30)
@@ -50,6 +60,11 @@ class Alquiler(models.Model):
 
     sena = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # ✅ Métodos (seña al crear; saldo al marcar PAGADO)
+    metodo_sena = models.CharField(max_length=20, choices=METODOS_PAGO, blank=True, default="")
+    metodo_saldo = models.CharField(max_length=20, choices=METODOS_PAGO, blank=True, default="")
+    saldo_pagado_en = models.DateField(null=True, blank=True)  # fecha real en que se marcó como pagado
 
     estado_saldo = models.CharField(max_length=12, choices=ESTADOS_SALDO, default=SAL_PEND)
     estado_alquiler = models.CharField(max_length=12, choices=ESTADOS_ALQUILER, default=EST_RESERVADO)
