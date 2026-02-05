@@ -20,6 +20,7 @@
           <th>Fechas</th>
           <th>Prendas</th>
           <th>Pago</th>
+          <th>Métodos</th>
           <th>Saldo</th>
           <th>Estado</th>
           <th>Guardar</th>
@@ -54,14 +55,21 @@
               {% endfor %}
             {% endif %}
           </td>
+
           <td class="ab-muted">
             Final: ${{ a.total_final }}<br>
             Seña: ${{ a.sena }}<br>
             Saldo: ${{ a.saldo }}
           </td>
 
+          <td class="ab-muted">
+            Seña: <b>{% if a.metodo_sena %}{{ a.get_metodo_sena_display }}{% else %}—{% endif %}</b><br>
+            Saldo: <b>{% if a.metodo_saldo %}{{ a.get_metodo_saldo_display }}{% else %}—{% endif %}</b><br>
+            {% if a.saldo_pagado_en %}<span class="ab-muted">Pagado: {{ a.saldo_pagado_en|date:"d/m/Y" }}</span>{% endif %}
+          </td>
+
           <td>
-            <form method="post" style="display:flex; gap:8px; align-items:center;">
+            <form method="post" style="display:flex; flex-direction:column; gap:8px;">
               {% csrf_token %}
               <input type="hidden" name="alq_id" value="{{ a.id }}">
 
@@ -71,7 +79,15 @@
                 {% endfor %}
               </select>
 
+              <!-- ✅ Método saldo: lo usa SOLO si elegís PAGADO -->
+              <select class="ab-sel" name="metodo_saldo">
+                <option value="">Método saldo (si PAGADO)</option>
+                {% for val, lab in metodos_pago %}
+                  <option value="{{ val }}" {% if a.metodo_saldo == val %}selected{% endif %}>{{ lab }}</option>
+                {% endfor %}
+              </select>
           </td>
+
           <td>
               <select class="ab-sel" name="estado_alquiler">
                 {% for val, lab in estados_alquiler %}
@@ -79,16 +95,19 @@
                 {% endfor %}
               </select>
           </td>
+
           <td>
               <button class="ab-btn2" type="submit">OK</button>
             </form>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="ab-muted">No hay alquileres todavía.</td></tr>
+        <tr><td colspan="9" class="ab-muted">No hay alquileres todavía.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 {% endblock %}
+
+
