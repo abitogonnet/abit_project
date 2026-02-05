@@ -4,7 +4,7 @@
   <div class="ab-head">
     <div>
       <h1 class="ab-title">Stock</h1>
-      <p class="ab-sub">Cambiar estado con desplegable (incluye Dañada → Disponible manual)</p>
+      <p class="ab-sub">Filtrá por tipo (prefijo) y cambiá estado con desplegable</p>
     </div>
     <div class="ab-row">
       <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
@@ -12,7 +12,37 @@
   </div>
 
   <div class="ab-body">
-    <table class="ab-table">
+
+    <!-- ✅ FILTRO POR PREFIJO -->
+    <div class="ab-card" style="border-radius:14px; margin-bottom:14px;">
+      <div class="ab-body">
+        <div class="ab-grid">
+          <div class="col-4">
+            <label class="ab-lab">Filtrar por prefijo</label>
+            <select class="ab-sel" id="prefFilter">
+              <option value="">Todos</option>
+              <option value="SA">SA — Sacos</option>
+              <option value="PA">PA — Pantalones</option>
+              <option value="CA">CA — Camisas</option>
+              <option value="CH">CH — Chalecos</option>
+              <option value="MO">MO — Moños</option>
+              <option value="CO">CO — Corbatas</option>
+              <option value="ZA">ZA — Zapatos</option>
+              <option value="CI">CI — Cinturones</option>
+            </select>
+          </div>
+
+          <div class="col-8 ab-row" style="justify-content:flex-end; align-items:end;">
+            <button class="ab-btn2" type="button" onclick="clearPref()">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="ab-hr"></div>
+        <div class="ab-muted" id="prefInfo">Mostrando: <b>Todos</b></div>
+      </div>
+    </div>
+
+    <table class="ab-table" id="stockTable">
       <thead>
         <tr>
           <th>Código</th>
@@ -26,7 +56,7 @@
       </thead>
       <tbody>
         {% for p in prendas %}
-        <tr>
+        <tr data-pref="{{ p.codigo|slice:':2' }}">
           <td><span class="ab-pill">{{ p.codigo }}</span></td>
           <td>{{ p.get_categoria_display }}</td>
           <td class="ab-muted">{{ p.marca }}</td>
@@ -51,6 +81,52 @@
         {% endfor %}
       </tbody>
     </table>
+
   </div>
 </div>
+
+<script>
+(function(){
+  const sel = document.getElementById("prefFilter");
+  const info = document.getElementById("prefInfo");
+  const rows = Array.from(document.querySelectorAll("#stockTable tbody tr"));
+
+  function labelFor(pref){
+    const map = {
+      "SA":"Sacos",
+      "PA":"Pantalones",
+      "CA":"Camisas",
+      "CH":"Chalecos",
+      "MO":"Moños",
+      "CO":"Corbatas",
+      "ZA":"Zapatos",
+      "CI":"Cinturones"
+    };
+    if(!pref) return "Todos";
+    return pref + " — " + (map[pref] || pref);
+  }
+
+  function apply(){
+    const pref = (sel.value || "").toUpperCase();
+    let shown = 0;
+
+    rows.forEach(tr => {
+      const rp = (tr.dataset.pref || "").toUpperCase();
+      const ok = !pref || rp === pref;
+      tr.style.display = ok ? "" : "none";
+      if(ok) shown++;
+    });
+
+    info.innerHTML = `Mostrando: <b>${labelFor(pref)}</b> — <b>${shown}</b> prendas`;
+  }
+
+  window.clearPref = function(){
+    sel.value = "";
+    apply();
+  }
+
+  sel.addEventListener("change", apply);
+  apply();
+})();
+</script>
 {% endblock %}
