@@ -18,7 +18,6 @@ CATS = [
     ("cinturon", Prenda.C_CINTURON),
 ]
 
-# Prefijos por tipo (para autocompletar y normalizar)
 SHORT_PREF = {
     "saco": "SA",
     "pantalon": "PA",
@@ -32,13 +31,6 @@ SHORT_PREF = {
 
 
 def _normalizar_codigo(code: str, prefijo: str) -> str:
-    """
-    Permite que el usuario escriba:
-      - "1" o "001"  -> "SA-001" (según prefijo del campo)
-      - "SA001"      -> "SA-001"
-      - "SA-1"       -> "SA-001"
-      - "SA-"        -> "" (lo tomo como vacío)
-    """
     raw = (code or "").strip().upper()
     pref = (prefijo or "").strip().upper()
 
@@ -74,7 +66,7 @@ class AlquilerForm(forms.ModelForm):
     p1_zapatos = forms.CharField(required=False)
     p1_cinturon = forms.CharField(required=False)
 
-    # ✅ Ruedo Persona 1 (separado)
+    # Ruedo Persona 1
     p1_ruedo_pantalon_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
     p1_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "—")] + AlquilerItem.RUEDO_TIPOS)
     p1_ruedo_saco_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
@@ -90,7 +82,7 @@ class AlquilerForm(forms.ModelForm):
     p2_zapatos = forms.CharField(required=False)
     p2_cinturon = forms.CharField(required=False)
 
-    # ✅ Ruedo Persona 2 (separado)
+    # Ruedo Persona 2
     p2_ruedo_pantalon_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
     p2_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "—")] + AlquilerItem.RUEDO_TIPOS)
     p2_ruedo_saco_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
@@ -103,6 +95,7 @@ class AlquilerForm(forms.ModelForm):
             "cliente_nombre", "cliente_telefono",
             "persona1_nombre", "persona2_nombre",
             "total_bruto", "descuento_pct", "sena",
+            "metodo_sena",  # ✅ nuevo
         ]
         widgets = {
             "fecha_visita": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
@@ -119,6 +112,8 @@ class AlquilerForm(forms.ModelForm):
             "total_bruto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
             "descuento_pct": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0", "max": "100"}),
             "sena": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
+
+            "metodo_sena": forms.Select(attrs={"class": "ab-sel"}),  # ✅
         }
 
     def __init__(self, *args, **kwargs):
@@ -138,7 +133,7 @@ class AlquilerForm(forms.ModelForm):
                     "inputmode": "numeric",
                 })
 
-        # ✅ Widgets ruedos
+        # Widgets ruedos
         for f in [
             "p1_ruedo_pantalon_valor", "p1_ruedo_saco_valor",
             "p2_ruedo_pantalon_valor", "p2_ruedo_saco_valor",
@@ -156,7 +151,6 @@ class AlquilerForm(forms.ModelForm):
 
         # 2da persona
         tiene_p2 = (cleaned.get("tiene_persona2") or "").strip() == "1"
-
         any_p2 = any((cleaned.get(f"p2_{short}") or "").strip() for short, _ in CATS)
         if (tiene_p2 or any_p2) and not (cleaned.get("persona2_nombre") or "").strip():
             self.add_error("persona2_nombre", "Si agregás 2da persona, tenés que poner el nombre.")
@@ -211,5 +205,10 @@ class AlquilerForm(forms.ModelForm):
             self.add_error("total_bruto", "El total no puede ser negativo.")
         if sena < 0:
             self.add_error("sena", "La seña no puede ser negativa.")
+
+        # ✅ método seña: si hay seña > 0, obligamos método
+        mp = (cleaned.get("metodo_sena") or "").strip()
+        if sena > 0 and not mp:
+            self.add_error("metodo_sena", "Elegí método de pago de la seña.")
 
         return cleaned
