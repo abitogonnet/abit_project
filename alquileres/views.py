@@ -82,9 +82,10 @@ def crear(request):
                 alq = form.save(commit=False)
                 alq.estado_alquiler = Alquiler.EST_RESERVADO
                 alq.estado_saldo = Alquiler.SAL_PEND
+                # metodo_sena ya viene del form
                 alq.save()
 
-                # ✅ ruedos separados P1
+                # ruedos separados P1
                 p1_rp_val = form.cleaned_data.get("p1_ruedo_pantalon_valor")
                 p1_rp_tipo = form.cleaned_data.get("p1_ruedo_pantalon_tipo") or ""
                 p1_rs_val = form.cleaned_data.get("p1_ruedo_saco_valor")
@@ -108,7 +109,7 @@ def crear(request):
                     pr.estado = Prenda.E_RES
                     pr.save(update_fields=["estado"])
 
-                # ✅ ruedos separados P2
+                # ruedos separados P2
                 p2_rp_val = form.cleaned_data.get("p2_ruedo_pantalon_valor")
                 p2_rp_tipo = form.cleaned_data.get("p2_ruedo_pantalon_tipo") or ""
                 p2_rs_val = form.cleaned_data.get("p2_ruedo_saco_valor")
@@ -173,14 +174,33 @@ def ver(request):
 
         nuevo_saldo = request.POST.get("estado_saldo")
         nuevo_estado = request.POST.get("estado_alquiler")
+        metodo_saldo = (request.POST.get("metodo_saldo") or "").strip()
 
         changed = False
 
+        # saldo
         if nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
             if alq.estado_saldo != nuevo_saldo:
+                # si pasa a PAGADO => exigir método
+                if nuevo_saldo == Alquiler.SAL_PAG:
+                    if not metodo_saldo:
+                        messages.error(request, "Para marcar SALDO como PAGADO tenés que elegir el método de pago.")
+                        return redirect("alquileres:ver")
+                    if metodo_saldo not in dict(Alquiler.METODOS_PAGO):
+                        messages.error(request, "Método de pago inválido.")
+                        return redirect("alquileres:ver")
+
+                    alq.metodo_saldo = metodo_saldo
+                    alq.saldo_pagado_en = timezone.localdate()
+                else:
+                    # vuelve a pendiente => limpiamos
+                    alq.metodo_saldo = ""
+                    alq.saldo_pagado_en = None
+
                 alq.estado_saldo = nuevo_saldo
                 changed = True
 
+        # estado alquiler
         if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
             if alq.estado_alquiler != nuevo_estado:
                 alq.estado_alquiler = nuevo_estado
@@ -203,12 +223,10 @@ def ver(request):
         "alquileres": alquileres,
         "estados_alquiler": Alquiler.ESTADOS_ALQUILER,
         "estados_saldo": Alquiler.ESTADOS_SALDO,
+        "metodos_pago": Alquiler.METODOS_PAGO,
     })
 
 
-# =========================
-# NUEVO: ENTREGAS
-# =========================
 def entregas(request):
     hoy = timezone.localdate()
     hasta_str = request.GET.get("hasta", "")
@@ -232,9 +250,6 @@ def entregas(request):
     })
 
 
-# =========================
-# NUEVO: RETRASADOS
-# =========================
 def retrasados(request):
     hoy = timezone.localdate()
 
