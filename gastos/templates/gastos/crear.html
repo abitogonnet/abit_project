@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ab-card">
+  <div class="ab-head">
+    <div>
+      <h1 class="ab-title">Cargar gasto</h1>
+      <p class="ab-sub">Proceso 4 — cargar y guardar un gasto</p>
+    </div>
+    <div class="ab-row">
+      <a class="ab-btn2" href="{% url 'gastos:home' %}">Volver</a>
+    </div>
+  </div>
+
+  <div class="ab-body">
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+
+      <div class="ab-grid">
+        <div class="col-3"><label class="ab-lab">Fecha</label>{{ form.fecha }}</div>
+        <div class="col-3"><label class="ab-lab">Categoría</label>{{ form.categoria }}</div>
+        <div class="col-3"><label class="ab-lab">Método</label>{{ form.metodo }}</div>
+        <div class="col-3"><label class="ab-lab">Monto</label>{{ form.monto }}</div>
+
+        <div class="col-12"><label class="ab-lab">Descripción (opcional)</label>{{ form.descripcion }}</div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="ab-msg err" style="margin-top:12px;">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="ab-hr"></div>
+      <div class="ab-row">
+        <button class="ab-btn" type="submit">Guardar gasto</button>
+        <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
+      </div>
+
+      <datalist id="dl_gasto_cat">
+        {% for c in cats %}<option value="{{ c }}"></option>{% endfor %}
+      </datalist>
+      <datalist id="dl_gasto_met">
+        {% for m in mets %}<option value="{{ m }}"></option>{% endfor %}
+      </datalist>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
