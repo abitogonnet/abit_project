@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ab-card">
+  <div class="ab-head">
+    <div>
+      <h1 class="ab-title">Entregas</h1>
+      <p class="ab-sub">Desde hoy {{ hoy|date:"d/m/Y" }} hasta {{ hasta|date:"d/m/Y" }}</p>
+    </div>
+
+    <form method="get" class="ab-row">
+      <div style="min-width:220px;">
+        <label class="ab-lab">Hasta</label>
+        <input class="ab-inp" type="date" name="hasta" value="{{ hasta|date:'Y-m-d' }}">
+      </div>
+      <button class="ab-btn2" type="submit">Filtrar</button>
+    </form>
+  </div>
+
+  <div class="ab-body">
+    <div class="ab-table-wrap">
+      <table class="ab-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Fechas</th>
+            <th>Prendas</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in alquileres %}
+          <tr>
+            <td><span class="ab-pill">#{{ a.id }}</span></td>
+            <td>
+              <div style="font-weight:900;">{{ a.cliente_nombre }}</div>
+              <div class="ab-muted">{{ a.cliente_telefono }}</div>
+            </td>
+            <td class="ab-muted">
+              Entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
+              Dev: {{ a.fecha_devolucion|date:"d/m/Y" }}
+            </td>
+            <td class="ab-muted">
+              <div style="font-weight:800; color:rgba(233,233,234,.9)">P1: {{ a.persona1_nombre }}</div>
+              {% for it in a.items.all %}
+                {% if it.persona_num == 1 %}
+                  - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
+                {% endif %}
+              {% endfor %}
+
+              {% if a.persona2_nombre %}
+                <div class="ab-hr" style="margin:8px 0;"></div>
+                <div style="font-weight:800; color:rgba(233,233,234,.9)">P2: {{ a.persona2_nombre }}</div>
+                {% for it in a.items.all %}
+                  {% if it.persona_num == 2 %}
+                    - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </td>
+            <td>
+              {% if a.fecha_entrega == hoy %}
+                <span class="ab-badge warn">HOY</span>
+              {% else %}
+                <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="ab-muted">No hay entregas en ese período.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
