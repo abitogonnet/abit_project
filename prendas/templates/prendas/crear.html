@@ -6,7 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ABITO - Crear prenda</title>
 
+  <!-- ✅ CSS global (debe existir static/css/app.css) -->
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Arial; background:#0f1115; color:#e8e8e8; margin:0;}
     .ab-wrap{max-width:980px; margin:24px auto; padding:0 16px;}
@@ -40,6 +42,7 @@
     <div class="ab-top">
       <div class="ab-title">Crear prenda</div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <!-- ✅ existe en alquileres/urls.py -->
         <a class="ab-btn2" href="{% url 'alquileres:home' %}">Home</a>
         <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
       </div>
@@ -136,3 +139,4 @@
   </div>
 </body>
 </html>
+
