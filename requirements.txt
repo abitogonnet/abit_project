@@ -10,3 +10,8 @@ python-dotenv==1.2.1
 sqlparse==0.5.5
 tzdata==2025.3
 whitenoise==6.11.0
+google-api-python-client==2.160.0
+google-auth==2.38.0
+google-auth-httplib2==0.2.0
+
+
