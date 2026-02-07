@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "alquileres",
     "gastos",
     "reportes",
+    "visitas",
 ]
 
 MIDDLEWARE = [
@@ -96,3 +97,4 @@ STORAGES = {
 WHITENOISE_MANIFEST_STRICT = False
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
