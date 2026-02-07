@@ -36,7 +36,7 @@
               <th>Teléfono</th>
               <th>Evento</th>
               <th>Estado</th>
-              <th style="width:240px;">Acciones</th>
+              <th style="width:220px;">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -57,20 +57,14 @@
                     <span class="ab-badge danger">Cancelada</span>
                   {% endif %}
                 </td>
-
-                <!-- ✅ Acciones en línea -->
                 <td>
-                  <div class="ab-row" style="gap:8px; flex-wrap:wrap;">
-                    {% if v.estado != "confirmada" and v.estado != "cancelada" %}
-                      <a class="ab-btn2" href="{% url 'visitas:confirmar' v.pk %}">Confirmar</a>
-                    {% endif %}
-
-                    {% if v.estado != "cancelada" %}
-                      <a class="ab-btn2"
-                         href="{% url 'visitas:cancelar' v.pk %}"
-                         onclick="return confirm('¿Cancelar esta visita?');">Cancelar</a>
-                    {% endif %}
-                  </div>
+                  {% if v.estado != "confirmada" and v.estado != "cancelada" %}
+                    <a class="ab-btn2" href="{% url 'visitas:confirmar' v.pk %}">Confirmar</a>
+                  {% endif %}
+                  {% if v.estado != "cancelada" %}
+                    <a class="ab-btn2" href="{% url 'visitas:cancelar' v.pk %}"
+                       onclick="return confirm('¿Cancelar esta visita?');">Cancelar</a>
+                  {% endif %}
                 </td>
               </tr>
             {% endfor %}
@@ -83,3 +77,4 @@
   </div>
 </div>
 {% endblock %}
+
