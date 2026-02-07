@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ab-card">
+  <div class="ab-head">
+    <div>
+      <h1 class="ab-title">Visitas</h1>
+      <p class="ab-sub">Agenda interna (luego se conecta a Google Calendar + WhatsApp)</p>
+    </div>
+    <div class="ab-row">
+      <a class="ab-btn" href="{% url 'visitas:crear' %}">Crear visita</a>
+    </div>
+  </div>
+
+  <div class="ab-body">
+    <div class="ab-row" style="gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+      <a class="ab-btn2" href="{% url 'visitas:listar' %}?r=today{% if show_canceladas %}&canceladas=1{% endif %}">Hoy</a>
+      <a class="ab-btn2" href="{% url 'visitas:listar' %}?r=week{% if show_canceladas %}&canceladas=1{% endif %}">7 días</a>
+      <a class="ab-btn2" href="{% url 'visitas:listar' %}?r=all{% if show_canceladas %}&canceladas=1{% endif %}">Todas</a>
+
+      {% if show_canceladas %}
+        <a class="ab-btn2" href="{% url 'visitas:listar' %}?r={{r}}">Ocultar canceladas</a>
+      {% else %}
+        <a class="ab-btn2" href="{% url 'visitas:listar' %}?r={{r}}&canceladas=1">Ver canceladas</a>
+      {% endif %}
+    </div>
+
+    {% if visitas %}
+      <div class="ab-table-wrap">
+        <table class="ab-table">
+          <thead>
+            <tr>
+              <th>Inicio</th>
+              <th>Dur.</th>
+              <th>Personas</th>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Evento</th>
+              <th>Estado</th>
+              <th style="width:220px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in visitas %}
+              <tr>
+                <td>{{ v.inicio|date:"d/m/Y H:i" }}</td>
+                <td>{{ v.duracion_min }}m</td>
+                <td>{{ v.personas }}</td>
+                <td>{{ v.nombre|default:"—" }}</td>
+                <td>{{ v.telefono }}</td>
+                <td>{{ v.fecha_evento|date:"d/m/Y" }}</td>
+                <td>
+                  {% if v.estado == "confirmada" %}
+                    <span class="ab-badge ok">Confirmada</span>
+                  {% elif v.estado == "pendiente" %}
+                    <span class="ab-badge warn">Pendiente</span>
+                  {% else %}
+                    <span class="ab-badge danger">Cancelada</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if v.estado != "confirmada" and v.estado != "cancelada" %}
+                    <a class="ab-btn2" href="{% url 'visitas:confirmar' v.pk %}">Confirmar</a>
+                  {% endif %}
+                  {% if v.estado != "cancelada" %}
+                    <a class="ab-btn2" href="{% url 'visitas:cancelar' v.pk %}"
+                       onclick="return confirm('¿Cancelar esta visita?');">Cancelar</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="ab-sub">No hay visitas para este filtro.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
