@@ -1,5 +1,4 @@
 from django import forms
-from typing import List
 from .models import Prenda
 
 # ===========================
@@ -34,13 +33,12 @@ TAM_NINO_ADULTO = ["Niño","Adulto"]
 def _norm(s: str) -> str:
     return (s or "").strip()
 
-# ✅ Python 3.8 compatible (NO usar list[str])
-def _in_list(val: str, options: List[str]) -> bool:
+def _in_list(val: str, options: list[str]) -> bool:
     v = _norm(val).casefold()
     return any(v == o.casefold() for o in options)
 
-def _nums(a: int, b: int, step: int = 1):
-    return [str(x) for x in range(a, b + 1, step)]
+def _nums(a:int,b:int,step:int=1):
+    return [str(x) for x in range(a, b+1, step)]
 
 BOILER_SACO_NUM = _nums(4, 16, 2)
 BOILER_CHAL_NUM = _nums(0, 16, 2)
@@ -64,11 +62,11 @@ class PrendaForm(forms.ModelForm):
         fields = ["categoria", "marca", "color", "talle", "notas"]
 
         widgets = {
-            "categoria": forms.Select(attrs={"class": "ab-sel", "id": "id_categoria"}),
-            "marca": forms.TextInput(attrs={"class": "ab-inp", "id": "id_marca", "list": "dl_marcas", "autocomplete": "off"}),
-            "color": forms.TextInput(attrs={"class": "ab-inp", "id": "id_color", "list": "dl_colores", "autocomplete": "off"}),
-            "talle": forms.TextInput(attrs={"class": "ab-inp", "id": "id_talle", "list": "dl_talles", "autocomplete": "off"}),
-            "notas": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Opcional"}),
+            "categoria": forms.Select(attrs={"class":"ab-sel", "id":"id_categoria"}),
+            "marca": forms.TextInput(attrs={"class":"ab-inp", "id":"id_marca", "list":"dl_marcas", "autocomplete":"off"}),
+            "color": forms.TextInput(attrs={"class":"ab-inp", "id":"id_color", "list":"dl_colores", "autocomplete":"off"}),
+            "talle": forms.TextInput(attrs={"class":"ab-inp", "id":"id_talle", "list":"dl_talles", "autocomplete":"off"}),
+            "notas": forms.TextInput(attrs={"class":"ab-inp", "placeholder":"Opcional"}),
         }
 
     def clean_marca(self):
