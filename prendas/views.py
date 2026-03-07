@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.db import IntegrityError, transaction
-from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
@@ -70,7 +69,7 @@ def _ctx_lists():
 # CREAR PRENDA
 # =========================
 def crear_prenda(request):
-    return HttpResponse("crear_prenda OK")
+    return render(request, "prendas/crear.html", {})
 
 
 # =========================
@@ -109,12 +108,17 @@ def stock(request):
 # =========================
 @require_http_methods(["GET"])
 def buscar_codigo(request):
+    """
+    Buscar prenda por código (SA-001, PA-010, etc.)
+    Muestra estado y último alquiler asociado.
+    """
     code = (request.GET.get("codigo") or "").strip().upper()
 
     prenda = None
     alquiler_item = None
 
     if code:
+        # Normalización: SA1, SA-1, SA001 → SA-001
         import re
         m = re.fullmatch(r"([A-Z]{2})\s*[- ]?\s*(\d{1,3})", code)
         if m:
