@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.db import IntegrityError, transaction
-from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
@@ -70,14 +69,57 @@ def _ctx_lists():
 # CREAR PRENDA
 # =========================
 def crear_prenda(request):
-    try:
-        return render(request, "prendas/crear.html", {})
-    except Exception as e:
-        return HttpResponse(
-            f"ERROR EN crear_prenda: {type(e).__name__}: {e}",
-            content_type="text/plain",
-            status=500,
-        )
+    """
+    Proceso:
+    - Completar datos
+    - Crear código (preview)
+    - Confirmar prenda
+    """
+    codigo_preview = None
+
+    if request.method == "POST":
+        accion = request.POST.get("accion", "generar")
+        form = PrendaForm(request.POST)
+
+        if form.is_valid():
+            cat = form.cleaned_data["categoria"]
+            pref = PREFIJOS.get(cat, "XX")
+
+            if accion == "generar":
+                codigo_preview = _next_codigo(pref)
+                messages.info(
+                    request,
+                    f"Código generado: {codigo_preview}. Confirmá para guardar."
+                )
+                ctx = {"form": form, "codigo_preview": codigo_preview}
+                ctx.update(_ctx_lists())
+                return render(request, "prendas/crear.html", ctx)
+
+            if accion == "confirmar":
+                with transaction.atomic():
+                    for _ in range(15):
+                        codigo = _next_codigo(pref)
+                        obj = form.save(commit=False)
+                        obj.codigo = codigo
+                        try:
+                            obj.save()
+                            messages.success(
+                                request,
+                                f"Prenda creada: {obj.codigo} ({obj.get_categoria_display()})"
+                            )
+                            return redirect("prendas:stock")
+                        except IntegrityError:
+                            continue
+
+                messages.error(request, "No se pudo generar un código único.")
+        else:
+            messages.error(request, "Revisá los campos marcados.")
+    else:
+        form = PrendaForm()
+
+    ctx = {"form": form, "codigo_preview": codigo_preview}
+    ctx.update(_ctx_lists())
+    return render(request, "prendas/crear.html", ctx)
 
 
 # =========================
@@ -116,6 +158,10 @@ def stock(request):
 # =========================
 @require_http_methods(["GET"])
 def buscar_codigo(request):
+    """
+    Buscar prenda por código (SA-001, PA-010, etc.)
+    Muestra estado y último alquiler asociado.
+    """
     code = (request.GET.get("codigo") or "").strip().upper()
 
     prenda = None
