@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 from prendas.models import Prenda
 from .models import Alquiler, AlquilerItem
@@ -82,10 +83,8 @@ def crear(request):
                 alq = form.save(commit=False)
                 alq.estado_alquiler = Alquiler.EST_RESERVADO
                 alq.estado_saldo = Alquiler.SAL_PEND
-                # metodo_sena ya viene del form
                 alq.save()
 
-                # ruedos separados P1
                 p1_rp_val = form.cleaned_data.get("p1_ruedo_pantalon_valor")
                 p1_rp_tipo = form.cleaned_data.get("p1_ruedo_pantalon_tipo") or ""
                 p1_rs_val = form.cleaned_data.get("p1_ruedo_saco_valor")
@@ -109,7 +108,6 @@ def crear(request):
                     pr.estado = Prenda.E_RES
                     pr.save(update_fields=["estado"])
 
-                # ruedos separados P2
                 p2_rp_val = form.cleaned_data.get("p2_ruedo_pantalon_valor")
                 p2_rp_tipo = form.cleaned_data.get("p2_ruedo_pantalon_tipo") or ""
                 p2_rs_val = form.cleaned_data.get("p2_ruedo_saco_valor")
@@ -178,10 +176,8 @@ def ver(request):
 
         changed = False
 
-        # saldo
         if nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
             if alq.estado_saldo != nuevo_saldo:
-                # si pasa a PAGADO => exigir método
                 if nuevo_saldo == Alquiler.SAL_PAG:
                     if not metodo_saldo:
                         messages.error(request, "Para marcar SALDO como PAGADO tenés que elegir el método de pago.")
@@ -193,14 +189,12 @@ def ver(request):
                     alq.metodo_saldo = metodo_saldo
                     alq.saldo_pagado_en = timezone.localdate()
                 else:
-                    # vuelve a pendiente => limpiamos
                     alq.metodo_saldo = ""
                     alq.saldo_pagado_en = None
 
                 alq.estado_saldo = nuevo_saldo
                 changed = True
 
-        # estado alquiler
         if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
             if alq.estado_alquiler != nuevo_estado:
                 alq.estado_alquiler = nuevo_estado
@@ -215,9 +209,11 @@ def ver(request):
 
         return redirect("alquileres:ver")
 
-    alquileres = (Alquiler.objects
-                  .all()
-                  .order_by("fecha_entrega", "fecha_devolucion", "-creado_en"))
+    alquileres = (
+        Alquiler.objects
+        .all()
+        .order_by("fecha_entrega", "fecha_devolucion", "-creado_en")
+    )
 
     return render(request, "alquileres/ver.html", {
         "alquileres": alquileres,
@@ -225,6 +221,25 @@ def ver(request):
         "estados_saldo": Alquiler.ESTADOS_SALDO,
         "metodos_pago": Alquiler.METODOS_PAGO,
     })
+
+
+@require_http_methods(["POST"])
+def eliminar(request, alq_id):
+    alq = get_object_or_404(Alquiler, id=alq_id)
+
+    with transaction.atomic():
+        items = list(alq.items.select_related("prenda").all())
+
+        for it in items:
+            prenda = it.prenda
+            if prenda.estado != Prenda.E_DAN:
+                prenda.estado = Prenda.E_DISP
+                prenda.save(update_fields=["estado"])
+
+        alq.delete()
+
+    messages.success(request, f"Alquiler #{alq_id} eliminado correctamente.")
+    return redirect("alquileres:ver")
 
 
 def entregas(request):
@@ -238,10 +253,12 @@ def entregas(request):
     if hasta < hoy:
         hasta = hoy
 
-    qs = (Alquiler.objects
-          .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
-          .order_by("fecha_entrega", "fecha_devolucion", "id")
-          .prefetch_related("items__prenda"))
+    qs = (
+        Alquiler.objects
+        .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
+        .order_by("fecha_entrega", "fecha_devolucion", "id")
+        .prefetch_related("items__prenda")
+    )
 
     return render(request, "alquileres/entregas.html", {
         "hoy": hoy,
@@ -253,11 +270,13 @@ def entregas(request):
 def retrasados(request):
     hoy = timezone.localdate()
 
-    qs = (Alquiler.objects
-          .exclude(estado_alquiler=Alquiler.EST_CERRADO)
-          .filter(fecha_devolucion__lt=hoy)
-          .order_by("fecha_devolucion", "fecha_entrega", "id")
-          .prefetch_related("items__prenda"))
+    qs = (
+        Alquiler.objects
+        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
+        .filter(fecha_devolucion__lt=hoy)
+        .order_by("fecha_devolucion", "fecha_entrega", "id")
+        .prefetch_related("items__prenda")
+    )
 
     retrasos = []
     for a in qs:
