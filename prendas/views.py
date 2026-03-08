@@ -154,6 +154,40 @@ def stock(request):
 
 
 # =========================
+# ELIMINAR PRENDA
+# =========================
+@require_http_methods(["POST"])
+def eliminar_prenda(request, prenda_id):
+    prenda = get_object_or_404(Prenda, id=prenda_id)
+
+    # Protección: si existe relación con alquileres, no permitir borrar
+    try:
+        from alquileres.models import AlquilerItem
+
+        tiene_alquileres = AlquilerItem.objects.filter(prenda=prenda).exists()
+        if tiene_alquileres:
+            messages.error(
+                request,
+                f"No se puede eliminar la prenda {prenda.codigo} porque está asociada a uno o más alquileres."
+            )
+            return redirect("prendas:stock")
+    except Exception:
+        # Si la app alquileres no estuviera disponible por algún motivo,
+        # no frenamos toda la pantalla, pero intentamos borrar igual.
+        pass
+
+    codigo = prenda.codigo
+    categoria = prenda.get_categoria_display()
+    prenda.delete()
+
+    messages.success(
+        request,
+        f"Prenda eliminada correctamente: {codigo} ({categoria})."
+    )
+    return redirect("prendas:stock")
+
+
+# =========================
 # BUSCAR POR CÓDIGO
 # =========================
 @require_http_methods(["GET"])
