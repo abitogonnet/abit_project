@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ABITO - Crear prenda</title>
 
-  {# <link rel="stylesheet" href="{% static 'css/app.css' %}"> #}
+  <link rel="stylesheet" href="{% static 'css/abito.css' %}">
+
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Arial; background:#0f1115; color:#e8e8e8; margin:0;}
     .ab-wrap{max-width:980px; margin:24px auto; padding:0 16px;}
@@ -111,6 +112,7 @@
           <button class="ab-btn" type="submit" name="accion" value="confirmar">Confirmar prenda</button>
         </div>
 
+        <!-- DATALISTS -->
         <datalist id="dl_marcas">
           {% for b in brands %}
             <option value="{{ b }}"></option>
