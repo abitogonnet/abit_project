@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.db import IntegrityError, transaction
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
@@ -69,7 +70,14 @@ def _ctx_lists():
 # CREAR PRENDA
 # =========================
 def crear_prenda(request):
-    return render(request, "prendas/crear.html", {})
+    try:
+        return render(request, "prendas/crear.html", {})
+    except Exception as e:
+        return HttpResponse(
+            f"ERROR EN crear_prenda: {type(e).__name__}: {e}",
+            content_type="text/plain",
+            status=500,
+        )
 
 
 # =========================
