@@ -19,7 +19,7 @@
     .ab-grid{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
     .ab-row{display:flex; flex-direction:column; gap:6px;}
     label{font-size:13px; color:#b7c0d3;}
-    .ab-inp,.ab-sel{background:#0f1420; border:1px solid #2a3245; color:#e8e8e8; border-radius:10px; padding:10px; outline:none;}
+    .ab-inp,.ab-sel{background:#0f1420; border:1px solid #2a3245; color:#e8e8e8; border-radius:10px; padding:10px; outline:none; width:100%; box-sizing:border-box;}
     .ab-inp:focus,.ab-sel:focus{border-color:#2dd4bf;}
     .ab-actions{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;}
     .ab-msg{margin:10px 0; padding:10px 12px; border-radius:10px; border:1px solid #2a3245;}
@@ -30,6 +30,7 @@
     .ab-msg.err{border-color:#fb7185;}
     .ab-small{color:#9aa6bf; font-size:12px; margin-top:6px;}
     .ab-err{color:#fb7185; font-size:13px;}
+    ul.errorlist{margin:0; padding-left:18px;}
     @media (max-width: 800px){ .ab-grid{grid-template-columns:1fr;} }
     a{color:#7dd3fc; text-decoration:none;}
   </style>
@@ -62,32 +63,32 @@
         <div class="ab-grid">
 
           <div class="ab-row">
-            <label>Categoría</label>
+            <label for="{{ form.categoria.id_for_label }}">Categoría</label>
             {{ form.categoria }}
             {% if form.categoria.errors %}<div class="ab-err">{{ form.categoria.errors }}</div>{% endif %}
           </div>
 
           <div class="ab-row">
-            <label>Marca</label>
+            <label for="{{ form.marca.id_for_label }}">Marca</label>
             {{ form.marca }}
             {% if form.marca.errors %}<div class="ab-err">{{ form.marca.errors }}</div>{% endif %}
             <div class="ab-small">Escribís, pero para que valide tiene que ser del desplegable.</div>
           </div>
 
           <div class="ab-row">
-            <label>Color</label>
+            <label for="{{ form.color.id_for_label }}">Color</label>
             {{ form.color }}
             {% if form.color.errors %}<div class="ab-err">{{ form.color.errors }}</div>{% endif %}
           </div>
 
           <div class="ab-row">
-            <label>Talle</label>
+            <label for="{{ form.talle.id_for_label }}">Talle</label>
             {{ form.talle }}
             {% if form.talle.errors %}<div class="ab-err">{{ form.talle.errors }}</div>{% endif %}
           </div>
 
           <div class="ab-row" style="grid-column: 1 / -1;">
-            <label>Notas (opcional)</label>
+            <label for="{{ form.notas.id_for_label }}">Notas (opcional)</label>
             {{ form.notas }}
             {% if form.notas.errors %}<div class="ab-err">{{ form.notas.errors }}</div>{% endif %}
           </div>
@@ -112,7 +113,6 @@
           <button class="ab-btn" type="submit" name="accion" value="confirmar">Confirmar prenda</button>
         </div>
 
-        <!-- DATALISTS -->
         <datalist id="dl_marcas">
           {% for b in brands %}
             <option value="{{ b }}"></option>
