@@ -24,6 +24,7 @@
           <th>Saldo</th>
           <th>Estado</th>
           <th>Guardar</th>
+          <th>Eliminar</th>
         </tr>
       </thead>
       <tbody>
@@ -79,7 +80,6 @@
                 {% endfor %}
               </select>
 
-              <!-- ✅ Método saldo: lo usa SOLO si elegís PAGADO -->
               <select class="ab-sel" name="metodo_saldo">
                 <option value="">Método saldo (si PAGADO)</option>
                 {% for val, lab in metodos_pago %}
@@ -100,9 +100,21 @@
               <button class="ab-btn2" type="submit">OK</button>
             </form>
           </td>
+
+          <td>
+            <form
+              method="post"
+              action="{% url 'alquileres:eliminar' a.id %}"
+              onsubmit="return confirm('¿Seguro que querés eliminar el alquiler #{{ a.id }}? Esta acción no se puede deshacer y liberará las prendas asociadas.');"
+              style="display:inline;"
+            >
+              {% csrf_token %}
+              <button class="ab-btn2" type="submit">Eliminar</button>
+            </form>
+          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="9" class="ab-muted">No hay alquileres todavía.</td></tr>
+        <tr><td colspan="10" class="ab-muted">No hay alquileres todavía.</td></tr>
         {% endfor %}
       </tbody>
     </table>
