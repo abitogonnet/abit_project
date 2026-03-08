@@ -4,7 +4,7 @@
   <div class="ab-head">
     <div>
       <h1 class="ab-title">Stock</h1>
-      <p class="ab-sub">Filtrá por tipo (prefijo) y cambiá estado con desplegable</p>
+      <p class="ab-sub">Filtrá por tipo (prefijo), cambiá estado y eliminá prendas con confirmación</p>
     </div>
     <div class="ab-row">
       <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
@@ -13,7 +13,6 @@
 
   <div class="ab-body">
 
-    <!-- ✅ FILTRO POR PREFIJO -->
     <div class="ab-card" style="border-radius:14px; margin-bottom:14px;">
       <div class="ab-body">
         <div class="ab-grid">
@@ -52,6 +51,7 @@
           <th>Talle</th>
           <th>Estado</th>
           <th>Guardar</th>
+          <th>Eliminar</th>
         </tr>
       </thead>
       <tbody>
@@ -75,9 +75,20 @@
             </form>
           </td>
           <td class="ab-muted">—</td>
+          <td>
+            <form
+              method="post"
+              action="{% url 'prendas:eliminar' p.id %}"
+              onsubmit="return confirm('¿Seguro que querés eliminar la prenda {{ p.codigo }}? Esta acción no se puede deshacer.');"
+              style="display:inline;"
+            >
+              {% csrf_token %}
+              <button class="ab-btn2" type="submit">Eliminar</button>
+            </form>
+          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="ab-muted">No hay prendas cargadas.</td></tr>
+        <tr><td colspan="8" class="ab-muted">No hay prendas cargadas.</td></tr>
         {% endfor %}
       </tbody>
     </table>
