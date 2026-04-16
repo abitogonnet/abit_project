@@ -207,3 +207,24 @@ class AlquilerForm(forms.ModelForm):
             self.add_error("metodo_sena", "Elige el metodo de pago de la sena.")
 
         return cleaned
+
+
+class VerAlquileresFiltroForm(forms.Form):
+    fecha_desde = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+    )
+    fecha_hasta = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        fecha_desde = cleaned.get("fecha_desde")
+        fecha_hasta = cleaned.get("fecha_hasta")
+
+        if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
+            self.add_error("fecha_hasta", "La fecha final no puede ser menor que la inicial.")
+
+        return cleaned

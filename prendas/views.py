@@ -137,15 +137,22 @@ def _ocupar_prendas_con_alquiler(prendas):
             prenda_id__in=[prenda.id for prenda in prendas],
             alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
         )
-        .order_by("alquiler__fecha_entrega", "alquiler__id")
+        .order_by("alquiler__fecha_entrega", "alquiler__fecha_devolucion", "alquiler__id")
     )
 
     ocupacion_por_prenda = {}
+    vistos_por_prenda = {}
     for item in activos:
-        ocupacion_por_prenda.setdefault(item.prenda_id, item.alquiler)
+        vistos = vistos_por_prenda.setdefault(item.prenda_id, set())
+        if item.alquiler_id in vistos:
+            continue
+        vistos.add(item.alquiler_id)
+        ocupacion_por_prenda.setdefault(item.prenda_id, []).append(item.alquiler)
 
     for prenda in prendas:
-        prenda.alquiler_activo = ocupacion_por_prenda.get(prenda.id)
+        alquileres_activos = ocupacion_por_prenda.get(prenda.id, [])
+        prenda.alquileres_activos = alquileres_activos
+        prenda.alquiler_activo = alquileres_activos[0] if alquileres_activos else None
 
 
 def crear_prenda(request):
@@ -281,7 +288,8 @@ def buscar_prenda(request):
     if form.is_bound and form.is_valid():
         marca = form.cleaned_data.get("marca") or ""
         talle = form.cleaned_data.get("talle") or ""
-        buscado = bool(marca or talle)
+        origen = form.cleaned_data.get("origen") or ""
+        buscado = bool(marca or talle or origen)
 
         if buscado:
             qs = Prenda.objects.all()
@@ -289,6 +297,8 @@ def buscar_prenda(request):
                 qs = qs.filter(marca=marca)
             if talle:
                 qs = qs.filter(talle=talle)
+            if marca.casefold() == "aires modernos" and origen:
+                qs = qs.filter(origen=origen)
             prendas = list(qs.order_by("categoria", "-codigo"))
             _ocupar_prendas_con_alquiler(prendas)
 
@@ -296,4 +306,5 @@ def buscar_prenda(request):
         "form": form,
         "prendas": prendas,
         "buscado": buscado,
+        "show_origen": (form["marca"].value() or "").strip().casefold() == "aires modernos",
     })

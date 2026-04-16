@@ -1,11 +1,14 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.db import transaction
+from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from prendas.models import Prenda
 
-from .forms import AlquilerForm
+from .forms import AlquilerForm, VerAlquileresFiltroForm
 from .models import Alquiler, AlquilerItem
 
 
@@ -209,6 +212,19 @@ def _sync_prendas_por_estado(alquiler: Alquiler):
     _refresh_prendas_estado(item.prenda for item in alquiler.items.select_related("prenda").all())
 
 
+def _redirect_ver_con_filtros(request):
+    params = {}
+    for key in ["fecha_desde", "fecha_hasta"]:
+        value = (request.POST.get(key) or "").strip()
+        if value:
+            params[key] = value
+
+    url = reverse("alquileres:ver")
+    if params:
+        url = f"{url}?{urlencode(params)}"
+    return redirect(url)
+
+
 def ver(request):
     if request.method == "POST":
         alquiler_id = request.POST.get("alq_id")
@@ -221,7 +237,7 @@ def ver(request):
                 alquiler.delete()
                 _refresh_prendas_estado_por_ids(prenda_ids)
             messages.success(request, f"Alquiler #{alquiler_id} eliminado.")
-            return redirect("alquileres:ver")
+            return _redirect_ver_con_filtros(request)
 
         nuevo_saldo = request.POST.get("estado_saldo")
         nuevo_estado = request.POST.get("estado_alquiler")
@@ -234,10 +250,10 @@ def ver(request):
                 if nuevo_saldo == Alquiler.SAL_PAG:
                     if not metodo_saldo:
                         messages.error(request, "Para marcar saldo como pagado tienes que elegir el metodo de pago.")
-                        return redirect("alquileres:ver")
+                        return _redirect_ver_con_filtros(request)
                     if metodo_saldo not in dict(Alquiler.METODOS_PAGO):
                         messages.error(request, "Metodo de pago invalido.")
-                        return redirect("alquileres:ver")
+                        return _redirect_ver_con_filtros(request)
 
                     alquiler.metodo_saldo = metodo_saldo
                     alquiler.saldo_pagado_en = timezone.localdate()
@@ -260,14 +276,27 @@ def ver(request):
         else:
             messages.info(request, "No hubo cambios.")
 
-        return redirect("alquileres:ver")
+        return _redirect_ver_con_filtros(request)
 
+    filtros_form = VerAlquileresFiltroForm(request.GET or None)
     alquileres = (
         Alquiler.objects
         .all()
-        .order_by("-creado_en", "-id")
+        .order_by("-fecha_entrega", "-fecha_devolucion", "-id")
         .prefetch_related("items__prenda")
     )
+
+    filtros_activos = False
+    if filtros_form.is_bound and filtros_form.is_valid():
+        fecha_desde = filtros_form.cleaned_data.get("fecha_desde")
+        fecha_hasta = filtros_form.cleaned_data.get("fecha_hasta")
+
+        if fecha_desde:
+            alquileres = alquileres.filter(fecha_entrega__gte=fecha_desde)
+            filtros_activos = True
+        if fecha_hasta:
+            alquileres = alquileres.filter(fecha_entrega__lte=fecha_hasta)
+            filtros_activos = True
 
     resumen = [
         {"label": "Activos", "valor": alquileres.exclude(estado_alquiler=Alquiler.EST_CERRADO).count()},
@@ -282,6 +311,8 @@ def ver(request):
         "estados_saldo": Alquiler.ESTADOS_SALDO,
         "metodos_pago": Alquiler.METODOS_PAGO,
         "resumen": resumen,
+        "filtros_form": filtros_form,
+        "filtros_activos": filtros_activos,
     })
 
 

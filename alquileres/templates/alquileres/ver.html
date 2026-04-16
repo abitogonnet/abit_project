@@ -5,7 +5,7 @@
     <div>
       <p class="ab-kicker">Alquileres</p>
       <h1 class="ab-title">Ver alquileres</h1>
-      <p class="ab-sub">La lista funciona como pila: arriba ves lo ultimo que cargaste. Tambien puedes eliminar alquileres desde aqui.</p>
+      <p class="ab-sub">La lista funciona como pila por fecha de entrega: arriba ves los alquileres con fecha mas lejana.</p>
     </div>
     <div class="ab-actions">
       <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
@@ -22,10 +22,43 @@
       {% endfor %}
     </div>
 
+    <form method="get" class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body">
+        <div class="ab-section-title">
+          <h2>Filtrar por fecha de entrega</h2>
+          {% if filtros_activos %}
+            <span class="ab-pill">Filtro activo</span>
+          {% endif %}
+        </div>
+
+        <div class="ab-grid">
+          <div class="col-4 ab-field">
+            <label class="ab-lab" for="{{ filtros_form.fecha_desde.id_for_label }}">Desde</label>
+            {{ filtros_form.fecha_desde }}
+          </div>
+          <div class="col-4 ab-field">
+            <label class="ab-lab" for="{{ filtros_form.fecha_hasta.id_for_label }}">Hasta</label>
+            {{ filtros_form.fecha_hasta }}
+          </div>
+          <div class="col-4 ab-field" style="justify-content: flex-end;">
+            <label class="ab-lab">&nbsp;</label>
+            <div class="ab-actions">
+              <button class="ab-btn" type="submit">Buscar</button>
+              <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Limpiar</a>
+            </div>
+          </div>
+        </div>
+
+        {% if filtros_form.errors %}
+          <div class="ab-msg err" style="margin-top: 14px;">Revisa el rango de fechas.</div>
+        {% endif %}
+      </div>
+    </form>
+
     <div class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-section-title">
-          <h2>Listado completo</h2>
+          <h2>Listado por fecha de entrega</h2>
           <span class="ab-pill">{{ alquileres|length }} alquiler{{ alquileres|length|pluralize }}</span>
         </div>
 
@@ -114,6 +147,8 @@
                     <form method="post" id="alq-form-{{ a.id }}" class="ab-stack">
                       {% csrf_token %}
                       <input type="hidden" name="alq_id" value="{{ a.id }}">
+                      <input type="hidden" name="fecha_desde" value="{{ filtros_form.fecha_desde.value|default:'' }}">
+                      <input type="hidden" name="fecha_hasta" value="{{ filtros_form.fecha_hasta.value|default:'' }}">
                       <div class="ab-actions-column">
                         <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar</button>
                         <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ a.id }}. Continuar?');">Eliminar</button>
@@ -123,7 +158,13 @@
                 </tr>
               {% empty %}
                 <tr>
-                  <td colspan="7" class="ab-muted">No hay alquileres cargados.</td>
+                  <td colspan="7" class="ab-muted">
+                    {% if filtros_activos %}
+                      No hay alquileres dentro de ese rango de fechas.
+                    {% else %}
+                      No hay alquileres cargados.
+                    {% endif %}
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -172,6 +213,8 @@
               <form method="post" class="ab-stack" style="margin-top: 14px;">
                 {% csrf_token %}
                 <input type="hidden" name="alq_id" value="{{ a.id }}">
+                <input type="hidden" name="fecha_desde" value="{{ filtros_form.fecha_desde.value|default:'' }}">
+                <input type="hidden" name="fecha_hasta" value="{{ filtros_form.fecha_hasta.value|default:'' }}">
 
                 <div class="ab-field">
                   <label class="ab-lab">Saldo</label>
@@ -208,7 +251,13 @@
               </form>
             </article>
           {% empty %}
-            <div class="ab-empty">No hay alquileres cargados.</div>
+            <div class="ab-empty">
+              {% if filtros_activos %}
+                No hay alquileres dentro de ese rango de fechas.
+              {% else %}
+                No hay alquileres cargados.
+              {% endif %}
+            </div>
           {% endfor %}
         </div>
       </div>

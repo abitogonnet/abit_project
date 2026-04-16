@@ -116,6 +116,81 @@ class PrendaViewsTests(TestCase):
         self.assertContains(response, "20/04/2026")
         self.assertContains(response, "25/04/2026")
 
+    def test_buscar_prenda_filtra_aires_modernos_por_origen(self):
+        importado = Prenda.objects.create(
+            codigo="SA-090",
+            categoria=Prenda.C_SACO,
+            marca="Aires Modernos",
+            color="Negro",
+            talle="22",
+            origen=Prenda.O_IMP,
+        )
+        Prenda.objects.create(
+            codigo="SA-091",
+            categoria=Prenda.C_SACO,
+            marca="Aires Modernos",
+            color="Negro",
+            talle="22",
+            origen=Prenda.O_NAC,
+        )
+
+        response = self.client.get(reverse("prendas:buscar_prenda"), {
+            "marca": "Aires Modernos",
+            "talle": "22",
+            "origen": Prenda.O_IMP,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, importado.codigo)
+        self.assertNotContains(response, "SA-091")
+
+    def test_buscar_prenda_muestra_todas_las_reservas_activas(self):
+        match = Prenda.objects.create(
+            codigo="PA-012",
+            categoria=Prenda.C_PANTALON,
+            marca="Boiler",
+            color="Negro",
+            talle="42",
+            estado=Prenda.E_RES,
+        )
+        alquiler_abril = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 10),
+            fecha_reserva=date(2026, 4, 10),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Pedro",
+            cliente_telefono="1234",
+            persona1_nombre="Pedro",
+            total_bruto="1000",
+            sena="0",
+            metodo_sena="",
+        )
+        alquiler_mayo = Alquiler.objects.create(
+            fecha_visita=date(2026, 5, 1),
+            fecha_reserva=date(2026, 5, 1),
+            fecha_entrega=date(2026, 5, 30),
+            fecha_devolucion=date(2026, 6, 2),
+            cliente_nombre="Lucas",
+            cliente_telefono="5678",
+            persona1_nombre="Lucas",
+            total_bruto="1000",
+            sena="0",
+            metodo_sena="",
+        )
+        AlquilerItem.objects.create(alquiler=alquiler_abril, persona_num=1, prenda=match)
+        AlquilerItem.objects.create(alquiler=alquiler_mayo, persona_num=1, prenda=match)
+
+        response = self.client.get(reverse("prendas:buscar_prenda"), {
+            "marca": "Boiler",
+            "talle": "42",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "20/04/2026")
+        self.assertContains(response, "25/04/2026")
+        self.assertContains(response, "30/05/2026")
+        self.assertContains(response, "02/06/2026")
+
     def test_stock_permite_eliminar_prenda_sin_alquileres(self):
         prenda = Prenda.objects.create(
             codigo="ZA-001",

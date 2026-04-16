@@ -5,7 +5,7 @@
     <div>
       <p class="ab-kicker">Busqueda</p>
       <h1 class="ab-title">Buscar prenda</h1>
-      <p class="ab-sub">Elige marca y talle desde los desplegables para ver los codigos que coinciden.</p>
+      <p class="ab-sub">Filtra por marca y talle. Si eliges Aires Modernos, tambien puedes distinguir nacional o importado.</p>
     </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
@@ -16,13 +16,17 @@
     <form method="get" class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-grid">
-          <div class="col-5 ab-field">
+          <div class="col-4 ab-field">
             <label class="ab-lab" for="{{ form.marca.id_for_label }}">Marca</label>
             {{ form.marca }}
           </div>
-          <div class="col-5 ab-field">
+          <div class="col-4 ab-field">
             <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
             {{ form.talle }}
+          </div>
+          <div class="col-2 ab-field" id="buscar-origen-wrap" {% if not show_origen %}hidden{% endif %}>
+            <label class="ab-lab" for="{{ form.origen.id_for_label }}">Origen</label>
+            {{ form.origen }}
           </div>
           <div class="col-2 ab-field" style="justify-content: flex-end;">
             <label class="ab-lab">&nbsp;</label>
@@ -61,8 +65,15 @@
                     <div>Talle: {{ prenda.talle|default:"-" }}</div>
                     <div>Color: {{ prenda.color|default:"-" }}</div>
                     <div>Origen: {{ prenda.get_origen_display|default:"-" }}</div>
-                    {% if prenda.alquiler_activo %}
-                      <div><strong>Ocupada del {{ prenda.alquiler_activo.fecha_entrega|date:"d/m/Y" }} al {{ prenda.alquiler_activo.fecha_devolucion|date:"d/m/Y" }}</strong></div>
+                    {% if prenda.alquileres_activos %}
+                      <div style="margin-top: 10px;"><strong>Reservas activas</strong></div>
+                      {% for alquiler in prenda.alquileres_activos %}
+                        <div>
+                          {{ alquiler.get_estado_alquiler_display }}:
+                          {{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}
+                          {% if alquiler.cliente_nombre %} · {{ alquiler.cliente_nombre }}{% endif %}
+                        </div>
+                      {% endfor %}
                     {% endif %}
                   </div>
 
@@ -79,9 +90,29 @@
       </div>
     {% else %}
       <div class="ab-form-note">
-        Puedes buscar con una sola opcion o combinar marca y talle. La idea es llegar a los codigos sin escribir nada.
+        Puedes buscar con una sola opcion o combinar marca, talle y origen para encontrar rapido la prenda.
       </div>
     {% endif %}
   </div>
 </section>
+<script>
+  (function () {
+    const marca = document.getElementById("id_marca");
+    const origen = document.getElementById("id_origen");
+    const origenWrap = document.getElementById("buscar-origen-wrap");
+
+    if (!marca || !origen || !origenWrap) return;
+
+    function syncOrigen() {
+      const showOrigen = (marca.value || "").trim().toLowerCase() === "aires modernos";
+      origenWrap.hidden = !showOrigen;
+      if (!showOrigen) {
+        origen.value = "";
+      }
+    }
+
+    syncOrigen();
+    marca.addEventListener("change", syncOrigen);
+  })();
+</script>
 {% endblock %}

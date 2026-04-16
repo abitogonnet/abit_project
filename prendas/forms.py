@@ -262,6 +262,7 @@ class PrendaForm(forms.ModelForm):
 class BuscarPrendaForm(forms.Form):
     marca = forms.ChoiceField(required=False)
     talle = forms.ChoiceField(required=False)
+    origen = forms.ChoiceField(required=False)
 
     def __init__(self, *args, **kwargs):
         marcas = kwargs.pop("marcas", [])
@@ -269,8 +270,17 @@ class BuscarPrendaForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["marca"].choices = _choices(marcas, "Todas las marcas", current=self._bound("marca"))
         self.fields["talle"].choices = _choices(talles, "Todos los talles", current=self._bound("talle"))
+        self.fields["origen"].choices = [("", "Nacional o importado")] + list(Prenda.ORIGENES)
         self.fields["marca"].widget.attrs.update({"class": "ab-sel"})
         self.fields["talle"].widget.attrs.update({"class": "ab-sel"})
+        self.fields["origen"].widget.attrs.update({"class": "ab-sel", "id": "id_origen"})
 
     def _bound(self, name: str) -> str:
         return _norm(self.data.get(name, "")) if self.is_bound else ""
+
+    def clean(self):
+        cleaned = super().clean()
+        marca = _norm(cleaned.get("marca", ""))
+        if marca.casefold() != "aires modernos":
+            cleaned["origen"] = ""
+        return cleaned

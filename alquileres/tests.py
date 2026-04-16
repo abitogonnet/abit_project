@@ -111,15 +111,53 @@ class AlquileresViewsTests(TestCase):
         saco.refresh_from_db()
         self.assertEqual(saco.estado, Prenda.E_DISP)
 
-    def test_ver_alquileres_muestra_primero_el_ultimo_cargado(self):
-        viejo = self._create_alquiler("Viejo")
-        nuevo = self._create_alquiler("Nuevo")
+    def test_ver_alquileres_muestra_primero_la_fecha_entrega_mas_lejana(self):
+        lejano = self._create_alquiler("Lejano")
+        cercano = self._create_alquiler("Cercano")
+        lejano.fecha_entrega = date(2026, 5, 20)
+        lejano.fecha_devolucion = date(2026, 5, 25)
+        lejano.save()
+        cercano.fecha_entrega = date(2026, 4, 20)
+        cercano.fecha_devolucion = date(2026, 4, 25)
+        cercano.save()
 
         response = self.client.get(reverse("alquileres:ver"))
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertLess(content.index(f"#{nuevo.id}"), content.index(f"#{viejo.id}"))
+        self.assertLess(content.index(f"#{lejano.id}"), content.index(f"#{cercano.id}"))
+
+    def test_ver_alquileres_filtra_por_fecha_entrega_incluyendo_extremos(self):
+        inicio = self._create_alquiler("Inicio")
+        inicio.fecha_entrega = date(2026, 4, 20)
+        inicio.fecha_devolucion = date(2026, 4, 25)
+        inicio.save()
+
+        medio = self._create_alquiler("Medio")
+        medio.fecha_entrega = date(2026, 4, 22)
+        medio.fecha_devolucion = date(2026, 4, 27)
+        medio.save()
+
+        fin = self._create_alquiler("Fin")
+        fin.fecha_entrega = date(2026, 4, 25)
+        fin.fecha_devolucion = date(2026, 4, 30)
+        fin.save()
+
+        fuera = self._create_alquiler("Fuera")
+        fuera.fecha_entrega = date(2026, 4, 26)
+        fuera.fecha_devolucion = date(2026, 5, 1)
+        fuera.save()
+
+        response = self.client.get(reverse("alquileres:ver"), {
+            "fecha_desde": "2026-04-20",
+            "fecha_hasta": "2026-04-25",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"#{inicio.id}")
+        self.assertContains(response, f"#{medio.id}")
+        self.assertContains(response, f"#{fin.id}")
+        self.assertNotContains(response, f"#{fuera.id}")
 
     def test_crear_alquiler_permited_usar_prenda_si_se_libera_antes_de_la_entrega(self):
         saco = Prenda.objects.create(
