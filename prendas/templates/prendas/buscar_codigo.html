@@ -1,151 +1,87 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ab-card">
+<section class="ab-card">
   <div class="ab-head">
     <div>
-      <h1 class="ab-title">Buscar por código</h1>
-      <p class="ab-sub">Elegí prefijo y completá solo los 3 números (ej: 001).</p>
+      <p class="ab-kicker">Busqueda</p>
+      <h1 class="ab-title">Buscar prenda</h1>
+      <p class="ab-sub">Elige marca y talle desde los desplegables para ver los codigos que coinciden.</p>
+    </div>
+    <div class="ab-actions">
+      <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
     </div>
   </div>
 
-  <div class="ab-body">
-
-    <form method="get">
-      <div class="ab-grid">
-
-        <div class="col-12">
-          <label class="ab-lab">Prefijo</label>
-          <div class="ab-row" style="gap:8px; align-items:flex-start;">
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="SA"
-                     {% if prefijo == "SA" or not prefijo %}checked{% endif %}
-                     style="margin-right:8px;">
-              SA- (Saco)
-            </label>
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="PA"
-                     {% if prefijo == "PA" %}checked{% endif %}
-                     style="margin-right:8px;">
-              PA- (Pantalón)
-            </label>
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="CA"
-                     {% if prefijo == "CA" %}checked{% endif %}
-                     style="margin-right:8px;">
-              CA- (Camisa)
-            </label>
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="CH"
-                     {% if prefijo == "CH" %}checked{% endif %}
-                     style="margin-right:8px;">
-              CH- (Chaleco)
-            </label>
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="MO"
-                     {% if prefijo == "MO" %}checked{% endif %}
-                     style="margin-right:8px;">
-              MO- (Moño)
-            </label>
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="CO"
-                     {% if prefijo == "CO" %}checked{% endif %}
-                     style="margin-right:8px;">
-              CO- (Corbata)
-            </label>
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="ZA"
-                     {% if prefijo == "ZA" %}checked{% endif %}
-                     style="margin-right:8px;">
-              ZA- (Zapatos)
-            </label>
-
-            <label class="ab-pill" style="cursor:pointer;">
-              <input type="radio" name="prefijo" value="CI"
-                     {% if prefijo == "CI" %}checked{% endif %}
-                     style="margin-right:8px;">
-              CI- (Cinturón)
-            </label>
-
+  <div class="ab-body ab-stack">
+    <form method="get" class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body">
+        <div class="ab-grid">
+          <div class="col-5 ab-field">
+            <label class="ab-lab" for="{{ form.marca.id_for_label }}">Marca</label>
+            {{ form.marca }}
           </div>
-
-          <p class="ab-sub" style="margin-top:10px;">
-            Tip: si no elegís prefijo, usa SA- por defecto.
-          </p>
+          <div class="col-5 ab-field">
+            <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
+            {{ form.talle }}
+          </div>
+          <div class="col-2 ab-field" style="justify-content: flex-end;">
+            <label class="ab-lab">&nbsp;</label>
+            <button class="ab-btn" type="submit">Buscar</button>
+          </div>
         </div>
 
-        <div class="col-6">
-          <label class="ab-lab">Número (1 a 3 dígitos)</label>
-          <input
-            class="ab-inp"
-            type="text"
-            name="num"
-            inputmode="numeric"
-            pattern="[0-9]{1,3}"
-            placeholder="ej: 1, 01 o 001"
-            value="{{ num }}"
-          >
-        </div>
-
-        <div class="col-6" style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
-          <button class="ab-btn" type="submit">Buscar</button>
-          <a class="ab-btn2" href="{% url 'prendas:buscar_codigo' %}">Limpiar</a>
-
-          {% if codigo %}
-            <span class="ab-pill">Código: {{ codigo }}</span>
-          {% endif %}
-        </div>
-
+        {% if form.errors %}
+          <div class="ab-msg err" style="margin-top: 14px;">Revisa los filtros seleccionados.</div>
+        {% endif %}
       </div>
     </form>
 
-    {% if prenda %}
-      <div class="ab-hr"></div>
-
-      <div class="ab-card" style="border-radius:14px;">
+    {% if buscado %}
+      <div class="ab-card" style="border-radius: 22px;">
         <div class="ab-body">
-
-          <div class="ab-row" style="justify-content:space-between;">
-            <div>
-              <div style="font-weight:900; font-size:18px;">
-                <span class="ab-pill">{{ prenda.codigo }}</span>
-                {{ prenda.get_categoria_display }}
-              </div>
-              <div class="ab-muted">
-                {{ prenda.color }} {{ prenda.marca }} talle {{ prenda.talle }}
-              </div>
-            </div>
-
-            <div>
-              <span class="ab-badge ok">Estado: {{ prenda.get_estado_display }}</span>
-            </div>
+          <div class="ab-section-title">
+            <h2>Resultados</h2>
+            <span class="ab-pill">{{ prendas|length }} codigo{{ prendas|length|pluralize }}</span>
           </div>
 
-          {% if alquiler_activo %}
-            <div class="ab-hr"></div>
-            <div style="font-weight:900;">En alquiler activo (no cerrado)</div>
+          {% if prendas %}
+            <div class="ab-card-grid">
+              {% for prenda in prendas %}
+                <article class="ab-list-card">
+                  <div class="ab-row" style="justify-content: space-between;">
+                    <h3>{{ prenda.codigo }}</h3>
+                    <span class="ab-badge {% if prenda.estado == 'DISPONIBLE' %}ok{% elif prenda.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
+                      {{ prenda.get_estado_display }}
+                    </span>
+                  </div>
 
-            <div class="ab-muted" style="margin-top:6px;">
-              <b>Cliente:</b> {{ alquiler_activo.cliente_nombre }} — {{ alquiler_activo.cliente_telefono }}<br>
-              <b>Entrega:</b> {{ alquiler_activo.fecha_entrega|date:"d/m/Y" }} —
-              <b>Devolución:</b> {{ alquiler_activo.fecha_devolucion|date:"d/m/Y" }}<br>
-              <b>Estado alquiler:</b> {{ alquiler_activo.get_estado_alquiler_display }}
+                  <div class="ab-meta" style="margin-top: 10px;">
+                    <div><strong>{{ prenda.get_categoria_display }}</strong></div>
+                    <div>Marca: {{ prenda.marca|default:"-" }}</div>
+                    <div>Talle: {{ prenda.talle|default:"-" }}</div>
+                    <div>Color: {{ prenda.color|default:"-" }}</div>
+                    <div>Origen: {{ prenda.get_origen_display|default:"-" }}</div>
+                    {% if prenda.alquiler_activo %}
+                      <div><strong>Ocupada del {{ prenda.alquiler_activo.fecha_entrega|date:"d/m/Y" }} al {{ prenda.alquiler_activo.fecha_devolucion|date:"d/m/Y" }}</strong></div>
+                    {% endif %}
+                  </div>
+
+                  <div class="ab-actions" style="margin-top: 14px;">
+                    <a class="ab-btn2" href="{% url 'prendas:editar' prenda.id %}">Modificar</a>
+                  </div>
+                </article>
+              {% endfor %}
             </div>
           {% else %}
-            <div class="ab-hr"></div>
-            <div class="ab-muted">No aparece en ningún alquiler activo (no cerrado).</div>
+            <div class="ab-empty">No hay prendas con esa combinacion de marca y talle.</div>
           {% endif %}
-
         </div>
       </div>
+    {% else %}
+      <div class="ab-form-note">
+        Puedes buscar con una sola opcion o combinar marca y talle. La idea es llegar a los codigos sin escribir nada.
+      </div>
     {% endif %}
-
   </div>
-</div>
+</section>
 {% endblock %}

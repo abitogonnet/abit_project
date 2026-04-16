@@ -35,6 +35,13 @@ class Prenda(models.Model):
         (E_DAN, "Dañada"),
     ]
 
+    O_NAC = "NACIONAL"
+    O_IMP = "IMPORTADO"
+    ORIGENES = [
+        (O_NAC, "Nacional"),
+        (O_IMP, "Importado"),
+    ]
+
     codigo = models.CharField(max_length=10, unique=True, db_index=True)
     categoria = models.CharField(max_length=20, choices=CATEGORIAS)
 
@@ -42,6 +49,7 @@ class Prenda(models.Model):
     marca = models.CharField(max_length=40, blank=True, default="")
     color = models.CharField(max_length=40, blank=True, default="")
     talle = models.CharField(max_length=20, blank=True, default="")
+    origen = models.CharField(max_length=20, choices=ORIGENES, blank=True, default="")
 
     estado = models.CharField(max_length=20, choices=ESTADOS, default=E_DISP)
 
@@ -51,4 +59,5 @@ class Prenda(models.Model):
     actualizado_en = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.codigo} - {self.get_categoria_display()} - {self.color} - {self.talle}".strip()
+        extra = f" - {self.get_origen_display()}" if self.origen else ""
+        return f"{self.codigo} - {self.get_categoria_display()} - {self.color} - {self.talle}{extra}".strip()

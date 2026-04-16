@@ -1,18 +1,29 @@
 from django.contrib import messages
 from django.db import IntegrityError, transaction
-from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models.deletion import ProtectedError
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .models import Prenda
 from .forms import (
+    BRANDS,
+    BuscarPrendaForm,
+    COLORES_CHALECO,
+    COLORES_GENERALES,
+    COLORES_TRAJE,
+    COLORES_ZAPATOS,
+    GENERIC_NUM,
+    GENERIC_TALLES,
+    LETRAS_XS_4XL,
+    LETRAS_XS_5XL,
     PrendaForm,
-    BRANDS, COLORES_TRAJE, COLORES_ZAPATOS, COLORES_CHALECO,
-    GENERIC_NUM, LETRAS_XS_5XL, LETRAS_XS_4XL, TAM_NINO_ADULTO
+    TAM_NINO_ADULTO,
+    color_options_for,
+    requiere_origen,
+    talle_options_for,
 )
+from .models import Prenda
 
-# =========================
-# PREFIJOS DE CÓDIGO
-# =========================
+
 PREFIJOS = {
     Prenda.C_SACO: "SA",
     Prenda.C_PANTALON: "PA",
@@ -25,9 +36,6 @@ PREFIJOS = {
 }
 
 
-# =========================
-# UTILIDADES
-# =========================
 def _next_codigo(prefijo: str) -> str:
     prefijo = prefijo.upper()
     last = (
@@ -45,36 +53,102 @@ def _next_codigo(prefijo: str) -> str:
         except Exception:
             n = 0
 
-    return f"{prefijo}-{n+1:03d}"
+    return f"{prefijo}-{n + 1:03d}"
 
 
-def _ctx_lists():
+def _mixed_sort(values):
+    def sort_key(value):
+        text = (value or "").strip()
+        if text.isdigit():
+            return (0, int(text), "")
+        return (1, text.casefold(), text)
+
+    clean = []
+    for value in values:
+        text = (value or "").strip()
+        if text and text not in clean:
+            clean.append(text)
+    return sorted(clean, key=sort_key)
+
+
+def _prenda_lookups():
     talles_letras = []
-    for t in (LETRAS_XS_5XL + LETRAS_XS_4XL):
-        if t not in talles_letras:
-            talles_letras.append(t)
+    for talle in LETRAS_XS_5XL + LETRAS_XS_4XL:
+        if talle not in talles_letras:
+            talles_letras.append(talle)
 
     return {
         "brands": BRANDS,
-        "colores_traje": COLORES_TRAJE,
-        "colores_zapatos": COLORES_ZAPATOS,
-        "colores_chaleco": COLORES_CHALECO,
-        "talles_nums": GENERIC_NUM,
-        "talles_letras": talles_letras,
-        "tam_nino_adulto": TAM_NINO_ADULTO,
+        "colorsByCategory": {
+            cat: color_options_for(cat)
+            for cat, _label in Prenda.CATEGORIAS
+        },
+        "tallesByCategory": {
+            cat: {
+                "__default": talle_options_for(cat, ""),
+                "boiler": talle_options_for(cat, "Boiler"),
+                "aires modernos": talle_options_for(cat, "Aires Modernos"),
+            }
+            for cat, _label in Prenda.CATEGORIAS
+        },
+        "origenes": [{"value": value, "label": label} for value, label in Prenda.ORIGENES],
+        "requiresOrigen": {
+            cat: {
+                brand.casefold(): requiere_origen(cat, brand)
+                for brand in BRANDS
+            }
+            for cat, _label in Prenda.CATEGORIAS
+        },
+        "allColors": COLORES_GENERALES,
+        "allNumericTalles": GENERIC_NUM,
+        "allLetterTalles": talles_letras,
+        "tamNinoAdulto": TAM_NINO_ADULTO,
+        "colorsTraje": COLORES_TRAJE,
+        "colorsZapatos": COLORES_ZAPATOS,
+        "colorsChaleco": COLORES_CHALECO,
+        "categories": [{"value": value, "label": label} for value, label in Prenda.CATEGORIAS],
     }
 
 
-# =========================
-# CREAR PRENDA
-# =========================
+def _prenda_form_context(form, *, titulo, subtitulo, accion_label, cancel_url, show_generate, codigo_preview=None, prenda=None):
+    return {
+        "form": form,
+        "titulo": titulo,
+        "subtitulo": subtitulo,
+        "accion_label": accion_label,
+        "cancel_url": cancel_url,
+        "show_generate": show_generate,
+        "codigo_preview": codigo_preview,
+        "prenda": prenda,
+        "prenda_lookups": _prenda_lookups(),
+    }
+
+
+def _ocupar_prendas_con_alquiler(prendas):
+    if not prendas:
+        return
+
+    from alquileres.models import Alquiler, AlquilerItem
+
+    activos = (
+        AlquilerItem.objects
+        .select_related("alquiler")
+        .filter(
+            prenda_id__in=[prenda.id for prenda in prendas],
+            alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
+        )
+        .order_by("alquiler__fecha_entrega", "alquiler__id")
+    )
+
+    ocupacion_por_prenda = {}
+    for item in activos:
+        ocupacion_por_prenda.setdefault(item.prenda_id, item.alquiler)
+
+    for prenda in prendas:
+        prenda.alquiler_activo = ocupacion_por_prenda.get(prenda.id)
+
+
 def crear_prenda(request):
-    """
-    Proceso:
-    - Completar datos
-    - Crear código (preview)
-    - Confirmar prenda
-    """
     codigo_preview = None
 
     if request.method == "POST":
@@ -82,150 +156,144 @@ def crear_prenda(request):
         form = PrendaForm(request.POST)
 
         if form.is_valid():
-            cat = form.cleaned_data["categoria"]
-            pref = PREFIJOS.get(cat, "XX")
+            categoria = form.cleaned_data["categoria"]
+            prefijo = PREFIJOS.get(categoria, "XX")
 
             if accion == "generar":
-                codigo_preview = _next_codigo(pref)
-                messages.info(
-                    request,
-                    f"Código generado: {codigo_preview}. Confirmá para guardar."
-                )
-                ctx = {"form": form, "codigo_preview": codigo_preview}
-                ctx.update(_ctx_lists())
-                return render(request, "prendas/crear.html", ctx)
-
-            if accion == "confirmar":
+                codigo_preview = _next_codigo(prefijo)
+                messages.info(request, f"Codigo sugerido: {codigo_preview}. Si esta bien, guarda la prenda.")
+            else:
                 with transaction.atomic():
                     for _ in range(15):
-                        codigo = _next_codigo(pref)
+                        codigo = _next_codigo(prefijo)
                         obj = form.save(commit=False)
                         obj.codigo = codigo
                         try:
                             obj.save()
-                            messages.success(
-                                request,
-                                f"Prenda creada: {obj.codigo} ({obj.get_categoria_display()})"
-                            )
+                            messages.success(request, f"Prenda creada: {obj.codigo} ({obj.get_categoria_display()})")
                             return redirect("prendas:stock")
                         except IntegrityError:
                             continue
-
-                messages.error(request, "No se pudo generar un código único.")
+                messages.error(request, "No se pudo generar un codigo unico.")
         else:
-            messages.error(request, "Revisá los campos marcados.")
+            messages.error(request, "Revisa los campos marcados.")
     else:
         form = PrendaForm()
 
-    ctx = {"form": form, "codigo_preview": codigo_preview}
-    ctx.update(_ctx_lists())
+    ctx = _prenda_form_context(
+        form,
+        titulo="Crear prenda",
+        subtitulo="Carga rapida con menus desplegables y codigo automatico",
+        accion_label="Guardar prenda",
+        cancel_url="prendas:stock",
+        show_generate=True,
+        codigo_preview=codigo_preview,
+    )
     return render(request, "prendas/crear.html", ctx)
 
 
-# =========================
-# STOCK + CAMBIO DE ESTADO
-# =========================
+def editar_prenda(request, pk):
+    prenda = get_object_or_404(Prenda, pk=pk)
+
+    if request.method == "POST":
+        form = PrendaForm(request.POST, instance=prenda)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Prenda actualizada: {prenda.codigo}.")
+            return redirect("prendas:stock")
+        messages.error(request, "Revisa los campos marcados.")
+    else:
+        form = PrendaForm(instance=prenda)
+
+    ctx = _prenda_form_context(
+        form,
+        titulo="Modificar prenda",
+        subtitulo=f"Edita los datos de {prenda.codigo} sin cambiar el codigo",
+        accion_label="Guardar cambios",
+        cancel_url="prendas:stock",
+        show_generate=False,
+        codigo_preview=prenda.codigo,
+        prenda=prenda,
+    )
+    return render(request, "prendas/crear.html", ctx)
+
+
 @require_http_methods(["GET", "POST"])
 def stock(request):
     if request.method == "POST":
         prenda_id = request.POST.get("prenda_id")
+        prenda = get_object_or_404(Prenda, id=prenda_id)
+        accion = request.POST.get("accion", "actualizar")
+
+        if accion == "eliminar":
+            codigo = prenda.codigo
+            try:
+                prenda.delete()
+                messages.success(request, f"Prenda eliminada: {codigo}.")
+            except ProtectedError:
+                messages.error(
+                    request,
+                    f"No se puede eliminar {codigo} porque ya esta asociada a uno o mas alquileres.",
+                )
+            return redirect("prendas:stock")
+
         nuevo_estado = request.POST.get("estado")
+        estados_validos = [estado for estado, _label in Prenda.ESTADOS]
 
-        pr = get_object_or_404(Prenda, id=prenda_id)
-
-        estados_validos = [e[0] for e in Prenda.ESTADOS]
         if nuevo_estado in estados_validos:
-            pr.estado = nuevo_estado
-            pr.save(update_fields=["estado"])
-            messages.success(
-                request,
-                f"Estado actualizado: {pr.codigo} → {pr.get_estado_display()}"
-            )
+            prenda.estado = nuevo_estado
+            prenda.save(update_fields=["estado"])
+            messages.success(request, f"Estado actualizado: {prenda.codigo} -> {prenda.get_estado_display()}")
         else:
-            messages.error(request, "Estado inválido.")
+            messages.error(request, "Estado invalido.")
 
         return redirect("prendas:stock")
 
-    prendas = Prenda.objects.all().order_by("categoria", "codigo")
+    prendas = Prenda.objects.all().order_by("categoria", "-creado_en", "-codigo")
+    resumen = [
+        {"label": "Total", "valor": prendas.count()},
+        {"label": "Disponibles", "valor": prendas.filter(estado=Prenda.E_DISP).count()},
+        {"label": "Reservadas", "valor": prendas.filter(estado=Prenda.E_RES).count()},
+        {"label": "Entregadas", "valor": prendas.filter(estado=Prenda.E_ENT).count()},
+        {"label": "Danadas", "valor": prendas.filter(estado=Prenda.E_DAN).count()},
+    ]
+
     return render(request, "prendas/stock.html", {
         "prendas": prendas,
         "estados": Prenda.ESTADOS,
+        "resumen": resumen,
+        "categorias": Prenda.CATEGORIAS,
     })
 
 
-# =========================
-# ELIMINAR PRENDA
-# =========================
-@require_http_methods(["POST"])
-def eliminar_prenda(request, prenda_id):
-    prenda = get_object_or_404(Prenda, id=prenda_id)
-
-    # Protección: si existe relación con alquileres, no permitir borrar
-    try:
-        from alquileres.models import AlquilerItem
-
-        tiene_alquileres = AlquilerItem.objects.filter(prenda=prenda).exists()
-        if tiene_alquileres:
-            messages.error(
-                request,
-                f"No se puede eliminar la prenda {prenda.codigo} porque está asociada a uno o más alquileres."
-            )
-            return redirect("prendas:stock")
-    except Exception:
-        # Si la app alquileres no estuviera disponible por algún motivo,
-        # no frenamos toda la pantalla, pero intentamos borrar igual.
-        pass
-
-    codigo = prenda.codigo
-    categoria = prenda.get_categoria_display()
-    prenda.delete()
-
-    messages.success(
-        request,
-        f"Prenda eliminada correctamente: {codigo} ({categoria})."
-    )
-    return redirect("prendas:stock")
-
-
-# =========================
-# BUSCAR POR CÓDIGO
-# =========================
 @require_http_methods(["GET"])
-def buscar_codigo(request):
-    """
-    Buscar prenda por código (SA-001, PA-010, etc.)
-    Muestra estado y último alquiler asociado.
-    """
-    code = (request.GET.get("codigo") or "").strip().upper()
+def buscar_prenda(request):
+    marcas_db = _mixed_sort(Prenda.objects.exclude(marca="").values_list("marca", flat=True).distinct())
+    talles_db = _mixed_sort(Prenda.objects.exclude(talle="").values_list("talle", flat=True).distinct())
 
-    prenda = None
-    alquiler_item = None
+    marcas = _mixed_sort(BRANDS + marcas_db)
+    talles = talles_db
 
-    if code:
-        import re
-        m = re.fullmatch(r"([A-Z]{2})\s*[- ]?\s*(\d{1,3})", code)
-        if m:
-            pref = m.group(1)
-            num = int(m.group(2))
-            code = f"{pref}-{num:03d}"
+    form = BuscarPrendaForm(request.GET or None, marcas=marcas, talles=talles)
+    prendas = []
+    buscado = False
 
-        try:
-            prenda = Prenda.objects.get(codigo=code)
-        except Prenda.DoesNotExist:
-            prenda = None
+    if form.is_bound and form.is_valid():
+        marca = form.cleaned_data.get("marca") or ""
+        talle = form.cleaned_data.get("talle") or ""
+        buscado = bool(marca or talle)
 
-        if prenda:
-            from alquileres.models import AlquilerItem
-            alquiler_item = (
-                AlquilerItem.objects
-                .select_related("alquiler", "prenda")
-                .filter(prenda=prenda)
-                .order_by("-alquiler__creado_en")
-                .first()
-            )
+        if buscado:
+            qs = Prenda.objects.all()
+            if marca:
+                qs = qs.filter(marca=marca)
+            if talle:
+                qs = qs.filter(talle=talle)
+            prendas = list(qs.order_by("categoria", "-codigo"))
+            _ocupar_prendas_con_alquiler(prendas)
 
     return render(request, "prendas/buscar_codigo.html", {
-        "codigo": code,
-        "prenda": prenda,
-        "alquiler_item": alquiler_item,
+        "form": form,
+        "prendas": prendas,
+        "buscado": buscado,
     })

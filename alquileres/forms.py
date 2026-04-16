@@ -1,9 +1,10 @@
 from decimal import Decimal
-import re
+
 from django import forms
 from django.core.exceptions import ValidationError
 
 from prendas.models import Prenda
+
 from .models import Alquiler, AlquilerItem
 
 
@@ -18,184 +19,179 @@ CATS = [
     ("cinturon", Prenda.C_CINTURON),
 ]
 
-SHORT_PREF = {
-    "saco": "SA",
-    "pantalon": "PA",
-    "camisa": "CA",
-    "chaleco": "CH",
-    "mono": "MO",
-    "corbata": "CO",
-    "zapatos": "ZA",
-    "cinturon": "CI",
-}
+
+def _prenda_choices(prendas):
+    choices = [("", "Sin seleccionar")]
+    for prenda in prendas:
+        desc = f"{prenda.codigo} - {prenda.color} {prenda.marca} talle {prenda.talle}".strip()
+        choices.append((prenda.codigo, desc))
+    return choices
 
 
-def _normalizar_codigo(code: str, prefijo: str) -> str:
-    raw = (code or "").strip().upper()
-    pref = (prefijo or "").strip().upper()
+def _buscar_conflicto(prenda: Prenda, fecha_entrega, fecha_devolucion):
+    if not prenda or not fecha_entrega or not fecha_devolucion:
+        return None
 
-    if not raw:
-        return ""
-
-    if raw == pref or raw == f"{pref}-":
-        return ""
-
-    if raw.isdigit():
-        return f"{pref}-{int(raw):03d}"
-
-    m = re.fullmatch(r"([A-Z]{2})\s*[- ]?\s*(\d{1,3})", raw)
-    if m:
-        p = m.group(1)
-        n = int(m.group(2))
-        return f"{p}-{n:03d}"
-
-    return raw
+    return (
+        AlquilerItem.objects
+        .select_related("alquiler")
+        .filter(
+            prenda=prenda,
+            alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
+            alquiler__fecha_entrega__lte=fecha_devolucion,
+            alquiler__fecha_devolucion__gte=fecha_entrega,
+        )
+        .order_by("alquiler__fecha_entrega", "alquiler__id")
+        .first()
+    )
 
 
 class AlquilerForm(forms.ModelForm):
-    # Toggle 2da persona (lo maneja JS)
     tiene_persona2 = forms.CharField(required=False, widget=forms.HiddenInput())
 
-    # Persona 1: códigos
-    p1_saco = forms.CharField(required=False)
-    p1_pantalon = forms.CharField(required=False)
-    p1_camisa = forms.CharField(required=False)
-    p1_chaleco = forms.CharField(required=False)
-    p1_mono = forms.CharField(required=False)
-    p1_corbata = forms.CharField(required=False)
-    p1_zapatos = forms.CharField(required=False)
-    p1_cinturon = forms.CharField(required=False)
+    p1_saco = forms.ChoiceField(required=False)
+    p1_pantalon = forms.ChoiceField(required=False)
+    p1_camisa = forms.ChoiceField(required=False)
+    p1_chaleco = forms.ChoiceField(required=False)
+    p1_mono = forms.ChoiceField(required=False)
+    p1_corbata = forms.ChoiceField(required=False)
+    p1_zapatos = forms.ChoiceField(required=False)
+    p1_cinturon = forms.ChoiceField(required=False)
 
-    # Ruedo Persona 1
     p1_ruedo_pantalon_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p1_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "—")] + AlquilerItem.RUEDO_TIPOS)
+    p1_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
     p1_ruedo_saco_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p1_ruedo_saco_tipo = forms.ChoiceField(required=False, choices=[("", "—")] + AlquilerItem.RUEDO_TIPOS)
+    p1_ruedo_saco_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
 
-    # Persona 2: códigos
-    p2_saco = forms.CharField(required=False)
-    p2_pantalon = forms.CharField(required=False)
-    p2_camisa = forms.CharField(required=False)
-    p2_chaleco = forms.CharField(required=False)
-    p2_mono = forms.CharField(required=False)
-    p2_corbata = forms.CharField(required=False)
-    p2_zapatos = forms.CharField(required=False)
-    p2_cinturon = forms.CharField(required=False)
+    p2_saco = forms.ChoiceField(required=False)
+    p2_pantalon = forms.ChoiceField(required=False)
+    p2_camisa = forms.ChoiceField(required=False)
+    p2_chaleco = forms.ChoiceField(required=False)
+    p2_mono = forms.ChoiceField(required=False)
+    p2_corbata = forms.ChoiceField(required=False)
+    p2_zapatos = forms.ChoiceField(required=False)
+    p2_cinturon = forms.ChoiceField(required=False)
 
-    # Ruedo Persona 2
     p2_ruedo_pantalon_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p2_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "—")] + AlquilerItem.RUEDO_TIPOS)
+    p2_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
     p2_ruedo_saco_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p2_ruedo_saco_tipo = forms.ChoiceField(required=False, choices=[("", "—")] + AlquilerItem.RUEDO_TIPOS)
+    p2_ruedo_saco_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
 
     class Meta:
         model = Alquiler
         fields = [
-            "fecha_visita", "fecha_reserva", "fecha_entrega", "fecha_devolucion",
-            "cliente_nombre", "cliente_telefono",
-            "persona1_nombre", "persona2_nombre",
-            "total_bruto", "descuento_pct", "sena",
-            "metodo_sena",  # ✅ nuevo
+            "fecha_reserva",
+            "fecha_entrega",
+            "fecha_devolucion",
+            "cliente_nombre",
+            "cliente_telefono",
+            "persona1_nombre",
+            "persona2_nombre",
+            "total_bruto",
+            "descuento_pct",
+            "sena",
+            "metodo_sena",
         ]
         widgets = {
-            "fecha_visita": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
             "fecha_reserva": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
             "fecha_entrega": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
             "fecha_devolucion": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-
             "cliente_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
             "cliente_telefono": forms.TextInput(attrs={"class": "ab-inp"}),
-
             "persona1_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
             "persona2_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
-
             "total_bruto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
             "descuento_pct": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0", "max": "100"}),
             "sena": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
-
-            "metodo_sena": forms.Select(attrs={"class": "ab-sel"}),  # ✅
+            "metodo_sena": forms.Select(attrs={"class": "ab-sel"}),
         }
 
     def __init__(self, *args, **kwargs):
+        disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
 
-        # Inputs de códigos con datalist + prefijo fijo (JS)
         for who in ["p1", "p2"]:
             for short, _cat in CATS:
                 fname = f"{who}_{short}"
-                pref = SHORT_PREF.get(short, "XX")
-                self.fields[fname].widget = forms.TextInput(attrs={
-                    "class": "ab-inp ab-code",
-                    "autocomplete": "off",
-                    "list": f"dl_{short}",
-                    "data-prefix": f"{pref}-",
-                    "placeholder": "001",
-                    "inputmode": "numeric",
-                })
+                self.fields[fname].choices = _prenda_choices(disponibles.get(short, []))
+                self.fields[fname].widget.attrs.update({"class": "ab-sel"})
 
-        # Widgets ruedos
-        for f in [
-            "p1_ruedo_pantalon_valor", "p1_ruedo_saco_valor",
-            "p2_ruedo_pantalon_valor", "p2_ruedo_saco_valor",
+        for name in [
+            "p1_ruedo_pantalon_valor",
+            "p1_ruedo_saco_valor",
+            "p2_ruedo_pantalon_valor",
+            "p2_ruedo_saco_valor",
         ]:
-            self.fields[f].widget = forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01"})
+            self.fields[name].widget = forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01"})
 
-        for f in [
-            "p1_ruedo_pantalon_tipo", "p1_ruedo_saco_tipo",
-            "p2_ruedo_pantalon_tipo", "p2_ruedo_saco_tipo",
+        for name in [
+            "p1_ruedo_pantalon_tipo",
+            "p1_ruedo_saco_tipo",
+            "p2_ruedo_pantalon_tipo",
+            "p2_ruedo_saco_tipo",
         ]:
-            self.fields[f].widget.attrs.update({"class": "ab-sel"})
+            self.fields[name].widget.attrs.update({"class": "ab-sel"})
 
     def clean(self):
         cleaned = super().clean()
+        fecha_entrega = cleaned.get("fecha_entrega")
+        fecha_devolucion = cleaned.get("fecha_devolucion")
 
-        # 2da persona
         tiene_p2 = (cleaned.get("tiene_persona2") or "").strip() == "1"
         any_p2 = any((cleaned.get(f"p2_{short}") or "").strip() for short, _ in CATS)
         if (tiene_p2 or any_p2) and not (cleaned.get("persona2_nombre") or "").strip():
-            self.add_error("persona2_nombre", "Si agregás 2da persona, tenés que poner el nombre.")
+            self.add_error("persona2_nombre", "Si agregas 2da persona, completa el nombre.")
 
         any_p1 = any((cleaned.get(f"p1_{short}") or "").strip() for short, _ in CATS)
         if not any_p1 and not any_p2:
-            raise ValidationError("Tenés que elegir al menos una prenda.")
+            raise ValidationError("Tienes que elegir al menos una prenda.")
 
         usados = set()
 
-        def validar_code(code: str, categoria: str, fieldname: str, prefijo: str):
-            code2 = _normalizar_codigo(code, prefijo)
-            if not code2:
+        def validar_code(code: str, categoria: str, fieldname: str):
+            codigo = (code or "").strip()
+            if not codigo:
                 return None
 
             try:
-                pr = Prenda.objects.get(codigo=code2)
+                prenda = Prenda.objects.get(codigo=codigo)
             except Prenda.DoesNotExist:
-                self.add_error(fieldname, "Código inexistente.")
+                self.add_error(fieldname, "Codigo inexistente.")
                 return None
 
-            if pr.categoria != categoria:
-                self.add_error(fieldname, "Ese código no corresponde a esa categoría.")
+            if prenda.categoria != categoria:
+                self.add_error(fieldname, "Ese codigo no corresponde a esa categoria.")
                 return None
 
-            if pr.estado != Prenda.E_DISP:
-                self.add_error(fieldname, f"Esa prenda no está disponible (estado: {pr.get_estado_display()}).")
+            if prenda.estado == Prenda.E_DAN:
+                self.add_error(fieldname, "Esa prenda esta marcada como danada.")
                 return None
 
-            if pr.codigo in usados:
-                self.add_error(fieldname, "Repetiste el mismo código.")
+            conflicto = _buscar_conflicto(prenda, fecha_entrega, fecha_devolucion)
+            if conflicto:
+                self.add_error(
+                    fieldname,
+                    "Esa prenda ya esta ocupada del "
+                    f"{conflicto.alquiler.fecha_entrega.strftime('%d/%m/%Y')} al "
+                    f"{conflicto.alquiler.fecha_devolucion.strftime('%d/%m/%Y')}."
+                )
                 return None
 
-            usados.add(pr.codigo)
-            cleaned[fieldname] = pr.codigo
-            return pr
+            if prenda.codigo in usados:
+                self.add_error(fieldname, "Repetiste la misma prenda.")
+                return None
+
+            usados.add(prenda.codigo)
+            cleaned[fieldname] = prenda.codigo
+            return prenda
 
         selected = {"p1": [], "p2": []}
         for who in ["p1", "p2"]:
-            for short, cat in CATS:
-                fname = f"{who}_{short}"
-                pref = SHORT_PREF.get(short, "XX")
-                pr = validar_code(cleaned.get(fname), cat, fname, pref)
-                if pr:
-                    selected[who].append(pr)
+            for short, categoria in CATS:
+                field_name = f"{who}_{short}"
+                prenda = validar_code(cleaned.get(field_name), categoria, field_name)
+                if prenda:
+                    selected[who].append(prenda)
 
         cleaned["_selected_prendas"] = selected
 
@@ -204,11 +200,10 @@ class AlquilerForm(forms.ModelForm):
         if total < 0:
             self.add_error("total_bruto", "El total no puede ser negativo.")
         if sena < 0:
-            self.add_error("sena", "La seña no puede ser negativa.")
+            self.add_error("sena", "La sena no puede ser negativa.")
 
-        # ✅ método seña: si hay seña > 0, obligamos método
-        mp = (cleaned.get("metodo_sena") or "").strip()
-        if sena > 0 and not mp:
-            self.add_error("metodo_sena", "Elegí método de pago de la seña.")
+        metodo_sena = (cleaned.get("metodo_sena") or "").strip()
+        if sena > 0 and not metodo_sena:
+            self.add_error("metodo_sena", "Elige el metodo de pago de la sena.")
 
         return cleaned

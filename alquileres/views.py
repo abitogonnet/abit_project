@@ -1,12 +1,12 @@
 from django.contrib import messages
 from django.db import transaction
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
 
 from prendas.models import Prenda
-from .models import Alquiler, AlquilerItem
+
 from .forms import AlquilerForm
+from .models import Alquiler, AlquilerItem
 
 
 def home(request):
@@ -21,154 +21,207 @@ def _fmt_date(d):
 
 def _armar_mensaje_cliente(alq: Alquiler) -> str:
     partes = []
+    partes.append("Hola, te mando el detallado de lo que alquilaste:")
+    partes.append("")
     partes.append("FECHAS")
-    partes.append(f"- Visita: {_fmt_date(alq.fecha_visita)}")
     partes.append(f"- Reserva: {_fmt_date(alq.fecha_reserva)}")
     partes.append(f"- Entrega: {_fmt_date(alq.fecha_entrega)}")
-    partes.append(f"- Devolución: {_fmt_date(alq.fecha_devolucion)}")
+    partes.append(f"- Devolucion: {_fmt_date(alq.fecha_devolucion)}")
     partes.append("")
 
     partes.append(f"{alq.persona1_nombre}")
-    for it in alq.items.filter(persona_num=1).select_related("prenda"):
-        p = it.prenda
+    for item in alq.items.filter(persona_num=1).select_related("prenda"):
+        prenda = item.prenda
         extra_ruedo = ""
-        if it.ruedo_valor and it.ruedo_tipo:
-            extra_ruedo = f" (Ruedo: {it.ruedo_valor} {it.get_ruedo_tipo_display()})"
-        partes.append(f"- {p.get_categoria_display()}: {p.color} {p.marca} talle {p.talle} [{p.codigo}]{extra_ruedo}")
+        if item.ruedo_valor and item.ruedo_tipo:
+            extra_ruedo = f" (Ruedo: {item.ruedo_valor} {item.get_ruedo_tipo_display()})"
+        partes.append(
+            f"- {prenda.get_categoria_display()}: {prenda.color} {prenda.marca} talle {prenda.talle}"
+            f"{extra_ruedo}"
+        )
     partes.append("")
 
     if (alq.persona2_nombre or "").strip():
         partes.append(f"{alq.persona2_nombre}")
-        for it in alq.items.filter(persona_num=2).select_related("prenda"):
-            p = it.prenda
+        for item in alq.items.filter(persona_num=2).select_related("prenda"):
+            prenda = item.prenda
             extra_ruedo = ""
-            if it.ruedo_valor and it.ruedo_tipo:
-                extra_ruedo = f" (Ruedo: {it.ruedo_valor} {it.get_ruedo_tipo_display()})"
-            partes.append(f"- {p.get_categoria_display()}: {p.color} {p.marca} talle {p.talle} [{p.codigo}]{extra_ruedo}")
+            if item.ruedo_valor and item.ruedo_tipo:
+                extra_ruedo = f" (Ruedo: {item.ruedo_valor} {item.get_ruedo_tipo_display()})"
+            partes.append(
+                f"- {prenda.get_categoria_display()}: {prenda.color} {prenda.marca} talle {prenda.talle}"
+                f"{extra_ruedo}"
+            )
         partes.append("")
 
     partes.append("PAGO")
     partes.append(f"- Total: ${alq.total_bruto}")
     if alq.descuento_pct and alq.descuento_pct > 0:
-        partes.append(f"- Descuento: {alq.descuento_pct}% ( -${alq.descuento_monto} )")
+        partes.append(f"- Descuento: {alq.descuento_pct}% (-${alq.descuento_monto})")
         partes.append(f"- Total final: ${alq.total_final}")
     else:
         partes.append(f"- Total final: ${alq.total_final}")
-    partes.append(f"- Seña: ${alq.sena}")
+    partes.append(f"- Sena: ${alq.sena}")
     partes.append(f"- Resta: ${alq.saldo}")
 
     return "\n".join(partes)
 
 
-def crear(request):
-    msg_cliente = request.session.pop("ultimo_mensaje_cliente", None)
+def _refresh_prenda_estado(prenda: Prenda):
+    if prenda.estado == Prenda.E_DAN:
+        return
 
-    disp = {
-        "saco": list(Prenda.objects.filter(categoria=Prenda.C_SACO, estado=Prenda.E_DISP).order_by("codigo")),
-        "pantalon": list(Prenda.objects.filter(categoria=Prenda.C_PANTALON, estado=Prenda.E_DISP).order_by("codigo")),
-        "camisa": list(Prenda.objects.filter(categoria=Prenda.C_CAMISA, estado=Prenda.E_DISP).order_by("codigo")),
-        "chaleco": list(Prenda.objects.filter(categoria=Prenda.C_CHALECO, estado=Prenda.E_DISP).order_by("codigo")),
-        "mono": list(Prenda.objects.filter(categoria=Prenda.C_MONO, estado=Prenda.E_DISP).order_by("codigo")),
-        "corbata": list(Prenda.objects.filter(categoria=Prenda.C_CORBATA, estado=Prenda.E_DISP).order_by("codigo")),
-        "zapatos": list(Prenda.objects.filter(categoria=Prenda.C_ZAPATOS, estado=Prenda.E_DISP).order_by("codigo")),
-        "cinturon": list(Prenda.objects.filter(categoria=Prenda.C_CINTURON, estado=Prenda.E_DISP).order_by("codigo")),
+    activos = (
+        AlquilerItem.objects
+        .select_related("alquiler")
+        .filter(
+            prenda=prenda,
+            alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
+        )
+    )
+
+    if activos.filter(alquiler__estado_alquiler=Alquiler.EST_ENTREGADO).exists():
+        nuevo_estado = Prenda.E_ENT
+    elif activos.exists():
+        nuevo_estado = Prenda.E_RES
+    else:
+        nuevo_estado = Prenda.E_DISP
+
+    if prenda.estado != nuevo_estado:
+        prenda.estado = nuevo_estado
+        prenda.save(update_fields=["estado"])
+
+
+def _refresh_prendas_estado(prendas):
+    vistos = set()
+    for prenda in prendas:
+        if not prenda or prenda.id in vistos:
+            continue
+        vistos.add(prenda.id)
+        _refresh_prenda_estado(prenda)
+
+
+def _refresh_prendas_estado_por_ids(prenda_ids):
+    prendas = Prenda.objects.filter(id__in=set(prenda_ids))
+    _refresh_prendas_estado(prendas)
+
+
+def _disponibles_por_categoria():
+    return {
+        "saco": list(Prenda.objects.filter(categoria=Prenda.C_SACO).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
+        "pantalon": list(Prenda.objects.filter(categoria=Prenda.C_PANTALON).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
+        "camisa": list(Prenda.objects.filter(categoria=Prenda.C_CAMISA).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
+        "chaleco": list(Prenda.objects.filter(categoria=Prenda.C_CHALECO).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
+        "mono": list(Prenda.objects.filter(categoria=Prenda.C_MONO).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
+        "corbata": list(Prenda.objects.filter(categoria=Prenda.C_CORBATA).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
+        "zapatos": list(Prenda.objects.filter(categoria=Prenda.C_ZAPATOS).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
+        "cinturon": list(Prenda.objects.filter(categoria=Prenda.C_CINTURON).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
     }
 
+
+def crear(request):
+    msg_cliente = request.session.pop("ultimo_mensaje_cliente", None)
+    disponibles = _disponibles_por_categoria()
+
     if request.method == "POST":
-        form = AlquilerForm(request.POST)
+        form = AlquilerForm(request.POST, disponibles=disponibles)
         if form.is_valid():
             selected = form.cleaned_data.get("_selected_prendas", {"p1": [], "p2": []})
+            touched_prendas = []
 
             with transaction.atomic():
-                alq = form.save(commit=False)
-                alq.estado_alquiler = Alquiler.EST_RESERVADO
-                alq.estado_saldo = Alquiler.SAL_PEND
-                alq.save()
+                alquiler = form.save(commit=False)
+                alquiler.fecha_visita = alquiler.fecha_reserva
+                alquiler.estado_alquiler = Alquiler.EST_RESERVADO
+                alquiler.estado_saldo = Alquiler.SAL_PEND
+                alquiler.save()
 
                 p1_rp_val = form.cleaned_data.get("p1_ruedo_pantalon_valor")
                 p1_rp_tipo = form.cleaned_data.get("p1_ruedo_pantalon_tipo") or ""
                 p1_rs_val = form.cleaned_data.get("p1_ruedo_saco_valor")
                 p1_rs_tipo = form.cleaned_data.get("p1_ruedo_saco_tipo") or ""
 
-                for pr in selected["p1"]:
-                    if pr.categoria == Prenda.C_PANTALON:
-                        rv, rt = p1_rp_val, p1_rp_tipo
-                    elif pr.categoria == Prenda.C_SACO:
-                        rv, rt = p1_rs_val, p1_rs_tipo
+                for prenda in selected["p1"]:
+                    if prenda.categoria == Prenda.C_PANTALON:
+                        ruedo_valor, ruedo_tipo = p1_rp_val, p1_rp_tipo
+                    elif prenda.categoria == Prenda.C_SACO:
+                        ruedo_valor, ruedo_tipo = p1_rs_val, p1_rs_tipo
                     else:
-                        rv, rt = None, ""
+                        ruedo_valor, ruedo_tipo = None, ""
 
                     AlquilerItem.objects.create(
-                        alquiler=alq,
+                        alquiler=alquiler,
                         persona_num=1,
-                        prenda=pr,
-                        ruedo_valor=rv,
-                        ruedo_tipo=rt,
+                        prenda=prenda,
+                        ruedo_valor=ruedo_valor,
+                        ruedo_tipo=ruedo_tipo,
                     )
-                    pr.estado = Prenda.E_RES
-                    pr.save(update_fields=["estado"])
+                    touched_prendas.append(prenda)
 
                 p2_rp_val = form.cleaned_data.get("p2_ruedo_pantalon_valor")
                 p2_rp_tipo = form.cleaned_data.get("p2_ruedo_pantalon_tipo") or ""
                 p2_rs_val = form.cleaned_data.get("p2_ruedo_saco_valor")
                 p2_rs_tipo = form.cleaned_data.get("p2_ruedo_saco_tipo") or ""
 
-                if (alq.persona2_nombre or "").strip() or selected["p2"]:
-                    for pr in selected["p2"]:
-                        if pr.categoria == Prenda.C_PANTALON:
-                            rv, rt = p2_rp_val, p2_rp_tipo
-                        elif pr.categoria == Prenda.C_SACO:
-                            rv, rt = p2_rs_val, p2_rs_tipo
+                if (alquiler.persona2_nombre or "").strip() or selected["p2"]:
+                    for prenda in selected["p2"]:
+                        if prenda.categoria == Prenda.C_PANTALON:
+                            ruedo_valor, ruedo_tipo = p2_rp_val, p2_rp_tipo
+                        elif prenda.categoria == Prenda.C_SACO:
+                            ruedo_valor, ruedo_tipo = p2_rs_val, p2_rs_tipo
                         else:
-                            rv, rt = None, ""
+                            ruedo_valor, ruedo_tipo = None, ""
 
                         AlquilerItem.objects.create(
-                            alquiler=alq,
+                            alquiler=alquiler,
                             persona_num=2,
-                            prenda=pr,
-                            ruedo_valor=rv,
-                            ruedo_tipo=rt,
+                            prenda=prenda,
+                            ruedo_valor=ruedo_valor,
+                            ruedo_tipo=ruedo_tipo,
                         )
-                        pr.estado = Prenda.E_RES
-                        pr.save(update_fields=["estado"])
+                        touched_prendas.append(prenda)
 
-                mensaje = _armar_mensaje_cliente(alq)
-                request.session["ultimo_mensaje_cliente"] = mensaje
+                _refresh_prendas_estado(touched_prendas)
+                request.session["ultimo_mensaje_cliente"] = _armar_mensaje_cliente(alquiler)
 
-            messages.success(request, "Alquiler creado. Copiá el mensaje para el cliente.")
+            messages.success(request, "Alquiler creado. Copia el mensaje para el cliente.")
             return redirect("alquileres:crear")
 
-        messages.error(request, "Revisá los campos (hay errores).")
+        messages.error(request, "Revisa los campos del formulario.")
     else:
         hoy = timezone.localdate()
-        form = AlquilerForm(initial={"fecha_reserva": hoy})
+        form = AlquilerForm(
+            disponibles=disponibles,
+            initial={
+                "fecha_reserva": hoy,
+                "fecha_entrega": hoy,
+                "fecha_devolucion": hoy,
+            },
+        )
 
     return render(request, "alquileres/crear.html", {
         "form": form,
-        "disp": disp,
         "mensaje_cliente": msg_cliente,
     })
 
 
-def _sync_prendas_por_estado(alq: Alquiler):
-    items = alq.items.select_related("prenda").all()
-    for it in items:
-        p = it.prenda
-        if p.estado == Prenda.E_DAN:
-            continue
-        if alq.estado_alquiler == Alquiler.EST_RESERVADO:
-            p.estado = Prenda.E_RES
-        elif alq.estado_alquiler == Alquiler.EST_ENTREGADO:
-            p.estado = Prenda.E_ENT
-        elif alq.estado_alquiler == Alquiler.EST_CERRADO:
-            p.estado = Prenda.E_DISP
-        p.save(update_fields=["estado"])
+def _sync_prendas_por_estado(alquiler: Alquiler):
+    _refresh_prendas_estado(item.prenda for item in alquiler.items.select_related("prenda").all())
 
 
 def ver(request):
     if request.method == "POST":
-        alq_id = request.POST.get("alq_id")
-        alq = get_object_or_404(Alquiler, id=alq_id)
+        alquiler_id = request.POST.get("alq_id")
+        alquiler = get_object_or_404(Alquiler, id=alquiler_id)
+        accion = request.POST.get("accion", "actualizar")
+
+        if accion == "eliminar":
+            with transaction.atomic():
+                prenda_ids = list(alquiler.items.values_list("prenda_id", flat=True))
+                alquiler.delete()
+                _refresh_prendas_estado_por_ids(prenda_ids)
+            messages.success(request, f"Alquiler #{alquiler_id} eliminado.")
+            return redirect("alquileres:ver")
 
         nuevo_saldo = request.POST.get("estado_saldo")
         nuevo_estado = request.POST.get("estado_alquiler")
@@ -177,33 +230,33 @@ def ver(request):
         changed = False
 
         if nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
-            if alq.estado_saldo != nuevo_saldo:
+            if alquiler.estado_saldo != nuevo_saldo:
                 if nuevo_saldo == Alquiler.SAL_PAG:
                     if not metodo_saldo:
-                        messages.error(request, "Para marcar SALDO como PAGADO tenés que elegir el método de pago.")
+                        messages.error(request, "Para marcar saldo como pagado tienes que elegir el metodo de pago.")
                         return redirect("alquileres:ver")
                     if metodo_saldo not in dict(Alquiler.METODOS_PAGO):
-                        messages.error(request, "Método de pago inválido.")
+                        messages.error(request, "Metodo de pago invalido.")
                         return redirect("alquileres:ver")
 
-                    alq.metodo_saldo = metodo_saldo
-                    alq.saldo_pagado_en = timezone.localdate()
+                    alquiler.metodo_saldo = metodo_saldo
+                    alquiler.saldo_pagado_en = timezone.localdate()
                 else:
-                    alq.metodo_saldo = ""
-                    alq.saldo_pagado_en = None
+                    alquiler.metodo_saldo = ""
+                    alquiler.saldo_pagado_en = None
 
-                alq.estado_saldo = nuevo_saldo
+                alquiler.estado_saldo = nuevo_saldo
                 changed = True
 
         if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
-            if alq.estado_alquiler != nuevo_estado:
-                alq.estado_alquiler = nuevo_estado
+            if alquiler.estado_alquiler != nuevo_estado:
+                alquiler.estado_alquiler = nuevo_estado
                 changed = True
 
         if changed:
-            alq.save()
-            _sync_prendas_por_estado(alq)
-            messages.success(request, f"Alquiler #{alq.id} actualizado.")
+            alquiler.save()
+            _sync_prendas_por_estado(alquiler)
+            messages.success(request, f"Alquiler #{alquiler.id} actualizado.")
         else:
             messages.info(request, "No hubo cambios.")
 
@@ -212,48 +265,41 @@ def ver(request):
     alquileres = (
         Alquiler.objects
         .all()
-        .order_by("fecha_entrega", "fecha_devolucion", "-creado_en")
+        .order_by("-creado_en", "-id")
+        .prefetch_related("items__prenda")
     )
+
+    resumen = [
+        {"label": "Activos", "valor": alquileres.exclude(estado_alquiler=Alquiler.EST_CERRADO).count()},
+        {"label": "Reservados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_RESERVADO).count()},
+        {"label": "Entregados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_ENTREGADO).count()},
+        {"label": "Cerrados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_CERRADO).count()},
+    ]
 
     return render(request, "alquileres/ver.html", {
         "alquileres": alquileres,
         "estados_alquiler": Alquiler.ESTADOS_ALQUILER,
         "estados_saldo": Alquiler.ESTADOS_SALDO,
         "metodos_pago": Alquiler.METODOS_PAGO,
+        "resumen": resumen,
     })
-
-
-@require_http_methods(["POST"])
-def eliminar(request, alq_id):
-    alq = get_object_or_404(Alquiler, id=alq_id)
-
-    with transaction.atomic():
-        items = list(alq.items.select_related("prenda").all())
-
-        for it in items:
-            prenda = it.prenda
-            if prenda.estado != Prenda.E_DAN:
-                prenda.estado = Prenda.E_DISP
-                prenda.save(update_fields=["estado"])
-
-        alq.delete()
-
-    messages.success(request, f"Alquiler #{alq_id} eliminado correctamente.")
-    return redirect("alquileres:ver")
 
 
 def entregas(request):
     hoy = timezone.localdate()
     hasta_str = request.GET.get("hasta", "")
     try:
-        hasta = timezone.datetime.strptime(hasta_str, "%Y-%m-%d").date() if hasta_str else (hoy + timezone.timedelta(days=7))
+        if hasta_str:
+            hasta = timezone.datetime.strptime(hasta_str, "%Y-%m-%d").date()
+        else:
+            hasta = hoy + timezone.timedelta(days=7)
     except Exception:
         hasta = hoy + timezone.timedelta(days=7)
 
     if hasta < hoy:
         hasta = hoy
 
-    qs = (
+    alquileres = (
         Alquiler.objects
         .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
         .order_by("fecha_entrega", "fecha_devolucion", "id")
@@ -263,14 +309,14 @@ def entregas(request):
     return render(request, "alquileres/entregas.html", {
         "hoy": hoy,
         "hasta": hasta,
-        "alquileres": qs,
+        "alquileres": alquileres,
     })
 
 
 def retrasados(request):
     hoy = timezone.localdate()
 
-    qs = (
+    alquileres = (
         Alquiler.objects
         .exclude(estado_alquiler=Alquiler.EST_CERRADO)
         .filter(fecha_devolucion__lt=hoy)
@@ -279,9 +325,9 @@ def retrasados(request):
     )
 
     retrasos = []
-    for a in qs:
-        dias = (hoy - a.fecha_devolucion).days
-        retrasos.append((a, dias))
+    for alquiler in alquileres:
+        dias = (hoy - alquiler.fecha_devolucion).days
+        retrasos.append((alquiler, dias))
 
     return render(request, "alquileres/retrasados.html", {
         "hoy": hoy,

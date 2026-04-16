@@ -1,275 +1,199 @@
 {% extends "base.html" %}
 {% block content %}
-
-<div class="ab-card">
+<section class="ab-card">
   <div class="ab-head">
     <div>
-      <h1 class="ab-title">Reportes</h1>
-      <p class="ab-sub">Uso de prendas por fecha de entrega + Ingresos por método de pago</p>
+      <p class="ab-kicker">Analitica</p>
+      <h1 class="ab-title">Reportes visuales</h1>
+      <p class="ab-sub">Graficos y lecturas rapidas para revisar ingresos, talles, marcas y colores sin exportar a Excel.</p>
     </div>
   </div>
 
-  <div class="ab-body">
-
-    <!-- FILTRO -->
-    <form method="get" class="ab-card" style="border-radius:14px; margin-bottom:14px;">
+  <div class="ab-body ab-stack">
+    <form method="get" class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-grid">
-          <div class="col-4">
-            <label class="ab-lab">Tipo de reporte</label>
-            <select class="ab-sel" name="periodo">
+          <div class="col-4 ab-field">
+            <label class="ab-lab" for="id_periodo">Tipo de reporte</label>
+            <select class="ab-sel" name="periodo" id="id_periodo">
               <option value="mensual" {% if periodo == "mensual" %}selected{% endif %}>Mensual</option>
-              <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semanal (dentro del mes)</option>
+              <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semanal</option>
             </select>
           </div>
-
-          <div class="col-4">
-            <label class="ab-lab">Mes</label>
-            <input class="ab-inp" type="month" name="ym" value="{{ ym_value }}">
+          <div class="col-4 ab-field">
+            <label class="ab-lab" for="id_ym">Mes</label>
+            <input class="ab-inp" type="month" name="ym" id="id_ym" value="{{ ym_value }}">
           </div>
-
-          <div class="col-4" style="display:flex; align-items:end; gap:10px; flex-wrap:wrap;">
-            <button class="ab-btn2" type="submit">Aplicar filtro</button>
-
-            <!-- ✅ EXPORT -->
-            <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">
-              Exportar a Excel
-            </a>
+          <div class="col-4 ab-field" style="justify-content: flex-end;">
+            <label class="ab-lab">&nbsp;</label>
+            <div class="ab-actions">
+              <button class="ab-btn2" type="submit">Aplicar</button>
+              <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
+            </div>
           </div>
-        </div>
-
-        <div class="ab-hr"></div>
-        <div class="ab-muted">
-          Total de prendas registradas en este período: <b>{{ total_items }}</b>
         </div>
       </div>
     </form>
 
-    <!-- =========================
-         INGRESOS
-         ========================= -->
-    <div class="ab-card" style="border-radius:14px; margin-bottom:14px;">
+    <div class="ab-summary-grid">
+      {% for item in summary %}
+        <div class="ab-summary-card">
+          <span class="ab-small">{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
-        <h2 style="margin:0 0 10px 0;">Ingresos (señas + saldos pagados)</h2>
-        <div class="ab-muted" style="margin-bottom:10px;">
-          Señas por <b>fecha_reserva</b> • Saldos por <b>saldo_pagado_en</b> (cuando marcás “Saldo: Pagado”)
+        <div class="ab-section-title">
+          <h2>Ingresos</h2>
+          <span class="ab-pill">{{ periodo|title }}</span>
         </div>
 
         {% if ingresos.tipo == "mensual" %}
-          <table class="ab-table">
-            <thead>
-              <tr>
-                <th>Método</th>
-                <th>Señas</th>
-                <th>Saldos</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for r in ingresos.rows %}
-                <tr>
-                  <td>{{ r.label }}</td>
-                  <td>${{ r.sena }}</td>
-                  <td>${{ r.saldo }}</td>
-                  <td><b>${{ r.total }}</b></td>
-                </tr>
+          {% if ingresos.total_general %}
+            <div class="ab-card-grid">
+              {% for row in ingresos.rows %}
+                <article class="ab-list-card">
+                  <div class="ab-row" style="justify-content: space-between;">
+                    <h3>{{ row.label }}</h3>
+                    <span class="ab-pill">${{ row.total }}</span>
+                  </div>
+
+                  <div class="ab-dual-meter" style="margin-top: 14px;">
+                    <div class="ab-dual-meter-line">
+                      <span>Senas</span>
+                      <div class="ab-bar-track"><div class="ab-bar-fill" style="width: {{ row.pct_sena }}%;"></div></div>
+                      <strong>${{ row.sena }}</strong>
+                    </div>
+                    <div class="ab-dual-meter-line">
+                      <span>Saldos</span>
+                      <div class="ab-bar-track"><div class="ab-bar-fill secondary" style="width: {{ row.pct_saldo }}%;"></div></div>
+                      <strong>${{ row.saldo }}</strong>
+                    </div>
+                    <div class="ab-dual-meter-line">
+                      <span>Total</span>
+                      <div class="ab-bar-track"><div class="ab-bar-fill warn" style="width: {{ row.pct_total }}%;"></div></div>
+                      <strong>${{ row.total }}</strong>
+                    </div>
+                  </div>
+                </article>
               {% endfor %}
-              <tr>
-                <td><b>TOTAL</b></td>
-                <td><b>${{ ingresos.tg_sena }}</b></td>
-                <td><b>${{ ingresos.tg_saldo }}</b></td>
-                <td><b>${{ ingresos.tg_total }}</b></td>
-              </tr>
-            </tbody>
-          </table>
-        {% else %}
-          {% for w in ingresos.weeks %}
-            <div class="ab-card" style="border-radius:14px; margin:12px 0;">
+            </div>
+
+            <div class="ab-card" style="border-radius: 22px; margin-top: 18px;">
               <div class="ab-body">
-                <div style="font-weight:900; margin-bottom:8px;">Semana W{{ w.wk }}</div>
-                <table class="ab-table">
-                  <thead>
-                    <tr>
-                      <th>Método</th>
-                      <th>Señas</th>
-                      <th>Saldos</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for r in w.rows %}
-                      <tr>
-                        <td>{{ r.label }}</td>
-                        <td>${{ r.sena }}</td>
-                        <td>${{ r.saldo }}</td>
-                        <td><b>${{ r.total }}</b></td>
-                      </tr>
-                    {% endfor %}
-                    <tr>
-                      <td><b>TOTAL</b></td>
-                      <td><b>${{ w.tg_sena }}</b></td>
-                      <td><b>${{ w.tg_saldo }}</b></td>
-                      <td><b>${{ w.tg_total }}</b></td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div class="ab-row" style="justify-content: space-between;">
+                  <span class="ab-chip">Senas: ${{ ingresos.total_sena }}</span>
+                  <span class="ab-chip">Saldos: ${{ ingresos.total_saldo }}</span>
+                  <span class="ab-chip">Total: ${{ ingresos.total_general }}</span>
+                </div>
               </div>
             </div>
-          {% endfor %}
+          {% else %}
+            <div class="ab-empty">No hubo ingresos registrados en este periodo.</div>
+          {% endif %}
+        {% else %}
+          <div class="ab-card-grid">
+            {% for week in ingresos.weeks %}
+              <article class="ab-list-card">
+                <div class="ab-row" style="justify-content: space-between;">
+                  <h3>Semana {{ week.wk }}</h3>
+                  <span class="ab-pill">${{ week.total_general }}</span>
+                </div>
+                <div class="ab-bar-track" style="margin-top: 12px;">
+                  <div class="ab-bar-fill warn" style="width: {{ week.pct_total }}%;"></div>
+                </div>
+
+                <div class="ab-stack" style="margin-top: 14px;">
+                  {% for row in week.rows %}
+                    <div class="ab-bar-row">
+                      <strong>{{ row.label }}</strong>
+                      <div class="ab-bar-track">
+                        <div class="ab-bar-fill" style="width: {{ row.pct_total }}%;"></div>
+                      </div>
+                      <span>${{ row.total }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
         {% endif %}
       </div>
     </div>
 
     {% if total_items == 0 %}
-      <div class="ab-msg err">No hay datos de prendas para ese mes.</div>
+      <div class="ab-empty">No hay movimientos de prendas en el mes seleccionado.</div>
     {% endif %}
 
-    <!-- =========================
-         USO DE PRENDAS
-         ========================= -->
-    {% for b in report %}
-      <div class="ab-card" style="border-radius:14px; margin-bottom:14px;">
+    {% for section in report %}
+      <div class="ab-card" style="border-radius: 22px;">
         <div class="ab-body">
-          <h2 style="margin:0 0 10px 0;">{{ b.label }}</h2>
+          <div class="ab-section-title">
+            <h2>{{ section.label }}</h2>
+            <span class="ab-chip">{{ section.mode|title }}</span>
+          </div>
 
-          {% if periodo == "mensual" %}
+          <div class="ab-card-grid">
+            {% for card in section.cards %}
+              <article class="ab-list-card">
+                <h3>{{ card.title }}</h3>
 
-            <div class="ab-grid">
-              <div class="col-4">
-                <h3 style="margin:0 0 8px 0;">Top por color</h3>
-                <table class="ab-table">
-                  <thead><tr><th>Color</th><th>Cant.</th></tr></thead>
-                  <tbody>
-                    {% for k,cnt in b.colors_month %}
-                      <tr><td>{{ k }}</td><td>{{ cnt }}</td></tr>
-                    {% empty %}
-                      <tr><td colspan="2" class="ab-muted">Sin datos</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="col-4">
-                <h3 style="margin:0 0 8px 0;">Top por talle</h3>
-                <table class="ab-table">
-                  <thead><tr><th>Talle</th><th>Cant.</th></tr></thead>
-                  <tbody>
-                    {% for k,cnt in b.talles_month %}
-                      <tr><td>{{ k }}</td><td>{{ cnt }}</td></tr>
-                    {% empty %}
-                      <tr><td colspan="2" class="ab-muted">Sin datos</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="col-4">
-                <h3 style="margin:0 0 8px 0;">Top por marca</h3>
-                <table class="ab-table">
-                  <thead><tr><th>Marca</th><th>Cant.</th></tr></thead>
-                  <tbody>
-                    {% for k,cnt in b.marcas_month %}
-                      <tr><td>{{ k }}</td><td>{{ cnt }}</td></tr>
-                    {% empty %}
-                      <tr><td colspan="2" class="ab-muted">Sin datos</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          {% else %}
-
-            <div class="ab-grid">
-              <div class="col-4">
-                <h3 style="margin:0 0 8px 0;">Top por color (semanal)</h3>
-                <div class="ab-muted" style="margin-bottom:8px;">Semanas del mes: 1 a {{ b.weeks_n }}</div>
-                <table class="ab-table">
-                  <thead>
-                    <tr>
-                      <th>Color</th>
-                      {% for w in "12345"|make_list %}
-                        {% if forloop.counter <= b.weeks_n %}<th>W{{ forloop.counter }}</th>{% endif %}
+                {% if section.mode == "mensual" %}
+                  {% if card.items %}
+                    <div class="ab-visual-list" style="margin-top: 14px;">
+                      {% for item in card.items %}
+                        <div class="ab-bar-row">
+                          <strong>{{ item.label }}</strong>
+                          <div class="ab-bar-track">
+                            <div class="ab-bar-fill{% if item.tone != 'accent' %} {{ item.tone }}{% endif %}" style="width: {{ item.pct }}%;"></div>
+                          </div>
+                          <span>{{ item.value }}</span>
+                        </div>
                       {% endfor %}
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in b.colors_week %}
-                      <tr>
-                        <td>{{ row.key }}</td>
-                        {% for v in row.weeks %}<td>{{ v }}</td>{% endfor %}
-                        <td><b>{{ row.total }}</b></td>
-                      </tr>
-                    {% empty %}
-                      <tr><td colspan="7" class="ab-muted">Sin datos</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="col-4">
-                <h3 style="margin:0 0 8px 0;">Top por talle (semanal)</h3>
-                <div class="ab-muted" style="margin-bottom:8px;">Semanas del mes: 1 a {{ b.weeks_n }}</div>
-                <table class="ab-table">
-                  <thead>
-                    <tr>
-                      <th>Talle</th>
-                      {% for w in "12345"|make_list %}
-                        {% if forloop.counter <= b.weeks_n %}<th>W{{ forloop.counter }}</th>{% endif %}
+                    </div>
+                  {% else %}
+                    <div class="ab-empty" style="margin-top: 14px;">Sin datos.</div>
+                  {% endif %}
+                {% else %}
+                  {% if card.rows %}
+                    <div class="ab-stack" style="margin-top: 14px;">
+                      {% for row in card.rows %}
+                        <div class="ab-stack" style="gap: 8px;">
+                          <div class="ab-row" style="justify-content: space-between;">
+                            <strong>{{ row.label }}</strong>
+                            <span>{{ row.total }}</span>
+                          </div>
+                          <div class="ab-microbars">
+                            {% for week in row.weeks %}
+                              <div class="ab-microbar" title="Semana {{ forloop.counter }}: {{ week.value }}">
+                                <span style="height: {{ week.pct }}%;"></span>
+                              </div>
+                            {% endfor %}
+                          </div>
+                          <div class="ab-bar-track">
+                            <div class="ab-bar-fill{% if row.tone != 'accent' %} {{ row.tone }}{% endif %}" style="width: {{ row.total_pct }}%;"></div>
+                          </div>
+                        </div>
                       {% endfor %}
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in b.talles_week %}
-                      <tr>
-                        <td>{{ row.key }}</td>
-                        {% for v in row.weeks %}<td>{{ v }}</td>{% endfor %}
-                        <td><b>{{ row.total }}</b></td>
-                      </tr>
-                    {% empty %}
-                      <tr><td colspan="7" class="ab-muted">Sin datos</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="col-4">
-                <h3 style="margin:0 0 8px 0;">Top por marca (semanal)</h3>
-                <div class="ab-muted" style="margin-bottom:8px;">Semanas del mes: 1 a {{ b.weeks_n }}</div>
-                <table class="ab-table">
-                  <thead>
-                    <tr>
-                      <th>Marca</th>
-                      {% for w in "12345"|make_list %}
-                        {% if forloop.counter <= b.weeks_n %}<th>W{{ forloop.counter }}</th>{% endif %}
+                    </div>
+                    <div class="ab-chip-row" style="margin-top: 14px;">
+                      {% for week_label in section.weeks_labels %}
+                        <span class="ab-chip">Semana {{ week_label }}</span>
                       {% endfor %}
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in b.marcas_week %}
-                      <tr>
-                        <td>{{ row.key }}</td>
-                        {% for v in row.weeks %}<td>{{ v }}</td>{% endfor %}
-                        <td><b>{{ row.total }}</b></td>
-                      </tr>
-                    {% empty %}
-                      <tr><td colspan="7" class="ab-muted">Sin datos</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          {% endif %}
-
+                    </div>
+                  {% else %}
+                    <div class="ab-empty" style="margin-top: 14px;">Sin datos.</div>
+                  {% endif %}
+                {% endif %}
+              </article>
+            {% endfor %}
+          </div>
         </div>
       </div>
     {% endfor %}
-
   </div>
-</div>
-
+</section>
 {% endblock %}

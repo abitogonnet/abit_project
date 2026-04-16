@@ -1,56 +1,75 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ab-card">
-  <div class="ab-head">
-    <div>
-      <h1 class="ab-title">Inicio</h1>
-      <p class="ab-sub">Elegí un proceso</p>
-    </div>
-  </div>
-
+<section class="ab-card">
   <div class="ab-body">
-    <div class="ab-grid">
-      <div class="col-6">
-        <div class="ab-card" style="border-radius:14px;">
-          <div class="ab-body">
-            <h2 style="margin:0 0 8px 0;">Alquileres</h2>
-            <div class="ab-row">
-              <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
-              <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
-            </div>
-          </div>
+    <div class="ab-hero">
+      <div class="ab-hero-panel">
+        <p class="ab-kicker">Panel principal</p>
+        <h1 class="ab-title">Gestion mas simple para alquileres y stock</h1>
+        <p class="ab-sub">
+          Todo quedo orientado a usar menus desplegables, ver mejor en celular y resolver rapido
+          alquileres, prendas y reportes sin pasar por Excel.
+        </p>
+        <div class="ab-actions" style="margin-top: 20px;">
+          <a class="ab-btn" href="{% url 'alquileres:crear' %}">Nuevo alquiler</a>
+          <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
+          <a class="ab-btn2" href="{% url 'reportes:home' %}">Abrir reportes</a>
         </div>
       </div>
 
-      <div class="col-6">
-        <div class="ab-card" style="border-radius:14px;">
-          <div class="ab-body">
-            <h2 style="margin:0 0 8px 0;">Stock</h2>
-            <div class="ab-row">
-              <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
-              <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
-            </div>
+      <div class="ab-hero-panel">
+        <p class="ab-kicker">Accesos rapidos</p>
+        <div class="ab-chip-row">
+          <span class="ab-chip">Sin visitas</span>
+          <span class="ab-chip">Carga tipo pila</span>
+          <span class="ab-chip">Edicion de prendas</span>
+          <span class="ab-chip">Busqueda por marca y talle</span>
+          <span class="ab-chip">Graficos dentro de la app</span>
+        </div>
+        <p class="ab-note" style="margin-top: 18px;">
+          Usa este inicio como tablero central. Desde aca ya tienes a mano los procesos principales.
+        </p>
+      </div>
+    </div>
+
+    <div class="ab-card-grid" style="margin-top: 20px;">
+      <article class="ab-card" style="border-radius: 22px;">
+        <div class="ab-body">
+          <p class="ab-kicker">Alquileres</p>
+          <h2 class="ab-mini-title">Crear, revisar y borrar alquileres</h2>
+          <p class="ab-caption">La lista de alquileres muestra primero lo ultimo cargado y permite eliminar registros si hace falta corregir algo.</p>
+          <div class="ab-actions" style="margin-top: 16px;">
+            <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
+            <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
           </div>
         </div>
-      </div>
+      </article>
 
-      <div class="col-12">
-        <div class="ab-card" style="border-radius:14px;">
-          <div class="ab-body">
-            <h2 style="margin:0 0 8px 0;">Seguimiento</h2>
-            <div class="ab-row">
-              <a class="ab-btn" href="{% url 'alquileres:entregas' %}">Entregas</a>
-              <a class="ab-btn2" href="{% url 'alquileres:retrasados' %}">Retrasados</a>
-              <a class="ab-btn2" href="{% url 'prendas:buscar_codigo' %}">Buscar por código</a>
-            </div>
-            <p class="ab-sub" style="margin-top:10px;">
-              Entregas muestra desde hoy hasta una fecha. Retrasados detecta devoluciones vencidas.
-            </p>
+      <article class="ab-card" style="border-radius: 22px;">
+        <div class="ab-body">
+          <p class="ab-kicker">Prendas</p>
+          <h2 class="ab-mini-title">Crear, modificar y buscar stock</h2>
+          <p class="ab-caption">Las prendas ahora se cargan y se corrigen desde menus desplegables, con edicion directa desde stock.</p>
+          <div class="ab-actions" style="margin-top: 16px;">
+            <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
+            <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
           </div>
         </div>
-      </div>
+      </article>
 
+      <article class="ab-card" style="border-radius: 22px;">
+        <div class="ab-body">
+          <p class="ab-kicker">Seguimiento</p>
+          <h2 class="ab-mini-title">Entregas, retrasos y analisis</h2>
+          <p class="ab-caption">Los reportes tienen visuales nuevos para decidir rapido sin exportar planillas.</p>
+          <div class="ab-actions" style="margin-top: 16px;">
+            <a class="ab-btn" href="{% url 'alquileres:entregas' %}">Entregas</a>
+            <a class="ab-btn2" href="{% url 'alquileres:retrasados' %}">Retrasados</a>
+            <a class="ab-btn2" href="{% url 'reportes:home' %}">Reportes</a>
+          </div>
+        </div>
+      </article>
     </div>
   </div>
-</div>
+</section>
 {% endblock %}

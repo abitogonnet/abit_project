@@ -1,139 +1,215 @@
-{% load static %}
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ABITO - Crear prenda</title>
+{% extends "base.html" %}
+{% block content %}
+{{ prenda_lookups|json_script:"prenda-lookups" }}
 
-  <link rel="stylesheet" href="{% static 'css/abito.css' %}">
+<section class="ab-card">
+  <div class="ab-head">
+    <div>
+      <p class="ab-kicker">Stock</p>
+      <h1 class="ab-title">{{ titulo }}</h1>
+      <p class="ab-sub">{{ subtitulo }}</p>
+    </div>
+    <div class="ab-actions">
+      <a class="ab-btn2" href="{% url cancel_url %}">Volver</a>
+      <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
+    </div>
+  </div>
 
-  <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial; background:#0f1115; color:#e8e8e8; margin:0;}
-    .ab-wrap{max-width:980px; margin:24px auto; padding:0 16px;}
-    .ab-card{background:#151922; border:1px solid #232a3a; border-radius:14px; padding:18px;}
-    .ab-top{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;}
-    .ab-title{font-size:20px; font-weight:700;}
-    .ab-btn{background:#2dd4bf; color:#0b1220; border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer;}
-    .ab-btn2{background:#334155; color:#e8e8e8; border:1px solid #475569; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer;}
-    .ab-grid{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
-    .ab-row{display:flex; flex-direction:column; gap:6px;}
-    label{font-size:13px; color:#b7c0d3;}
-    .ab-inp,.ab-sel{background:#0f1420; border:1px solid #2a3245; color:#e8e8e8; border-radius:10px; padding:10px; outline:none; width:100%; box-sizing:border-box;}
-    .ab-inp:focus,.ab-sel:focus{border-color:#2dd4bf;}
-    .ab-actions{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;}
-    .ab-msg{margin:10px 0; padding:10px 12px; border-radius:10px; border:1px solid #2a3245;}
-    .ab-msg.success{border-color:#2dd4bf;}
-    .ab-msg.info{border-color:#7dd3fc;}
-    .ab-msg.error{border-color:#fb7185;}
-    .ab-msg.ok{border-color:#2dd4bf;}
-    .ab-msg.err{border-color:#fb7185;}
-    .ab-small{color:#9aa6bf; font-size:12px; margin-top:6px;}
-    .ab-err{color:#fb7185; font-size:13px;}
-    ul.errorlist{margin:0; padding-left:18px;}
-    @media (max-width: 800px){ .ab-grid{grid-template-columns:1fr;} }
-    a{color:#7dd3fc; text-decoration:none;}
-  </style>
-</head>
-
-<body>
-  <div class="ab-wrap">
-
-    <div class="ab-top">
-      <div class="ab-title">Crear prenda</div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <a class="ab-btn2" href="{% url 'alquileres:home' %}">Home</a>
-        <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
+  <div class="ab-body">
+    <div class="ab-card" style="border-radius: 22px; margin-bottom: 18px;">
+      <div class="ab-body">
+        <div class="ab-row" style="justify-content: space-between;">
+          <div>
+            <div class="ab-small">Codigo</div>
+            <div class="ab-pill" style="margin-top: 6px;">
+              {% if codigo_preview %}
+                {{ codigo_preview }}
+              {% elif prenda %}
+                {{ prenda.codigo }}
+              {% else %}
+                Se genera automaticamente
+              {% endif %}
+            </div>
+          </div>
+          <p class="ab-note" style="max-width: 440px;">
+            El formulario se acomoda segun la categoria y la marca. Si eliges Aires Modernos en saco o pantalon,
+            se habilita el desplegable para indicar si la prenda es nacional o importada.
+          </p>
+        </div>
       </div>
     </div>
 
-    <div class="ab-card">
+    <form method="post" id="prendaForm" class="ab-stack">
+      {% csrf_token %}
 
-      {% if messages %}
-        {% for m in messages %}
-          <div class="ab-msg {% if m.tags %}{{ m.tags }}{% endif %}">
-            {{ m }}
-          </div>
-        {% endfor %}
+      {% if form.non_field_errors %}
+        <div class="ab-msg err">{{ form.non_field_errors }}</div>
       {% endif %}
 
-      <form method="post" autocomplete="off">
-        {% csrf_token %}
-
-        <div class="ab-grid">
-
-          <div class="ab-row">
-            <label for="{{ form.categoria.id_for_label }}">Categoría</label>
-            {{ form.categoria }}
-            {% if form.categoria.errors %}<div class="ab-err">{{ form.categoria.errors }}</div>{% endif %}
-          </div>
-
-          <div class="ab-row">
-            <label for="{{ form.marca.id_for_label }}">Marca</label>
-            {{ form.marca }}
-            {% if form.marca.errors %}<div class="ab-err">{{ form.marca.errors }}</div>{% endif %}
-            <div class="ab-small">Escribís, pero para que valide tiene que ser del desplegable.</div>
-          </div>
-
-          <div class="ab-row">
-            <label for="{{ form.color.id_for_label }}">Color</label>
-            {{ form.color }}
-            {% if form.color.errors %}<div class="ab-err">{{ form.color.errors }}</div>{% endif %}
-          </div>
-
-          <div class="ab-row">
-            <label for="{{ form.talle.id_for_label }}">Talle</label>
-            {{ form.talle }}
-            {% if form.talle.errors %}<div class="ab-err">{{ form.talle.errors }}</div>{% endif %}
-          </div>
-
-          <div class="ab-row" style="grid-column: 1 / -1;">
-            <label for="{{ form.notas.id_for_label }}">Notas (opcional)</label>
-            {{ form.notas }}
-            {% if form.notas.errors %}<div class="ab-err">{{ form.notas.errors }}</div>{% endif %}
-          </div>
-
+      <div class="ab-grid">
+        <div class="col-4 ab-field">
+          <label class="ab-lab" for="{{ form.categoria.id_for_label }}">Categoria</label>
+          {{ form.categoria }}
+          {% if form.categoria.errors %}<div class="ab-field-errors">{{ form.categoria.errors }}</div>{% endif %}
         </div>
 
-        {% if codigo_preview %}
-          <div class="ab-msg ok" style="margin-top:14px;">
-            <b>Código generado:</b> {{ codigo_preview }} <br>
-            <span class="ab-small">Ahora tocá “Confirmar prenda” para guardarla.</span>
-          </div>
-        {% endif %}
-
-        {% if form.non_field_errors %}
-          <div class="ab-msg err">
-            {{ form.non_field_errors }}
-          </div>
-        {% endif %}
-
-        <div class="ab-actions">
-          <button class="ab-btn2" type="submit" name="accion" value="generar">Crear código</button>
-          <button class="ab-btn" type="submit" name="accion" value="confirmar">Confirmar prenda</button>
+        <div class="col-4 ab-field">
+          <label class="ab-lab" for="{{ form.marca.id_for_label }}">Marca</label>
+          {{ form.marca }}
+          {% if form.marca.errors %}<div class="ab-field-errors">{{ form.marca.errors }}</div>{% endif %}
         </div>
 
-        <datalist id="dl_marcas">
-          {% for b in brands %}
-            <option value="{{ b }}"></option>
-          {% endfor %}
-        </datalist>
+        <div class="col-4 ab-field" id="origenField">
+          <label class="ab-lab" for="{{ form.origen.id_for_label }}">Origen</label>
+          {{ form.origen }}
+          {% if form.origen.errors %}<div class="ab-field-errors">{{ form.origen.errors }}</div>{% endif %}
+        </div>
 
-        <datalist id="dl_colores">
-          {% for c in colores_traje %}<option value="{{ c }}"></option>{% endfor %}
-          {% for c in colores_zapatos %}<option value="{{ c }}"></option>{% endfor %}
-          {% for c in colores_chaleco %}<option value="{{ c }}"></option>{% endfor %}
-        </datalist>
+        <div class="col-4 ab-field">
+          <label class="ab-lab" for="{{ form.color.id_for_label }}">Color</label>
+          {{ form.color }}
+          {% if form.color.errors %}<div class="ab-field-errors">{{ form.color.errors }}</div>{% endif %}
+        </div>
 
-        <datalist id="dl_talles">
-          {% for n in talles_nums %}<option value="{{ n }}"></option>{% endfor %}
-          {% for t in talles_letras %}<option value="{{ t }}"></option>{% endfor %}
-          {% for x in tam_nino_adulto %}<option value="{{ x }}"></option>{% endfor %}
-        </datalist>
+        <div class="col-4 ab-field">
+          <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
+          {{ form.talle }}
+          {% if form.talle.errors %}<div class="ab-field-errors">{{ form.talle.errors }}</div>{% endif %}
+        </div>
 
-      </form>
-    </div>
+        <div class="col-12 ab-field">
+          <label class="ab-lab" for="{{ form.notas.id_for_label }}">Notas</label>
+          {{ form.notas }}
+          {% if form.notas.errors %}<div class="ab-field-errors">{{ form.notas.errors }}</div>{% endif %}
+        </div>
+      </div>
 
+      {% if codigo_preview and show_generate %}
+        <div class="ab-msg ok">
+          Codigo sugerido: <strong>{{ codigo_preview }}</strong>. Si esta bien, presiona <strong>Guardar prenda</strong>.
+        </div>
+      {% endif %}
+
+      <div class="ab-actions">
+        {% if show_generate %}
+          <button class="ab-btn2" type="submit" name="accion" value="generar">Ver codigo</button>
+          <button class="ab-btn" type="submit" name="accion" value="confirmar">{{ accion_label }}</button>
+        {% else %}
+          <button class="ab-btn" type="submit">{{ accion_label }}</button>
+        {% endif %}
+      </div>
+    </form>
   </div>
-</body>
-</html>
+</section>
+
+<script>
+  (function () {
+    const lookupNode = document.getElementById("prenda-lookups");
+    if (!lookupNode) return;
+
+    const lookups = JSON.parse(lookupNode.textContent);
+    const categoria = document.getElementById("id_categoria");
+    const marca = document.getElementById("id_marca");
+    const color = document.getElementById("id_color");
+    const talle = document.getElementById("id_talle");
+    const origen = document.getElementById("id_origen");
+    const origenField = document.getElementById("origenField");
+
+    function populate(select, options, placeholder, selectedValue) {
+      if (!select) return;
+      const wanted = selectedValue || select.value || "";
+      select.innerHTML = "";
+
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.textContent = placeholder;
+      select.appendChild(blank);
+
+      const seen = new Set();
+      (options || []).forEach(function (item) {
+        const value = typeof item === "string" ? item : item.value;
+        const label = typeof item === "string" ? item : item.label;
+        if (!value || seen.has(value)) return;
+        seen.add(value);
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label || value;
+        if (value === wanted) {
+          option.selected = true;
+          blank.selected = false;
+        }
+        select.appendChild(option);
+      });
+
+      if (wanted && !seen.has(wanted)) {
+        const option = document.createElement("option");
+        option.value = wanted;
+        option.textContent = wanted;
+        option.selected = true;
+        blank.selected = false;
+        select.appendChild(option);
+      }
+    }
+
+    function currentCategory() {
+      return (categoria && categoria.value) || "";
+    }
+
+    function currentBrandKey() {
+      return ((marca && marca.value) || "").toLowerCase();
+    }
+
+    function talleOptions(cat, brandKey) {
+      const catData = lookups.tallesByCategory[cat] || {};
+      return catData[brandKey] || catData["__default"] || [];
+    }
+
+    function needsOrigin(cat, brandKey) {
+      const catData = lookups.requiresOrigen[cat] || {};
+      return !!catData[brandKey];
+    }
+
+    function syncForm() {
+      const cat = currentCategory();
+      const brandKey = currentBrandKey();
+
+      populate(color, lookups.colorsByCategory[cat] || [], "Elegir color", color.dataset.current || color.value);
+      populate(talle, talleOptions(cat, brandKey), "Elegir talle", talle.dataset.current || talle.value);
+
+      if (needsOrigin(cat, brandKey)) {
+        origenField.style.display = "";
+        populate(origen, lookups.origenes || [], "Elegir origen", origen.dataset.current || origen.value);
+        origen.disabled = false;
+      } else {
+        origenField.style.display = "none";
+        populate(origen, [], "No aplica", "");
+        origen.disabled = true;
+        origen.value = "";
+      }
+
+      color.dataset.current = "";
+      talle.dataset.current = "";
+      origen.dataset.current = "";
+    }
+
+    if (color) color.dataset.current = color.value;
+    if (talle) talle.dataset.current = talle.value;
+    if (origen) origen.dataset.current = origen.value;
+
+    if (categoria) categoria.addEventListener("change", function () {
+      color.dataset.current = "";
+      talle.dataset.current = "";
+      origen.dataset.current = "";
+      syncForm();
+    });
+
+    if (marca) marca.addEventListener("change", function () {
+      talle.dataset.current = "";
+      origen.dataset.current = "";
+      syncForm();
+    });
+
+    syncForm();
+  })();
+</script>
+{% endblock %}

@@ -41,7 +41,7 @@
               Dev: {{ a.fecha_devolucion|date:"d/m/Y" }}
             </td>
             <td class="ab-muted">
-              <div style="font-weight:800; color:rgba(233,233,234,.9)">P1: {{ a.persona1_nombre }}</div>
+              <div style="font-weight:800;">P1: {{ a.persona1_nombre }}</div>
               {% for it in a.items.all %}
                 {% if it.persona_num == 1 %}
                   - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
@@ -50,7 +50,7 @@
 
               {% if a.persona2_nombre %}
                 <div class="ab-hr" style="margin:8px 0;"></div>
-                <div style="font-weight:800; color:rgba(233,233,234,.9)">P2: {{ a.persona2_nombre }}</div>
+                <div style="font-weight:800;">P2: {{ a.persona2_nombre }}</div>
                 {% for it in a.items.all %}
                   {% if it.persona_num == 2 %}
                     - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
