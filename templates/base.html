@@ -7,42 +7,61 @@
   <title>ABITO</title>
   <link rel="stylesheet" href="{% static 'css/abito.css' %}">
 </head>
-<body>
-  <div class="ab-wrap">
-    <div class="ab-nav">
-      <div class="ab-brand">
-        <span class="ab-dot"></span>
-        <span>ABITO</span>
+<body class="ab-page">
+  <div class="ab-shell">
+    <header class="ab-nav">
+      <div class="ab-brandbox">
+        <a class="ab-brand" href="{% url 'alquileres:home' %}">
+          <span class="ab-dot"></span>
+          <span>ABITO</span>
+        </a>
+        <p class="ab-tagline">Alquileres, stock y reportes en una sola vista.</p>
       </div>
 
-      <div class="ab-links">
+      <button class="ab-nav-toggle" type="button" aria-expanded="false" aria-controls="ab-nav-links">
+        Menu
+      </button>
+
+      <nav class="ab-links" id="ab-nav-links">
         <a class="ab-link" href="{% url 'alquileres:home' %}">Inicio</a>
         <a class="ab-link" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
         <a class="ab-link" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
-
         <a class="ab-link" href="{% url 'alquileres:entregas' %}">Entregas</a>
         <a class="ab-link" href="{% url 'alquileres:retrasados' %}">Retrasados</a>
-
-        <a class="ab-link" href="{% url 'visitas:listar' %}">Visitas</a>
-
         <a class="ab-link" href="{% url 'prendas:crear' %}">Crear prenda</a>
         <a class="ab-link" href="{% url 'prendas:stock' %}">Stock</a>
-        <a class="ab-link" href="{% url 'prendas:buscar_codigo' %}">Buscar código</a>
-
+        <a class="ab-link" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
         <a class="ab-link" href="{% url 'gastos:home' %}">Gastos</a>
         <a class="ab-link" href="{% url 'reportes:home' %}">Reportes</a>
-      </div>
-    </div>
+      </nav>
+    </header>
 
     {% if messages %}
-      {% for m in messages %}
-        <div class="ab-msg {% if m.tags == 'success' %}ok{% elif m.tags == 'error' %}err{% endif %}">
-          {{ m }}
-        </div>
-      {% endfor %}
+      <div class="ab-flash-stack">
+        {% for m in messages %}
+          <div class="ab-msg {% if m.tags == 'success' %}ok{% elif m.tags == 'error' %}err{% else %}info{% endif %}">
+            {{ m }}
+          </div>
+        {% endfor %}
+      </div>
     {% endif %}
 
-    {% block content %}{% endblock %}
+    <main>
+      {% block content %}{% endblock %}
+    </main>
   </div>
+
+  <script>
+    (function () {
+      const button = document.querySelector(".ab-nav-toggle");
+      const nav = document.getElementById("ab-nav-links");
+      if (!button || !nav) return;
+
+      button.addEventListener("click", function () {
+        const open = nav.classList.toggle("is-open");
+        button.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    })();
+  </script>
 </body>
 </html>
