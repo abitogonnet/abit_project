@@ -6,7 +6,7 @@
       <p class="ab-kicker">Alquileres</p>
       <h1 class="ab-title">Crear alquiler</h1>
       <p class="ab-sub">
-        La carga ahora usa desplegables. Las prendas disponibles aparecen ordenadas de la mas nueva a la mas vieja.
+        Escribe solo el numero del codigo, conserva el prefijo de cada prenda y elige el resultado final desde el desplegable.
       </p>
     </div>
     <div class="ab-actions">
@@ -87,7 +87,7 @@
         <div class="ab-body">
           <div class="ab-section-title">
             <h2>Persona 1</h2>
-            <span class="ab-chip">Seleccion rapida por codigo</span>
+            <span class="ab-chip">Prefijo fijo + seleccion final</span>
           </div>
 
           <div class="ab-grid">
@@ -125,15 +125,99 @@
 
           <div class="ab-hr"></div>
 
+          <div class="ab-form-note">
+            Escribe solo los numeros del codigo. El prefijo se completa solo y luego eliges la prenda exacta desde el desplegable.
+          </div>
+
           <div class="ab-grid">
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_saco.id_for_label }}">Saco</label>{{ form.p1_saco }}{% if form.p1_saco.errors %}<div class="ab-field-errors">{{ form.p1_saco.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_pantalon.id_for_label }}">Pantalon</label>{{ form.p1_pantalon }}{% if form.p1_pantalon.errors %}<div class="ab-field-errors">{{ form.p1_pantalon.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_camisa.id_for_label }}">Camisa</label>{{ form.p1_camisa }}{% if form.p1_camisa.errors %}<div class="ab-field-errors">{{ form.p1_camisa.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_chaleco.id_for_label }}">Chaleco</label>{{ form.p1_chaleco }}{% if form.p1_chaleco.errors %}<div class="ab-field-errors">{{ form.p1_chaleco.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_mono.id_for_label }}">Mono</label>{{ form.p1_mono }}{% if form.p1_mono.errors %}<div class="ab-field-errors">{{ form.p1_mono.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_corbata.id_for_label }}">Corbata</label>{{ form.p1_corbata }}{% if form.p1_corbata.errors %}<div class="ab-field-errors">{{ form.p1_corbata.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_zapatos.id_for_label }}">Zapatos</label>{{ form.p1_zapatos }}{% if form.p1_zapatos.errors %}<div class="ab-field-errors">{{ form.p1_zapatos.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p1_cinturon.id_for_label }}">Cinturon</label>{{ form.p1_cinturon }}{% if form.p1_cinturon.errors %}<div class="ab-field-errors">{{ form.p1_cinturon.errors }}</div>{% endif %}</div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_saco_numero.id_for_label }}">Saco</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">SA-</span>
+                  {{ form.p1_saco_numero }}
+                </div>
+                {{ form.p1_saco }}
+              </div>
+              {% if form.p1_saco.errors %}<div class="ab-field-errors">{{ form.p1_saco.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_pantalon_numero.id_for_label }}">Pantalon</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">PA-</span>
+                  {{ form.p1_pantalon_numero }}
+                </div>
+                {{ form.p1_pantalon }}
+              </div>
+              {% if form.p1_pantalon.errors %}<div class="ab-field-errors">{{ form.p1_pantalon.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_camisa_numero.id_for_label }}">Camisa</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CA-</span>
+                  {{ form.p1_camisa_numero }}
+                </div>
+                {{ form.p1_camisa }}
+              </div>
+              {% if form.p1_camisa.errors %}<div class="ab-field-errors">{{ form.p1_camisa.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_chaleco_numero.id_for_label }}">Chaleco</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CH-</span>
+                  {{ form.p1_chaleco_numero }}
+                </div>
+                {{ form.p1_chaleco }}
+              </div>
+              {% if form.p1_chaleco.errors %}<div class="ab-field-errors">{{ form.p1_chaleco.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_mono_numero.id_for_label }}">Mono</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">MO-</span>
+                  {{ form.p1_mono_numero }}
+                </div>
+                {{ form.p1_mono }}
+              </div>
+              {% if form.p1_mono.errors %}<div class="ab-field-errors">{{ form.p1_mono.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_corbata_numero.id_for_label }}">Corbata</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CO-</span>
+                  {{ form.p1_corbata_numero }}
+                </div>
+                {{ form.p1_corbata }}
+              </div>
+              {% if form.p1_corbata.errors %}<div class="ab-field-errors">{{ form.p1_corbata.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_zapatos_numero.id_for_label }}">Zapatos</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">ZA-</span>
+                  {{ form.p1_zapatos_numero }}
+                </div>
+                {{ form.p1_zapatos }}
+              </div>
+              {% if form.p1_zapatos.errors %}<div class="ab-field-errors">{{ form.p1_zapatos.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p1_cinturon_numero.id_for_label }}">Cinturon</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CI-</span>
+                  {{ form.p1_cinturon_numero }}
+                </div>
+                {{ form.p1_cinturon }}
+              </div>
+              {% if form.p1_cinturon.errors %}<div class="ab-field-errors">{{ form.p1_cinturon.errors }}</div>{% endif %}
+            </div>
           </div>
         </div>
       </div>
@@ -180,15 +264,99 @@
 
           <div class="ab-hr"></div>
 
+          <div class="ab-form-note">
+            Tambien aqui puedes filtrar por numero de codigo y luego confirmar la prenda desde el desplegable.
+          </div>
+
           <div class="ab-grid">
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_saco.id_for_label }}">Saco</label>{{ form.p2_saco }}{% if form.p2_saco.errors %}<div class="ab-field-errors">{{ form.p2_saco.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_pantalon.id_for_label }}">Pantalon</label>{{ form.p2_pantalon }}{% if form.p2_pantalon.errors %}<div class="ab-field-errors">{{ form.p2_pantalon.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_camisa.id_for_label }}">Camisa</label>{{ form.p2_camisa }}{% if form.p2_camisa.errors %}<div class="ab-field-errors">{{ form.p2_camisa.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_chaleco.id_for_label }}">Chaleco</label>{{ form.p2_chaleco }}{% if form.p2_chaleco.errors %}<div class="ab-field-errors">{{ form.p2_chaleco.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_mono.id_for_label }}">Mono</label>{{ form.p2_mono }}{% if form.p2_mono.errors %}<div class="ab-field-errors">{{ form.p2_mono.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_corbata.id_for_label }}">Corbata</label>{{ form.p2_corbata }}{% if form.p2_corbata.errors %}<div class="ab-field-errors">{{ form.p2_corbata.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_zapatos.id_for_label }}">Zapatos</label>{{ form.p2_zapatos }}{% if form.p2_zapatos.errors %}<div class="ab-field-errors">{{ form.p2_zapatos.errors }}</div>{% endif %}</div>
-            <div class="col-3 ab-field"><label class="ab-lab" for="{{ form.p2_cinturon.id_for_label }}">Cinturon</label>{{ form.p2_cinturon }}{% if form.p2_cinturon.errors %}<div class="ab-field-errors">{{ form.p2_cinturon.errors }}</div>{% endif %}</div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_saco_numero.id_for_label }}">Saco</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">SA-</span>
+                  {{ form.p2_saco_numero }}
+                </div>
+                {{ form.p2_saco }}
+              </div>
+              {% if form.p2_saco.errors %}<div class="ab-field-errors">{{ form.p2_saco.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_pantalon_numero.id_for_label }}">Pantalon</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">PA-</span>
+                  {{ form.p2_pantalon_numero }}
+                </div>
+                {{ form.p2_pantalon }}
+              </div>
+              {% if form.p2_pantalon.errors %}<div class="ab-field-errors">{{ form.p2_pantalon.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_camisa_numero.id_for_label }}">Camisa</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CA-</span>
+                  {{ form.p2_camisa_numero }}
+                </div>
+                {{ form.p2_camisa }}
+              </div>
+              {% if form.p2_camisa.errors %}<div class="ab-field-errors">{{ form.p2_camisa.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_chaleco_numero.id_for_label }}">Chaleco</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CH-</span>
+                  {{ form.p2_chaleco_numero }}
+                </div>
+                {{ form.p2_chaleco }}
+              </div>
+              {% if form.p2_chaleco.errors %}<div class="ab-field-errors">{{ form.p2_chaleco.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_mono_numero.id_for_label }}">Mono</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">MO-</span>
+                  {{ form.p2_mono_numero }}
+                </div>
+                {{ form.p2_mono }}
+              </div>
+              {% if form.p2_mono.errors %}<div class="ab-field-errors">{{ form.p2_mono.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_corbata_numero.id_for_label }}">Corbata</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CO-</span>
+                  {{ form.p2_corbata_numero }}
+                </div>
+                {{ form.p2_corbata }}
+              </div>
+              {% if form.p2_corbata.errors %}<div class="ab-field-errors">{{ form.p2_corbata.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_zapatos_numero.id_for_label }}">Zapatos</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">ZA-</span>
+                  {{ form.p2_zapatos_numero }}
+                </div>
+                {{ form.p2_zapatos }}
+              </div>
+              {% if form.p2_zapatos.errors %}<div class="ab-field-errors">{{ form.p2_zapatos.errors }}</div>{% endif %}
+            </div>
+            <div class="col-6 ab-field">
+              <label class="ab-lab" for="{{ form.p2_cinturon_numero.id_for_label }}">Cinturon</label>
+              <div style="display: grid; grid-template-columns: minmax(150px, 180px) minmax(0, 1fr); gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="ab-pill" style="min-width: 54px; text-align: center;">CI-</span>
+                  {{ form.p2_cinturon_numero }}
+                </div>
+                {{ form.p2_cinturon }}
+              </div>
+              {% if form.p2_cinturon.errors %}<div class="ab-field-errors">{{ form.p2_cinturon.errors }}</div>{% endif %}
+            </div>
           </div>
         </div>
       </div>
@@ -272,6 +440,75 @@ function copyMsg() {
   if (!box) return;
   navigator.clipboard.writeText(box.innerText);
 }
+
+function onlyDigits(value) {
+  return (value || "").toString().replace(/\D/g, "");
+}
+
+function normalizedDigits(value) {
+  const digits = onlyDigits(value);
+  if (!digits) return "";
+  return digits.replace(/^0+/, "") || "0";
+}
+
+function matchesCodeNumber(code, prefix, typed) {
+  if (!typed) return true;
+  const rawCode = (code || "").toUpperCase();
+  const fullPrefix = `${(prefix || "").toUpperCase()}-`;
+  const suffix = rawCode.startsWith(fullPrefix) ? rawCode.slice(fullPrefix.length) : rawCode;
+  const codeDigits = onlyDigits(suffix);
+  const cleanTyped = onlyDigits(typed);
+  const normalizedTyped = normalizedDigits(cleanTyped);
+  const normalizedCode = normalizedDigits(codeDigits);
+  return codeDigits.startsWith(cleanTyped) || normalizedCode.startsWith(normalizedTyped);
+}
+
+function cloneOption(optionData) {
+  const option = document.createElement("option");
+  option.value = optionData.value;
+  option.textContent = optionData.label;
+  return option;
+}
+
+function filterCodeSelect(input) {
+  const selectId = input.dataset.targetSelect;
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  if (!select._allOptions) {
+    select._allOptions = Array.from(select.options).map(function (option) {
+      return { value: option.value, label: option.textContent };
+    });
+  }
+
+  const prefix = input.dataset.prefix || "";
+  const typed = onlyDigits(input.value);
+  if (input.value !== typed) {
+    input.value = typed;
+  }
+
+  const previousValue = select.value;
+  const matchingOptions = select._allOptions.filter(function (option) {
+    return !option.value || matchesCodeNumber(option.value, prefix, typed);
+  });
+
+  select.innerHTML = "";
+  matchingOptions.forEach(function (optionData) {
+    select.appendChild(cloneOption(optionData));
+  });
+
+  const stillExists = matchingOptions.some(function (optionData) {
+    return optionData.value === previousValue;
+  });
+  select.value = stillExists ? previousValue : "";
+}
+
+document.querySelectorAll(".js-code-filter").forEach(function (input) {
+  input.addEventListener("input", function () {
+    filterCodeSelect(input);
+  });
+  filterCodeSelect(input);
+});
 
 ["id_total_bruto", "id_descuento_pct", "id_sena"].forEach(function (id) {
   const input = document.getElementById(id);

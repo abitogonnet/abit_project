@@ -20,6 +20,18 @@ CATS = [
 ]
 
 
+CODIGO_PREFIJOS = {
+    Prenda.C_SACO: "SA",
+    Prenda.C_PANTALON: "PA",
+    Prenda.C_CAMISA: "CA",
+    Prenda.C_CHALECO: "CH",
+    Prenda.C_MONO: "MO",
+    Prenda.C_CORBATA: "CO",
+    Prenda.C_ZAPATOS: "ZA",
+    Prenda.C_CINTURON: "CI",
+}
+
+
 def _prenda_choices(prendas):
     choices = [("", "Sin seleccionar")]
     for prenda in prendas:
@@ -111,10 +123,30 @@ class AlquilerForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         for who in ["p1", "p2"]:
-            for short, _cat in CATS:
+            for short, categoria in CATS:
                 fname = f"{who}_{short}"
+                numero_fname = f"{fname}_numero"
+                prefijo = CODIGO_PREFIJOS.get(categoria, "")
+
+                self.fields[numero_fname] = forms.CharField(
+                    required=False,
+                    widget=forms.TextInput(
+                        attrs={
+                            "class": "ab-inp js-code-filter",
+                            "autocomplete": "off",
+                            "inputmode": "numeric",
+                            "maxlength": "4",
+                            "placeholder": "Numero",
+                            "data-prefix": prefijo,
+                            "data-target-select": f"id_{fname}",
+                        }
+                    ),
+                )
                 self.fields[fname].choices = _prenda_choices(disponibles.get(short, []))
-                self.fields[fname].widget.attrs.update({"class": "ab-sel"})
+                self.fields[fname].widget.attrs.update({
+                    "class": "ab-sel js-code-select",
+                    "data-prefix": prefijo,
+                })
 
         for name in [
             "p1_ruedo_pantalon_valor",

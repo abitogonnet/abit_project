@@ -22,6 +22,15 @@ def _fmt_date(d):
     return d.strftime("%d/%m/%Y")
 
 
+def _descripcion_prenda(prenda: Prenda) -> str:
+    partes = []
+    if prenda.color:
+        partes.append(prenda.color)
+    if prenda.talle:
+        partes.append(f"talle {prenda.talle}")
+    return " ".join(partes)
+
+
 def _armar_mensaje_cliente(alq: Alquiler) -> str:
     partes = []
     partes.append("Hola, te mando el detallado de lo que alquilaste:")
@@ -35,26 +44,28 @@ def _armar_mensaje_cliente(alq: Alquiler) -> str:
     partes.append(f"{alq.persona1_nombre}")
     for item in alq.items.filter(persona_num=1).select_related("prenda"):
         prenda = item.prenda
+        detalle_prenda = _descripcion_prenda(prenda)
         extra_ruedo = ""
         if item.ruedo_valor and item.ruedo_tipo:
             extra_ruedo = f" (Ruedo: {item.ruedo_valor} {item.get_ruedo_tipo_display()})"
-        partes.append(
-            f"- {prenda.get_categoria_display()}: {prenda.color} {prenda.marca} talle {prenda.talle}"
-            f"{extra_ruedo}"
-        )
+        if detalle_prenda:
+            partes.append(f"- {prenda.get_categoria_display()}: {detalle_prenda}{extra_ruedo}")
+        else:
+            partes.append(f"- {prenda.get_categoria_display()}{extra_ruedo}")
     partes.append("")
 
     if (alq.persona2_nombre or "").strip():
         partes.append(f"{alq.persona2_nombre}")
         for item in alq.items.filter(persona_num=2).select_related("prenda"):
             prenda = item.prenda
+            detalle_prenda = _descripcion_prenda(prenda)
             extra_ruedo = ""
             if item.ruedo_valor and item.ruedo_tipo:
                 extra_ruedo = f" (Ruedo: {item.ruedo_valor} {item.get_ruedo_tipo_display()})"
-            partes.append(
-                f"- {prenda.get_categoria_display()}: {prenda.color} {prenda.marca} talle {prenda.talle}"
-                f"{extra_ruedo}"
-            )
+            if detalle_prenda:
+                partes.append(f"- {prenda.get_categoria_display()}: {detalle_prenda}{extra_ruedo}")
+            else:
+                partes.append(f"- {prenda.get_categoria_display()}{extra_ruedo}")
         partes.append("")
 
     partes.append("PAGO")

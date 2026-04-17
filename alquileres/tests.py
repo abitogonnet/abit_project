@@ -3,9 +3,11 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
+from .forms import AlquilerForm
 from prendas.models import Prenda
 
 from .models import Alquiler, AlquilerItem
+from .views import _armar_mensaje_cliente
 
 
 class AlquileresViewsTests(TestCase):
@@ -24,25 +26,41 @@ class AlquileresViewsTests(TestCase):
             "metodo_sena": Alquiler.MP_EFEC,
             "tiene_persona2": "",
             "p1_saco": "",
+            "p1_saco_numero": "",
             "p1_pantalon": "",
+            "p1_pantalon_numero": "",
             "p1_camisa": "",
+            "p1_camisa_numero": "",
             "p1_chaleco": "",
+            "p1_chaleco_numero": "",
             "p1_mono": "",
+            "p1_mono_numero": "",
             "p1_corbata": "",
+            "p1_corbata_numero": "",
             "p1_zapatos": "",
+            "p1_zapatos_numero": "",
             "p1_cinturon": "",
+            "p1_cinturon_numero": "",
             "p1_ruedo_pantalon_valor": "",
             "p1_ruedo_pantalon_tipo": "",
             "p1_ruedo_saco_valor": "",
             "p1_ruedo_saco_tipo": "",
             "p2_saco": "",
+            "p2_saco_numero": "",
             "p2_pantalon": "",
+            "p2_pantalon_numero": "",
             "p2_camisa": "",
+            "p2_camisa_numero": "",
             "p2_chaleco": "",
+            "p2_chaleco_numero": "",
             "p2_mono": "",
+            "p2_mono_numero": "",
             "p2_corbata": "",
+            "p2_corbata_numero": "",
             "p2_zapatos": "",
+            "p2_zapatos_numero": "",
             "p2_cinturon": "",
+            "p2_cinturon_numero": "",
             "p2_ruedo_pantalon_valor": "",
             "p2_ruedo_pantalon_tipo": "",
             "p2_ruedo_saco_valor": "",
@@ -277,3 +295,26 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         saco.refresh_from_db()
         self.assertEqual(saco.estado, Prenda.E_RES)
+
+    def test_mensaje_cliente_no_muestra_la_marca(self):
+        saco = Prenda.objects.create(
+            codigo="SA-020",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+        )
+        alquiler = self._create_alquiler("Mensaje", created_prenda=saco)
+
+        mensaje = _armar_mensaje_cliente(alquiler)
+
+        self.assertIn("- Saco: Negro talle 4", mensaje)
+        self.assertNotIn("Boiler", mensaje)
+
+    def test_formulario_expone_busqueda_por_numero_y_prefijo(self):
+        form = AlquilerForm(disponibles={})
+
+        self.assertIn("p1_saco_numero", form.fields)
+        self.assertEqual(form.fields["p1_saco_numero"].widget.attrs["data-prefix"], "SA")
+        self.assertEqual(form.fields["p1_saco"].widget.attrs["data-prefix"], "SA")
+        self.assertEqual(form.fields["p2_cinturon_numero"].widget.attrs["data-prefix"], "CI")
