@@ -93,10 +93,7 @@ def _prenda_lookups():
         },
         "origenes": [{"value": value, "label": label} for value, label in Prenda.ORIGENES],
         "requiresOrigen": {
-            cat: {
-                brand.casefold(): requiere_origen(cat, brand)
-                for brand in BRANDS
-            }
+            cat: requiere_origen(cat, "")
             for cat, _label in Prenda.CATEGORIAS
         },
         "allColors": COLORES_GENERALES,
@@ -121,6 +118,7 @@ def _prenda_form_context(form, *, titulo, subtitulo, accion_label, cancel_url, s
         "codigo_preview": codigo_preview,
         "prenda": prenda,
         "prenda_lookups": _prenda_lookups(),
+        "corbata_value": Prenda.C_CORBATA,
     }
 
 
@@ -297,7 +295,7 @@ def buscar_prenda(request):
                 qs = qs.filter(marca=marca)
             if talle:
                 qs = qs.filter(talle=talle)
-            if marca.casefold() == "aires modernos" and origen:
+            if origen:
                 qs = qs.filter(origen=origen)
             prendas = list(qs.order_by("categoria", "-codigo"))
             _ocupar_prendas_con_alquiler(prendas)
@@ -306,5 +304,4 @@ def buscar_prenda(request):
         "form": form,
         "prendas": prendas,
         "buscado": buscado,
-        "show_origen": (form["marca"].value() or "").strip().casefold() == "aires modernos",
     })

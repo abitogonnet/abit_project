@@ -5,7 +5,7 @@
     <div>
       <p class="ab-kicker">Busqueda</p>
       <h1 class="ab-title">Buscar prenda</h1>
-      <p class="ab-sub">Filtra por marca y talle. Si eliges Aires Modernos, tambien puedes distinguir nacional o importado.</p>
+      <p class="ab-sub">Filtra por marca, talle y origen para encontrar rapido la prenda.</p>
     </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
@@ -24,7 +24,7 @@
             <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
             {{ form.talle }}
           </div>
-          <div class="col-2 ab-field" id="buscar-origen-wrap" {% if not show_origen %}hidden{% endif %}>
+          <div class="col-2 ab-field">
             <label class="ab-lab" for="{{ form.origen.id_for_label }}">Origen</label>
             {{ form.origen }}
           </div>
@@ -84,7 +84,7 @@
               {% endfor %}
             </div>
           {% else %}
-            <div class="ab-empty">No hay prendas con esa combinacion de marca y talle.</div>
+            <div class="ab-empty">No hay prendas con esos filtros.</div>
           {% endif %}
         </div>
       </div>
@@ -95,24 +95,4 @@
     {% endif %}
   </div>
 </section>
-<script>
-  (function () {
-    const marca = document.getElementById("id_marca");
-    const origen = document.getElementById("id_origen");
-    const origenWrap = document.getElementById("buscar-origen-wrap");
-
-    if (!marca || !origen || !origenWrap) return;
-
-    function syncOrigen() {
-      const showOrigen = (marca.value || "").trim().toLowerCase() === "aires modernos";
-      origenWrap.hidden = !showOrigen;
-      if (!showOrigen) {
-        origen.value = "";
-      }
-    }
-
-    syncOrigen();
-    marca.addEventListener("change", syncOrigen);
-  })();
-</script>
 {% endblock %}

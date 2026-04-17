@@ -10,12 +10,12 @@ from .models import Prenda
 
 
 class PrendaFormTests(TestCase):
-    def test_requires_origen_for_aires_modernos_saco(self):
+    def test_requires_origen_for_cualquier_saco(self):
         form = PrendaForm(data={
             "categoria": Prenda.C_SACO,
-            "marca": "Aires Modernos",
+            "marca": "Boiler",
             "color": "Negro",
-            "talle": "22",
+            "talle": "4",
             "origen": "",
             "notas": "",
         })
@@ -23,9 +23,21 @@ class PrendaFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("origen", form.errors)
 
+    def test_corbata_admite_color_libre(self):
+        form = PrendaForm(data={
+            "categoria": Prenda.C_CORBATA,
+            "marca": "Boiler",
+            "color": "Azul con flores bordadas",
+            "talle": "Adulto",
+            "origen": "",
+            "notas": "",
+        })
+
+        self.assertTrue(form.is_valid())
+
 
 class PrendaViewsTests(TestCase):
-    def test_editar_prenda_actualiza_datos_y_limpia_origen(self):
+    def test_editar_prenda_actualiza_datos_y_mantiene_origen_requerido(self):
         prenda = Prenda.objects.create(
             codigo="SA-001",
             categoria=Prenda.C_SACO,
@@ -40,7 +52,7 @@ class PrendaViewsTests(TestCase):
             "marca": "Boiler",
             "color": "Azul oscuro",
             "talle": "4",
-            "origen": "",
+            "origen": Prenda.O_IMP,
             "notas": "Corregida",
         }, follow=True)
 
@@ -49,7 +61,7 @@ class PrendaViewsTests(TestCase):
         self.assertEqual(prenda.marca, "Boiler")
         self.assertEqual(prenda.color, "Azul oscuro")
         self.assertEqual(prenda.talle, "4")
-        self.assertEqual(prenda.origen, "")
+        self.assertEqual(prenda.origen, Prenda.O_IMP)
 
     def test_buscar_prenda_devuelve_codigos_por_marca_y_talle(self):
         match = Prenda.objects.create(
@@ -116,27 +128,27 @@ class PrendaViewsTests(TestCase):
         self.assertContains(response, "20/04/2026")
         self.assertContains(response, "25/04/2026")
 
-    def test_buscar_prenda_filtra_aires_modernos_por_origen(self):
+    def test_buscar_prenda_filtra_por_origen_sin_importar_la_marca(self):
         importado = Prenda.objects.create(
             codigo="SA-090",
             categoria=Prenda.C_SACO,
-            marca="Aires Modernos",
+            marca="Boiler",
             color="Negro",
-            talle="22",
+            talle="4",
             origen=Prenda.O_IMP,
         )
         Prenda.objects.create(
             codigo="SA-091",
             categoria=Prenda.C_SACO,
-            marca="Aires Modernos",
+            marca="Boiler",
             color="Negro",
-            talle="22",
+            talle="4",
             origen=Prenda.O_NAC,
         )
 
         response = self.client.get(reverse("prendas:buscar_prenda"), {
-            "marca": "Aires Modernos",
-            "talle": "22",
+            "marca": "Boiler",
+            "talle": "4",
             "origen": Prenda.O_IMP,
         })
 

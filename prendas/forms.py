@@ -125,13 +125,13 @@ def talle_options_for(categoria: str, marca: str):
 
 
 def requiere_origen(categoria: str, marca: str) -> bool:
-    return categoria in {Prenda.C_SACO, Prenda.C_PANTALON} and _norm(marca).casefold() == "aires modernos"
+    return categoria in {Prenda.C_SACO, Prenda.C_PANTALON}
 
 
 class PrendaForm(forms.ModelForm):
     categoria = forms.ChoiceField(required=True)
     marca = forms.ChoiceField(required=False)
-    color = forms.ChoiceField(required=False)
+    color = forms.CharField(required=False)
     talle = forms.ChoiceField(required=False)
     origen = forms.ChoiceField(required=False)
     notas = forms.CharField(required=False)
@@ -142,7 +142,15 @@ class PrendaForm(forms.ModelForm):
         widgets = {
             "categoria": forms.Select(attrs={"class": "ab-sel", "id": "id_categoria"}),
             "marca": forms.Select(attrs={"class": "ab-sel", "id": "id_marca"}),
-            "color": forms.Select(attrs={"class": "ab-sel", "id": "id_color"}),
+            "color": forms.TextInput(
+                attrs={
+                    "class": "ab-inp",
+                    "id": "id_color",
+                    "list": "id_color_options",
+                    "placeholder": "Elegir o escribir color",
+                    "autocomplete": "off",
+                }
+            ),
             "talle": forms.Select(attrs={"class": "ab-sel", "id": "id_talle"}),
             "origen": forms.Select(attrs={"class": "ab-sel", "id": "id_origen"}),
             "notas": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Opcional"}),
@@ -159,10 +167,11 @@ class PrendaForm(forms.ModelForm):
 
         self.fields["categoria"].choices = [("", "Elegir categoria")] + list(Prenda.CATEGORIAS)
         self.fields["marca"].choices = _choices(BRANDS, "Elegir marca", current=current_marca)
-        self.fields["color"].choices = _choices(
-            color_options_for(current_categoria),
-            "Elegir color",
-            current=current_color,
+        self.fields["color"].initial = current_color
+        self.fields["color"].widget.attrs["placeholder"] = (
+            "Ej: Azul oscuro con rayas bordo"
+            if current_categoria == Prenda.C_CORBATA
+            else "Elegir o escribir color"
         )
         self.fields["talle"].choices = _choices(
             talle_options_for(current_categoria, current_marca),
@@ -198,9 +207,18 @@ class PrendaForm(forms.ModelForm):
         talle = _norm(cleaned.get("talle", ""))
         origen = _norm(cleaned.get("origen", ""))
 
-        if cat in {Prenda.C_MONO, Prenda.C_CORBATA}:
+        if cat == Prenda.C_MONO:
+            if color and color not in COLORES_GENERALES:
+                self.add_error("color", "Para mono, elegi un color del listado.")
             if talle not in TAM_NINO_ADULTO:
                 self.add_error("talle", "Para mono/corbata, elegi Niño o Adulto.")
+            cleaned["origen"] = ""
+            return cleaned
+
+        if cat == Prenda.C_CORBATA:
+            if talle not in TAM_NINO_ADULTO:
+                self.add_error("talle", "Para mono/corbata, elegi Niño o Adulto.")
+            cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_CINTURON:
@@ -208,6 +226,7 @@ class PrendaForm(forms.ModelForm):
                 self.add_error("color", "Para cinturon, elegi Negro o Marron.")
             if talle not in TAM_NINO_ADULTO:
                 self.add_error("talle", "Para cinturon, elegi Niño o Adulto.")
+            cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_ZAPATOS:
@@ -215,6 +234,7 @@ class PrendaForm(forms.ModelForm):
                 self.add_error("color", "Para zapatos, elegi Negro o Marron.")
             if talle not in ZAPATOS_NUM:
                 self.add_error("talle", "Para zapatos, elegi un talle entre 36 y 46.")
+            cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_PANTALON:
@@ -222,10 +242,8 @@ class PrendaForm(forms.ModelForm):
                 self.add_error("color", "Para pantalon, elegi un color del desplegable.")
             if talle not in PANTALON_NUM:
                 self.add_error("talle", "Para pantalon, elegi un talle entre 0 y 70.")
-            if requiere_origen(cat, marca) and origen not in dict(Prenda.ORIGENES):
-                self.add_error("origen", "Para Aires Modernos elegi si es nacional o importado.")
-            if not requiere_origen(cat, marca):
-                cleaned["origen"] = ""
+            if origen not in dict(Prenda.ORIGENES):
+                self.add_error("origen", "Para pantalon, elegi si es nacional o importado.")
             return cleaned
 
         if cat == Prenda.C_CHALECO:
@@ -241,10 +259,8 @@ class PrendaForm(forms.ModelForm):
                 self.add_error("color", "Para saco, elegi un color del desplegable.")
             if talle not in talle_options_for(cat, marca):
                 self.add_error("talle", "Para saco, elegi un talle valido del desplegable.")
-            if requiere_origen(cat, marca) and origen not in dict(Prenda.ORIGENES):
-                self.add_error("origen", "Para Aires Modernos elegi si es nacional o importado.")
-            if not requiere_origen(cat, marca):
-                cleaned["origen"] = ""
+            if origen not in dict(Prenda.ORIGENES):
+                self.add_error("origen", "Para saco, elegi si es nacional o importado.")
             return cleaned
 
         if cat == Prenda.C_CAMISA:
@@ -277,10 +293,3 @@ class BuscarPrendaForm(forms.Form):
 
     def _bound(self, name: str) -> str:
         return _norm(self.data.get(name, "")) if self.is_bound else ""
-
-    def clean(self):
-        cleaned = super().clean()
-        marca = _norm(cleaned.get("marca", ""))
-        if marca.casefold() != "aires modernos":
-            cleaned["origen"] = ""
-        return cleaned

@@ -32,8 +32,8 @@
             </div>
           </div>
           <p class="ab-note" style="max-width: 440px;">
-            El formulario se acomoda segun la categoria y la marca. Si eliges Aires Modernos en saco o pantalon,
-            se habilita el desplegable para indicar si la prenda es nacional o importada.
+            El formulario se acomoda segun la categoria y la marca. En sacos y pantalones debes indicar si la
+            prenda es nacional o importada, y en corbatas puedes escribir el color con mas detalle.
           </p>
         </div>
       </div>
@@ -68,6 +68,7 @@
         <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.color.id_for_label }}">Color</label>
           {{ form.color }}
+          <datalist id="id_color_options"></datalist>
           {% if form.color.errors %}<div class="ab-field-errors">{{ form.color.errors }}</div>{% endif %}
         </div>
 
@@ -111,6 +112,7 @@
     const categoria = document.getElementById("id_categoria");
     const marca = document.getElementById("id_marca");
     const color = document.getElementById("id_color");
+    const colorOptions = document.getElementById("id_color_options");
     const talle = document.getElementById("id_talle");
     const origen = document.getElementById("id_origen");
     const origenField = document.getElementById("origenField");
@@ -159,24 +161,47 @@
       return ((marca && marca.value) || "").toLowerCase();
     }
 
+    function populateDatalist(listNode, options) {
+      if (!listNode) return;
+      listNode.innerHTML = "";
+
+      const seen = new Set();
+      (options || []).forEach(function (value) {
+        if (!value || seen.has(value)) return;
+        seen.add(value);
+        const option = document.createElement("option");
+        option.value = value;
+        listNode.appendChild(option);
+      });
+    }
+
+    function colorPlaceholder(cat) {
+      if (cat === "{{ corbata_value }}") {
+        return "Ej: Azul oscuro con rayas bordo";
+      }
+      return "Elegir o escribir color";
+    }
+
     function talleOptions(cat, brandKey) {
       const catData = lookups.tallesByCategory[cat] || {};
       return catData[brandKey] || catData["__default"] || [];
     }
 
-    function needsOrigin(cat, brandKey) {
-      const catData = lookups.requiresOrigen[cat] || {};
-      return !!catData[brandKey];
+    function needsOrigin(cat) {
+      return !!lookups.requiresOrigen[cat];
     }
 
     function syncForm() {
       const cat = currentCategory();
       const brandKey = currentBrandKey();
 
-      populate(color, lookups.colorsByCategory[cat] || [], "Elegir color", color.dataset.current || color.value);
+      populateDatalist(colorOptions, lookups.colorsByCategory[cat] || []);
+      if (color) {
+        color.placeholder = colorPlaceholder(cat);
+      }
       populate(talle, talleOptions(cat, brandKey), "Elegir talle", talle.dataset.current || talle.value);
 
-      if (needsOrigin(cat, brandKey)) {
+      if (needsOrigin(cat)) {
         origenField.style.display = "";
         populate(origen, lookups.origenes || [], "Elegir origen", origen.dataset.current || origen.value);
         origen.disabled = false;
@@ -187,17 +212,15 @@
         origen.value = "";
       }
 
-      color.dataset.current = "";
       talle.dataset.current = "";
       origen.dataset.current = "";
     }
 
-    if (color) color.dataset.current = color.value;
     if (talle) talle.dataset.current = talle.value;
     if (origen) origen.dataset.current = origen.value;
 
     if (categoria) categoria.addEventListener("change", function () {
-      color.dataset.current = "";
+      if (color) color.value = "";
       talle.dataset.current = "";
       origen.dataset.current = "";
       syncForm();
@@ -205,7 +228,6 @@
 
     if (marca) marca.addEventListener("change", function () {
       talle.dataset.current = "";
-      origen.dataset.current = "";
       syncForm();
     });
 
