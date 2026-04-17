@@ -5,7 +5,7 @@
     <div>
       <p class="ab-kicker">Busqueda</p>
       <h1 class="ab-title">Buscar prenda</h1>
-      <p class="ab-sub">Filtra por marca, talle y origen para encontrar rapido la prenda.</p>
+      <p class="ab-sub">Filtra por prenda, marca, talle y origen para encontrar rapido la prenda.</p>
     </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
@@ -16,11 +16,15 @@
     <form method="get" class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-grid">
-          <div class="col-4 ab-field">
+          <div class="col-3 ab-field">
+            <label class="ab-lab" for="{{ form.categoria.id_for_label }}">Prenda</label>
+            {{ form.categoria }}
+          </div>
+          <div class="col-3 ab-field">
             <label class="ab-lab" for="{{ form.marca.id_for_label }}">Marca</label>
             {{ form.marca }}
           </div>
-          <div class="col-4 ab-field">
+          <div class="col-2 ab-field">
             <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
             {{ form.talle }}
           </div>
@@ -90,7 +94,7 @@
       </div>
     {% else %}
       <div class="ab-form-note">
-        Puedes buscar con una sola opcion o combinar marca, talle y origen para encontrar rapido la prenda.
+        Puedes buscar con una sola opcion o combinar prenda, marca, talle y origen para encontrar rapido la prenda.
       </div>
     {% endif %}
   </div>

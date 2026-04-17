@@ -284,13 +284,16 @@ def buscar_prenda(request):
     buscado = False
 
     if form.is_bound and form.is_valid():
+        categoria = form.cleaned_data.get("categoria") or ""
         marca = form.cleaned_data.get("marca") or ""
         talle = form.cleaned_data.get("talle") or ""
         origen = form.cleaned_data.get("origen") or ""
-        buscado = bool(marca or talle or origen)
+        buscado = bool(categoria or marca or talle or origen)
 
         if buscado:
             qs = Prenda.objects.all()
+            if categoria:
+                qs = qs.filter(categoria=categoria)
             if marca:
                 qs = qs.filter(marca=marca)
             if talle:

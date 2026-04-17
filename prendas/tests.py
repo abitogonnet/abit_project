@@ -96,6 +96,32 @@ class PrendaViewsTests(TestCase):
         self.assertNotContains(response, "SA-020")
         self.assertNotContains(response, "CA-030")
 
+    def test_buscar_prenda_filtra_por_categoria(self):
+        match = Prenda.objects.create(
+            codigo="SA-060",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+        )
+        Prenda.objects.create(
+            codigo="PA-060",
+            categoria=Prenda.C_PANTALON,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+        )
+
+        response = self.client.get(reverse("prendas:buscar_prenda"), {
+            "categoria": Prenda.C_SACO,
+            "marca": "Boiler",
+            "talle": "4",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, match.codigo)
+        self.assertNotContains(response, "PA-060")
+
     def test_buscar_prenda_muestra_fechas_si_esta_reservada(self):
         match = Prenda.objects.create(
             codigo="PA-011",
