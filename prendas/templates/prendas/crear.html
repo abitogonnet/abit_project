@@ -33,7 +33,7 @@
           </div>
           <p class="ab-note" style="max-width: 440px;">
             El formulario se acomoda segun la categoria y la marca. En sacos y pantalones debes indicar si la
-            prenda es nacional o importada, y en corbatas puedes escribir el color con mas detalle.
+            prenda es nacional o importada, y el color se escribe libremente en todas las prendas.
           </p>
         </div>
       </div>
@@ -68,7 +68,6 @@
         <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.color.id_for_label }}">Color</label>
           {{ form.color }}
-          <datalist id="id_color_options"></datalist>
           {% if form.color.errors %}<div class="ab-field-errors">{{ form.color.errors }}</div>{% endif %}
         </div>
 
@@ -111,8 +110,6 @@
     const lookups = JSON.parse(lookupNode.textContent);
     const categoria = document.getElementById("id_categoria");
     const marca = document.getElementById("id_marca");
-    const color = document.getElementById("id_color");
-    const colorOptions = document.getElementById("id_color_options");
     const talle = document.getElementById("id_talle");
     const origen = document.getElementById("id_origen");
     const origenField = document.getElementById("origenField");
@@ -161,27 +158,6 @@
       return ((marca && marca.value) || "").toLowerCase();
     }
 
-    function populateDatalist(listNode, options) {
-      if (!listNode) return;
-      listNode.innerHTML = "";
-
-      const seen = new Set();
-      (options || []).forEach(function (value) {
-        if (!value || seen.has(value)) return;
-        seen.add(value);
-        const option = document.createElement("option");
-        option.value = value;
-        listNode.appendChild(option);
-      });
-    }
-
-    function colorPlaceholder(cat) {
-      if (cat === "{{ corbata_value }}") {
-        return "Ej: Azul oscuro con rayas bordo";
-      }
-      return "Elegir o escribir color";
-    }
-
     function talleOptions(cat, brandKey) {
       const catData = lookups.tallesByCategory[cat] || {};
       return catData[brandKey] || catData["__default"] || [];
@@ -195,10 +171,6 @@
       const cat = currentCategory();
       const brandKey = currentBrandKey();
 
-      populateDatalist(colorOptions, lookups.colorsByCategory[cat] || []);
-      if (color) {
-        color.placeholder = colorPlaceholder(cat);
-      }
       populate(talle, talleOptions(cat, brandKey), "Elegir talle", talle.dataset.current || talle.value);
 
       if (needsOrigin(cat)) {
@@ -220,7 +192,6 @@
     if (origen) origen.dataset.current = origen.value;
 
     if (categoria) categoria.addEventListener("change", function () {
-      if (color) color.value = "";
       talle.dataset.current = "";
       origen.dataset.current = "";
       syncForm();

@@ -35,6 +35,18 @@ class PrendaFormTests(TestCase):
 
         self.assertTrue(form.is_valid())
 
+    def test_saco_admite_color_libre(self):
+        form = PrendaForm(data={
+            "categoria": Prenda.C_SACO,
+            "marca": "Boiler",
+            "color": "Verde oliva texturado",
+            "talle": "4",
+            "origen": Prenda.O_NAC,
+            "notas": "",
+        })
+
+        self.assertTrue(form.is_valid())
+
 
 class PrendaViewsTests(TestCase):
     def test_editar_prenda_actualiza_datos_y_mantiene_origen_requerido(self):

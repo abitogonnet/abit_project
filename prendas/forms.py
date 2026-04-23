@@ -146,8 +146,7 @@ class PrendaForm(forms.ModelForm):
                 attrs={
                     "class": "ab-inp",
                     "id": "id_color",
-                    "list": "id_color_options",
-                    "placeholder": "Elegir o escribir color",
+                    "placeholder": "Escribir color",
                     "autocomplete": "off",
                 }
             ),
@@ -168,11 +167,7 @@ class PrendaForm(forms.ModelForm):
         self.fields["categoria"].choices = [("", "Elegir categoria")] + list(Prenda.CATEGORIAS)
         self.fields["marca"].choices = _choices(BRANDS, "Elegir marca", current=current_marca)
         self.fields["color"].initial = current_color
-        self.fields["color"].widget.attrs["placeholder"] = (
-            "Ej: Azul oscuro con rayas bordo"
-            if current_categoria == Prenda.C_CORBATA
-            else "Elegir o escribir color"
-        )
+        self.fields["color"].widget.attrs["placeholder"] = "Escribir color"
         self.fields["talle"].choices = _choices(
             talle_options_for(current_categoria, current_marca),
             "Elegir talle",
@@ -203,13 +198,10 @@ class PrendaForm(forms.ModelForm):
         cleaned = super().clean()
         cat = cleaned.get("categoria")
         marca = cleaned.get("marca", "")
-        color = _norm(cleaned.get("color", ""))
         talle = _norm(cleaned.get("talle", ""))
         origen = _norm(cleaned.get("origen", ""))
 
         if cat == Prenda.C_MONO:
-            if color and color not in COLORES_GENERALES:
-                self.add_error("color", "Para mono, elegi un color del listado.")
             if talle not in TAM_NINO_ADULTO:
                 self.add_error("talle", "Para mono/corbata, elegi Niño o Adulto.")
             cleaned["origen"] = ""
@@ -222,24 +214,18 @@ class PrendaForm(forms.ModelForm):
             return cleaned
 
         if cat == Prenda.C_CINTURON:
-            if color not in COLORES_ZAPATOS:
-                self.add_error("color", "Para cinturon, elegi Negro o Marron.")
             if talle not in TAM_NINO_ADULTO:
                 self.add_error("talle", "Para cinturon, elegi Niño o Adulto.")
             cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_ZAPATOS:
-            if color not in COLORES_ZAPATOS:
-                self.add_error("color", "Para zapatos, elegi Negro o Marron.")
             if talle not in ZAPATOS_NUM:
                 self.add_error("talle", "Para zapatos, elegi un talle entre 36 y 46.")
             cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_PANTALON:
-            if color not in COLORES_TRAJE:
-                self.add_error("color", "Para pantalon, elegi un color del desplegable.")
             if talle not in PANTALON_NUM:
                 self.add_error("talle", "Para pantalon, elegi un talle entre 0 y 70.")
             if origen not in dict(Prenda.ORIGENES):
@@ -247,16 +233,12 @@ class PrendaForm(forms.ModelForm):
             return cleaned
 
         if cat == Prenda.C_CHALECO:
-            if color not in COLORES_CHALECO:
-                self.add_error("color", "Para chaleco, elegi Gris, Negro, Azul oscuro o Azul francia.")
             if talle not in talle_options_for(cat, marca):
                 self.add_error("talle", "Para chaleco, elegi un talle valido del desplegable.")
             cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_SACO:
-            if color not in COLORES_TRAJE:
-                self.add_error("color", "Para saco, elegi un color del desplegable.")
             if talle not in talle_options_for(cat, marca):
                 self.add_error("talle", "Para saco, elegi un talle valido del desplegable.")
             if origen not in dict(Prenda.ORIGENES):
@@ -264,8 +246,6 @@ class PrendaForm(forms.ModelForm):
             return cleaned
 
         if cat == Prenda.C_CAMISA:
-            if color not in COLORES_TRAJE:
-                self.add_error("color", "Para camisa, elegi un color del desplegable.")
             if talle not in GENERIC_TALLES:
                 self.add_error("talle", "Para camisa, elegi un talle valido del desplegable.")
             cleaned["origen"] = ""
