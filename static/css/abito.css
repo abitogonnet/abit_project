@@ -731,6 +731,10 @@ textarea.ab-inp:focus {
   gap: 10px;
 }
 
+.ab-edit-form-note {
+  margin-bottom: 4px;
+}
+
 .ab-edit-block-title {
   font-size: 0.92rem;
   font-weight: 800;
@@ -777,6 +781,37 @@ textarea.ab-inp:focus {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.ab-edit-person-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ab-edit-person-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.ab-edit-code-cell {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.ab-edit-prefix {
+  justify-content: center;
+  min-width: 0;
+}
+
+.ab-edit-garment-table {
+  min-width: 720px;
 }
 
 .ab-edit-side {
@@ -976,7 +1011,8 @@ textarea.ab-inp:focus {
   }
 
   .ab-detail-actions,
-  .ab-edit-layout {
+  .ab-edit-layout,
+  .ab-edit-person-grid {
     grid-template-columns: 1fr;
   }
 

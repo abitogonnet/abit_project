@@ -20,6 +20,16 @@ CATS = [
 ]
 
 
+PERSONAS_FORM = ["p1", "p2"]
+CATEGORIA_POR_SHORT = dict(CATS)
+SHORT_POR_CATEGORIA = {categoria: short for short, categoria in CATS}
+CATEGORIA_LABELS = dict(Prenda.CATEGORIAS)
+RUEDO_FIELDS = {
+    "pantalon": ("ruedo_pantalon_valor", "ruedo_pantalon_tipo"),
+    "saco": ("ruedo_saco_valor", "ruedo_saco_tipo"),
+}
+
+
 CODIGO_PREFIJOS = {
     Prenda.C_SACO: "SA",
     Prenda.C_PANTALON: "PA",
@@ -60,6 +70,195 @@ def _buscar_conflicto(prenda: Prenda, fecha_entrega, fecha_devolucion, exclude_a
         conflictos = conflictos.exclude(alquiler_id=exclude_alquiler_id)
 
     return conflictos.first()
+
+
+def _numero_codigo(codigo: str, prefijo: str) -> str:
+    raw = (codigo or "").strip().upper()
+    prefijo_completo = f"{(prefijo or '').upper()}-"
+    if raw.startswith(prefijo_completo):
+        return raw[len(prefijo_completo):]
+    if "-" in raw:
+        return raw.split("-", 1)[1]
+    return raw
+
+
+def _items_por_slot(instance: Alquiler):
+    if not instance or not getattr(instance, "pk", None):
+        return {}
+
+    items = {}
+    for item in instance.items.select_related("prenda"):
+        short = SHORT_POR_CATEGORIA.get(item.prenda.categoria)
+        persona = f"p{item.persona_num}"
+        if not short or (persona, short) in items:
+            continue
+        items[(persona, short)] = item
+    return items
+
+
+def _configurar_campos_prenda(form, disponibles, initial_items=None):
+    initial_items = initial_items or {}
+
+    for who in PERSONAS_FORM:
+        for short, categoria in CATS:
+            field_name = f"{who}_{short}"
+            numero_field = f"{field_name}_numero"
+            prefijo = CODIGO_PREFIJOS.get(categoria, "")
+
+            if field_name not in form.fields:
+                form.fields[field_name] = forms.ChoiceField(required=False)
+
+            form.fields[numero_field] = forms.CharField(
+                required=False,
+                widget=forms.TextInput(
+                    attrs={
+                        "class": "ab-inp js-code-filter",
+                        "autocomplete": "off",
+                        "inputmode": "numeric",
+                        "maxlength": "4",
+                        "placeholder": "Numero",
+                        "data-prefix": prefijo,
+                        "data-target-select": f"id_{form.add_prefix(field_name)}",
+                    }
+                ),
+            )
+
+            prendas_categoria = list(disponibles.get(short, []))
+            current_item = initial_items.get((who, short))
+            if current_item and all(prenda.id != current_item.prenda_id for prenda in prendas_categoria):
+                prendas_categoria = [current_item.prenda] + prendas_categoria
+
+            form.fields[field_name].choices = _prenda_choices(prendas_categoria)
+            form.fields[field_name].widget.attrs.update({
+                "class": "ab-sel js-code-select",
+                "data-prefix": prefijo,
+            })
+
+            if current_item:
+                form.initial.setdefault(field_name, current_item.prenda.codigo)
+                form.initial.setdefault(numero_field, _numero_codigo(current_item.prenda.codigo, prefijo))
+
+    for who in PERSONAS_FORM:
+        for short, (valor_suffix, tipo_suffix) in RUEDO_FIELDS.items():
+            valor_name = f"{who}_{valor_suffix}"
+            tipo_name = f"{who}_{tipo_suffix}"
+
+            if valor_name not in form.fields:
+                form.fields[valor_name] = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
+            if tipo_name not in form.fields:
+                form.fields[tipo_name] = forms.ChoiceField(
+                    required=False,
+                    choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS,
+                )
+
+            form.fields[valor_name].widget = forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01"})
+            form.fields[tipo_name].widget.attrs.update({"class": "ab-sel"})
+
+            current_item = initial_items.get((who, short))
+            if current_item:
+                if current_item.ruedo_valor is not None:
+                    form.initial.setdefault(valor_name, current_item.ruedo_valor)
+                if current_item.ruedo_tipo:
+                    form.initial.setdefault(tipo_name, current_item.ruedo_tipo)
+
+
+def _rows_prendas(form, who: str):
+    rows = []
+    for short, categoria in CATS:
+        ruedo_valor = None
+        ruedo_tipo = None
+        if short in RUEDO_FIELDS:
+            valor_suffix, tipo_suffix = RUEDO_FIELDS[short]
+            ruedo_valor = form[f"{who}_{valor_suffix}"]
+            ruedo_tipo = form[f"{who}_{tipo_suffix}"]
+
+        rows.append({
+            "label": CATEGORIA_LABELS.get(categoria, short.title()),
+            "prefix": CODIGO_PREFIJOS.get(categoria, ""),
+            "numero": form[f"{who}_{short}_numero"],
+            "select": form[f"{who}_{short}"],
+            "ruedo_valor": ruedo_valor,
+            "ruedo_tipo": ruedo_tipo,
+        })
+    return rows
+
+
+def _validar_prendas(
+    form,
+    cleaned,
+    fecha_entrega,
+    fecha_devolucion,
+    *,
+    exclude_alquiler_id=None,
+    allow_prenda_ids=None,
+):
+    usados = set()
+    selected = {"p1": {}, "p2": {}}
+    allow_prenda_ids = set(allow_prenda_ids or [])
+
+    def validar_code(code: str, categoria: str, fieldname: str):
+        codigo = (code or "").strip()
+        if not codigo:
+            return None
+
+        try:
+            prenda = Prenda.objects.get(codigo=codigo)
+        except Prenda.DoesNotExist:
+            form.add_error(fieldname, "Codigo inexistente.")
+            return None
+
+        if prenda.categoria != categoria:
+            form.add_error(fieldname, "Ese codigo no corresponde a esa categoria.")
+            return None
+
+        if prenda.estado == Prenda.E_DAN and prenda.id not in allow_prenda_ids:
+            form.add_error(fieldname, "Esa prenda esta marcada como danada.")
+            return None
+
+        conflicto = _buscar_conflicto(
+            prenda,
+            fecha_entrega,
+            fecha_devolucion,
+            exclude_alquiler_id=exclude_alquiler_id,
+        )
+        if conflicto:
+            form.add_error(
+                fieldname,
+                "Esa prenda ya esta ocupada del "
+                f"{conflicto.alquiler.fecha_entrega.strftime('%d/%m/%Y')} al "
+                f"{conflicto.alquiler.fecha_devolucion.strftime('%d/%m/%Y')}.",
+            )
+            return None
+
+        if prenda.codigo in usados:
+            form.add_error(fieldname, "Repetiste la misma prenda.")
+            return None
+
+        usados.add(prenda.codigo)
+        cleaned[fieldname] = prenda.codigo
+        return prenda
+
+    for who in PERSONAS_FORM:
+        for short, categoria in CATS:
+            field_name = f"{who}_{short}"
+            prenda = validar_code(cleaned.get(field_name), categoria, field_name)
+            if not prenda:
+                continue
+
+            slot = {
+                "prenda": prenda,
+                "ruedo_valor": None,
+                "ruedo_tipo": "",
+            }
+            if short in RUEDO_FIELDS:
+                valor_suffix, tipo_suffix = RUEDO_FIELDS[short]
+                slot["ruedo_valor"] = cleaned.get(f"{who}_{valor_suffix}")
+                slot["ruedo_tipo"] = (cleaned.get(f"{who}_{tipo_suffix}") or "").strip()
+
+            selected[who][short] = slot
+
+    cleaned["_selected_prendas"] = selected
+    return selected
 
 
 class AlquilerForm(forms.ModelForm):
@@ -125,48 +324,7 @@ class AlquilerForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
-
-        for who in ["p1", "p2"]:
-            for short, categoria in CATS:
-                fname = f"{who}_{short}"
-                numero_fname = f"{fname}_numero"
-                prefijo = CODIGO_PREFIJOS.get(categoria, "")
-
-                self.fields[numero_fname] = forms.CharField(
-                    required=False,
-                    widget=forms.TextInput(
-                        attrs={
-                            "class": "ab-inp js-code-filter",
-                            "autocomplete": "off",
-                            "inputmode": "numeric",
-                            "maxlength": "4",
-                            "placeholder": "Numero",
-                            "data-prefix": prefijo,
-                            "data-target-select": f"id_{fname}",
-                        }
-                    ),
-                )
-                self.fields[fname].choices = _prenda_choices(disponibles.get(short, []))
-                self.fields[fname].widget.attrs.update({
-                    "class": "ab-sel js-code-select",
-                    "data-prefix": prefijo,
-                })
-
-        for name in [
-            "p1_ruedo_pantalon_valor",
-            "p1_ruedo_saco_valor",
-            "p2_ruedo_pantalon_valor",
-            "p2_ruedo_saco_valor",
-        ]:
-            self.fields[name].widget = forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01"})
-
-        for name in [
-            "p1_ruedo_pantalon_tipo",
-            "p1_ruedo_saco_tipo",
-            "p2_ruedo_pantalon_tipo",
-            "p2_ruedo_saco_tipo",
-        ]:
-            self.fields[name].widget.attrs.update({"class": "ab-sel"})
+        _configurar_campos_prenda(self, disponibles)
 
     def clean(self):
         cleaned = super().clean()
@@ -182,54 +340,10 @@ class AlquilerForm(forms.ModelForm):
         if not any_p1 and not any_p2:
             raise ValidationError("Tienes que elegir al menos una prenda.")
 
-        usados = set()
+        selected = _validar_prendas(self, cleaned, fecha_entrega, fecha_devolucion)
 
-        def validar_code(code: str, categoria: str, fieldname: str):
-            codigo = (code or "").strip()
-            if not codigo:
-                return None
-
-            try:
-                prenda = Prenda.objects.get(codigo=codigo)
-            except Prenda.DoesNotExist:
-                self.add_error(fieldname, "Codigo inexistente.")
-                return None
-
-            if prenda.categoria != categoria:
-                self.add_error(fieldname, "Ese codigo no corresponde a esa categoria.")
-                return None
-
-            if prenda.estado == Prenda.E_DAN:
-                self.add_error(fieldname, "Esa prenda esta marcada como danada.")
-                return None
-
-            conflicto = _buscar_conflicto(prenda, fecha_entrega, fecha_devolucion)
-            if conflicto:
-                self.add_error(
-                    fieldname,
-                    "Esa prenda ya esta ocupada del "
-                    f"{conflicto.alquiler.fecha_entrega.strftime('%d/%m/%Y')} al "
-                    f"{conflicto.alquiler.fecha_devolucion.strftime('%d/%m/%Y')}."
-                )
-                return None
-
-            if prenda.codigo in usados:
-                self.add_error(fieldname, "Repetiste la misma prenda.")
-                return None
-
-            usados.add(prenda.codigo)
-            cleaned[fieldname] = prenda.codigo
-            return prenda
-
-        selected = {"p1": [], "p2": []}
-        for who in ["p1", "p2"]:
-            for short, categoria in CATS:
-                field_name = f"{who}_{short}"
-                prenda = validar_code(cleaned.get(field_name), categoria, field_name)
-                if prenda:
-                    selected[who].append(prenda)
-
-        cleaned["_selected_prendas"] = selected
+        if not selected["p1"] and not selected["p2"]:
+            raise ValidationError("Tienes que elegir al menos una prenda.")
 
         total = Decimal(cleaned.get("total_bruto") or 0)
         sena = Decimal(cleaned.get("sena") or 0)
@@ -267,6 +381,13 @@ class VerAlquileresFiltroForm(forms.Form):
 
 
 class AlquilerEdicionForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        disponibles = kwargs.pop("disponibles", None) or {}
+        super().__init__(*args, **kwargs)
+        _configurar_campos_prenda(self, disponibles, initial_items=_items_por_slot(self.instance))
+        self.persona1_prenda_rows = _rows_prendas(self, "p1")
+        self.persona2_prenda_rows = _rows_prendas(self, "p2")
+
     class Meta:
         model = Alquiler
         fields = [
@@ -319,26 +440,19 @@ class AlquilerEdicionForm(forms.ModelForm):
         if sena > 0 and not metodo_sena:
             self.add_error("metodo_sena", "Elige el metodo de pago de la sena.")
 
-        tiene_persona2 = self.instance.items.filter(persona_num=2).exists()
-        if tiene_persona2 and not (cleaned.get("persona2_nombre") or "").strip():
-            self.add_error("persona2_nombre", "Completa el nombre de la persona 2.")
+        selected = _validar_prendas(
+            self,
+            cleaned,
+            fecha_entrega,
+            fecha_devolucion,
+            exclude_alquiler_id=self.instance.id,
+            allow_prenda_ids=self.instance.items.values_list("prenda_id", flat=True),
+        )
+        if not selected["p1"] and not selected["p2"]:
+            raise ValidationError("Tienes que elegir al menos una prenda.")
 
-        if fecha_entrega and fecha_devolucion:
-            for item in self.instance.items.select_related("prenda"):
-                conflicto = _buscar_conflicto(
-                    item.prenda,
-                    fecha_entrega,
-                    fecha_devolucion,
-                    exclude_alquiler_id=self.instance.id,
-                )
-                if conflicto:
-                    self.add_error(
-                        "fecha_entrega",
-                        "La prenda "
-                        f"{item.prenda.codigo} ya esta ocupada del "
-                        f"{conflicto.alquiler.fecha_entrega.strftime('%d/%m/%Y')} al "
-                        f"{conflicto.alquiler.fecha_devolucion.strftime('%d/%m/%Y')}.",
-                    )
-                    break
+        any_p2 = any((cleaned.get(f"p2_{short}") or "").strip() for short, _ in CATS) or bool(selected["p2"])
+        if any_p2 and not (cleaned.get("persona2_nombre") or "").strip():
+            self.add_error("persona2_nombre", "Completa el nombre de la persona 2.")
 
         return cleaned

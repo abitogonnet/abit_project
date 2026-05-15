@@ -78,6 +78,121 @@
     </div>
 
     <div class="ab-edit-block">
+      <div class="ab-edit-block-title">Prendas y ruedos</div>
+      <div class="ab-form-note ab-edit-form-note">
+        Puedes cambiar cada prenda escribiendo el numero del codigo y luego eligiendo la opcion final. Los ruedos se guardan junto con el alquiler.
+      </div>
+
+      <div class="ab-edit-person-grid">
+        <section class="ab-edit-person-card">
+          <div class="ab-row" style="justify-content: space-between;">
+            <strong>Persona 1</strong>
+            <span class="ab-small">{{ alquiler.edit_form.persona1_nombre.value|default:"Sin nombre" }}</span>
+          </div>
+          <div class="ab-edit-table-wrap">
+            <table class="ab-edit-table ab-edit-garment-table">
+              <thead>
+                <tr>
+                  <th>Prenda</th>
+                  <th>Codigo</th>
+                  <th>Seleccion</th>
+                  <th>Ruedo</th>
+                  <th>Tipo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in alquiler.edit_form.persona1_prenda_rows %}
+                  <tr>
+                    <td><strong>{{ row.label }}</strong></td>
+                    <td>
+                      <div class="ab-edit-code-cell">
+                        <span class="ab-pill ab-edit-prefix">{{ row.prefix }}-</span>
+                        {{ row.numero }}
+                      </div>
+                    </td>
+                    <td>
+                      {{ row.select }}
+                      {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
+                    </td>
+                    <td>
+                      {% if row.ruedo_valor %}
+                        {{ row.ruedo_valor }}
+                        {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
+                      {% else %}
+                        <span class="ab-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if row.ruedo_tipo %}
+                        {{ row.ruedo_tipo }}
+                        {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
+                      {% else %}
+                        <span class="ab-muted">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="ab-edit-person-card">
+          <div class="ab-row" style="justify-content: space-between;">
+            <strong>Persona 2</strong>
+            <span class="ab-small">{{ alquiler.edit_form.persona2_nombre.value|default:"Opcional" }}</span>
+          </div>
+          <div class="ab-edit-table-wrap">
+            <table class="ab-edit-table ab-edit-garment-table">
+              <thead>
+                <tr>
+                  <th>Prenda</th>
+                  <th>Codigo</th>
+                  <th>Seleccion</th>
+                  <th>Ruedo</th>
+                  <th>Tipo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in alquiler.edit_form.persona2_prenda_rows %}
+                  <tr>
+                    <td><strong>{{ row.label }}</strong></td>
+                    <td>
+                      <div class="ab-edit-code-cell">
+                        <span class="ab-pill ab-edit-prefix">{{ row.prefix }}-</span>
+                        {{ row.numero }}
+                      </div>
+                    </td>
+                    <td>
+                      {{ row.select }}
+                      {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
+                    </td>
+                    <td>
+                      {% if row.ruedo_valor %}
+                        {{ row.ruedo_valor }}
+                        {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
+                      {% else %}
+                        <span class="ab-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if row.ruedo_tipo %}
+                        {{ row.ruedo_tipo }}
+                        {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
+                      {% else %}
+                        <span class="ab-muted">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="ab-edit-block">
       <div class="ab-edit-block-title">Pago</div>
       <div class="ab-edit-table-wrap">
         <table class="ab-edit-table">

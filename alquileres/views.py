@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from prendas.models import Prenda
 
-from .forms import AlquilerEdicionForm, AlquilerForm, VerAlquileresFiltroForm
+from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA, VerAlquileresFiltroForm
 from .models import Alquiler, AlquilerItem
 
 
@@ -81,12 +81,16 @@ def _adjuntar_detalle_alquiler(alquileres):
         alquiler.personas_resumen = ", ".join(persona["nombre"] for persona in personas)
 
 
-def _adjuntar_formularios_edicion(alquileres, form_por_alquiler_id=None):
+def _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=None):
     form_por_alquiler_id = form_por_alquiler_id or {}
     for alquiler in alquileres:
         alquiler.edit_form = form_por_alquiler_id.get(
             alquiler.id,
-            AlquilerEdicionForm(instance=alquiler, prefix=f"alq-edit-{alquiler.id}"),
+            AlquilerEdicionForm(
+                instance=alquiler,
+                prefix=f"alq-edit-{alquiler.id}",
+                disponibles=disponibles,
+            ),
         )
 
 
@@ -179,6 +183,83 @@ def _refresh_prendas_estado_por_ids(prenda_ids):
     _refresh_prendas_estado(prendas)
 
 
+def _crear_items_desde_seleccion(alquiler: Alquiler, selected_prendas):
+    touched_prendas = []
+    for who, prendas in (selected_prendas or {}).items():
+        persona_num = 1 if who == "p1" else 2
+        for data in prendas.values():
+            prenda = data["prenda"]
+            AlquilerItem.objects.create(
+                alquiler=alquiler,
+                persona_num=persona_num,
+                prenda=prenda,
+                ruedo_valor=data.get("ruedo_valor"),
+                ruedo_tipo=data.get("ruedo_tipo") or "",
+            )
+            touched_prendas.append(prenda)
+    return touched_prendas
+
+
+def _sync_items_alquiler(alquiler: Alquiler, selected_prendas):
+    existentes = {}
+    duplicados = []
+
+    for item in alquiler.items.select_related("prenda"):
+        short = SHORT_POR_CATEGORIA.get(item.prenda.categoria)
+        key = (item.persona_num, short)
+        if not short:
+            continue
+        if key in existentes:
+            duplicados.append(item)
+            continue
+        existentes[key] = item
+
+    touched_ids = set()
+    for who, prendas in (selected_prendas or {}).items():
+        persona_num = 1 if who == "p1" else 2
+        for short, data in prendas.items():
+            key = (persona_num, short)
+            prenda = data["prenda"]
+            ruedo_valor = data.get("ruedo_valor")
+            ruedo_tipo = data.get("ruedo_tipo") or ""
+            touched_ids.add(prenda.id)
+
+            item = existentes.pop(key, None)
+            if item:
+                changed_fields = []
+                if item.prenda_id != prenda.id:
+                    touched_ids.add(item.prenda_id)
+                    item.prenda = prenda
+                    changed_fields.append("prenda")
+                if item.ruedo_valor != ruedo_valor:
+                    item.ruedo_valor = ruedo_valor
+                    changed_fields.append("ruedo_valor")
+                if item.ruedo_tipo != ruedo_tipo:
+                    item.ruedo_tipo = ruedo_tipo
+                    changed_fields.append("ruedo_tipo")
+                if changed_fields:
+                    item.save(update_fields=changed_fields)
+                continue
+
+            AlquilerItem.objects.create(
+                alquiler=alquiler,
+                persona_num=persona_num,
+                prenda=prenda,
+                ruedo_valor=ruedo_valor,
+                ruedo_tipo=ruedo_tipo,
+            )
+
+    for item in existentes.values():
+        touched_ids.add(item.prenda_id)
+        item.delete()
+
+    for item in duplicados:
+        touched_ids.add(item.prenda_id)
+        item.delete()
+
+    return touched_ids
+
+
 def _disponibles_por_categoria():
     return {
         "saco": list(Prenda.objects.filter(categoria=Prenda.C_SACO).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
@@ -199,7 +280,7 @@ def crear(request):
     if request.method == "POST":
         form = AlquilerForm(request.POST, disponibles=disponibles)
         if form.is_valid():
-            selected = form.cleaned_data.get("_selected_prendas", {"p1": [], "p2": []})
+            selected = form.cleaned_data.get("_selected_prendas", {"p1": {}, "p2": {}})
             touched_prendas = []
 
             with transaction.atomic():
@@ -208,51 +289,7 @@ def crear(request):
                 alquiler.estado_alquiler = Alquiler.EST_RESERVADO
                 alquiler.estado_saldo = Alquiler.SAL_PEND
                 alquiler.save()
-
-                p1_rp_val = form.cleaned_data.get("p1_ruedo_pantalon_valor")
-                p1_rp_tipo = form.cleaned_data.get("p1_ruedo_pantalon_tipo") or ""
-                p1_rs_val = form.cleaned_data.get("p1_ruedo_saco_valor")
-                p1_rs_tipo = form.cleaned_data.get("p1_ruedo_saco_tipo") or ""
-
-                for prenda in selected["p1"]:
-                    if prenda.categoria == Prenda.C_PANTALON:
-                        ruedo_valor, ruedo_tipo = p1_rp_val, p1_rp_tipo
-                    elif prenda.categoria == Prenda.C_SACO:
-                        ruedo_valor, ruedo_tipo = p1_rs_val, p1_rs_tipo
-                    else:
-                        ruedo_valor, ruedo_tipo = None, ""
-
-                    AlquilerItem.objects.create(
-                        alquiler=alquiler,
-                        persona_num=1,
-                        prenda=prenda,
-                        ruedo_valor=ruedo_valor,
-                        ruedo_tipo=ruedo_tipo,
-                    )
-                    touched_prendas.append(prenda)
-
-                p2_rp_val = form.cleaned_data.get("p2_ruedo_pantalon_valor")
-                p2_rp_tipo = form.cleaned_data.get("p2_ruedo_pantalon_tipo") or ""
-                p2_rs_val = form.cleaned_data.get("p2_ruedo_saco_valor")
-                p2_rs_tipo = form.cleaned_data.get("p2_ruedo_saco_tipo") or ""
-
-                if (alquiler.persona2_nombre or "").strip() or selected["p2"]:
-                    for prenda in selected["p2"]:
-                        if prenda.categoria == Prenda.C_PANTALON:
-                            ruedo_valor, ruedo_tipo = p2_rp_val, p2_rp_tipo
-                        elif prenda.categoria == Prenda.C_SACO:
-                            ruedo_valor, ruedo_tipo = p2_rs_val, p2_rs_tipo
-                        else:
-                            ruedo_valor, ruedo_tipo = None, ""
-
-                        AlquilerItem.objects.create(
-                            alquiler=alquiler,
-                            persona_num=2,
-                            prenda=prenda,
-                            ruedo_valor=ruedo_valor,
-                            ruedo_tipo=ruedo_tipo,
-                        )
-                        touched_prendas.append(prenda)
+                touched_prendas.extend(_crear_items_desde_seleccion(alquiler, selected))
 
                 _refresh_prendas_estado(touched_prendas)
                 request.session["ultimo_mensaje_cliente"] = _armar_mensaje_cliente(alquiler)
@@ -304,6 +341,7 @@ def _redirect_entregas_con_filtro(request):
 
 
 def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=None):
+    disponibles = _disponibles_por_categoria()
     filtros_form = VerAlquileresFiltroForm(data or None)
     alquileres = (
         Alquiler.objects
@@ -333,7 +371,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
 
     alquileres = list(alquileres)
     _adjuntar_detalle_alquiler(alquileres)
-    _adjuntar_formularios_edicion(alquileres, form_por_alquiler_id=form_por_alquiler_id)
+    _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=form_por_alquiler_id)
 
     fecha_desde_valor = filtros_form["fecha_desde"].value() or ""
     fecha_hasta_valor = filtros_form["fecha_hasta"].value() or ""
@@ -356,6 +394,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
 
 
 def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
+    disponibles = _disponibles_por_categoria()
     hoy = timezone.localdate()
     hasta_str = ""
     if data is not None:
@@ -380,7 +419,7 @@ def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
     )
     alquileres = list(alquileres)
     _adjuntar_detalle_alquiler(alquileres)
-    _adjuntar_formularios_edicion(alquileres, form_por_alquiler_id=form_por_alquiler_id)
+    _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=form_por_alquiler_id)
 
     hasta_valor = hasta.strftime("%Y-%m-%d")
     for alquiler in alquileres:
@@ -409,13 +448,21 @@ def ver(request):
             return _redirect_ver_con_filtros(request)
 
         if accion == "editar":
+            disponibles = _disponibles_por_categoria()
             edit_form = AlquilerEdicionForm(
                 request.POST,
                 instance=alquiler,
                 prefix=f"alq-edit-{alquiler.id}",
+                disponibles=disponibles,
             )
             if edit_form.is_valid():
-                edit_form.save()
+                with transaction.atomic():
+                    alquiler = edit_form.save()
+                    touched_ids = _sync_items_alquiler(
+                        alquiler,
+                        edit_form.cleaned_data.get("_selected_prendas"),
+                    )
+                    _refresh_prendas_estado_por_ids(touched_ids)
                 messages.success(request, f"Alquiler #{alquiler.id} editado.")
                 return _redirect_ver_con_filtros(request)
 
@@ -487,13 +534,21 @@ def entregas(request):
             return _redirect_entregas_con_filtro(request)
 
         if accion == "editar":
+            disponibles = _disponibles_por_categoria()
             edit_form = AlquilerEdicionForm(
                 request.POST,
                 instance=alquiler,
                 prefix=f"alq-edit-{alquiler.id}",
+                disponibles=disponibles,
             )
             if edit_form.is_valid():
-                edit_form.save()
+                with transaction.atomic():
+                    alquiler = edit_form.save()
+                    touched_ids = _sync_items_alquiler(
+                        alquiler,
+                        edit_form.cleaned_data.get("_selected_prendas"),
+                    )
+                    _refresh_prendas_estado_por_ids(touched_ids)
                 messages.success(request, f"Alquiler #{alquiler.id} editado.")
                 return _redirect_entregas_con_filtro(request)
 

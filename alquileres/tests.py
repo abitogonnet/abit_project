@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import AlquilerForm
+from .forms import AlquilerForm, SHORT_POR_CATEGORIA
 from prendas.models import Prenda
 
 from .models import Alquiler, AlquilerItem
@@ -85,6 +85,49 @@ class AlquileresViewsTests(TestCase):
         if created_prenda:
             AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=created_prenda)
         return alquiler
+
+    def _edit_payload(self, alquiler, **overrides):
+        prefix = f"alq-edit-{alquiler.id}"
+        payload = {
+            "alq_id": alquiler.id,
+            "accion": "editar",
+            f"{prefix}-fecha_reserva": alquiler.fecha_reserva.strftime("%Y-%m-%d"),
+            f"{prefix}-fecha_entrega": alquiler.fecha_entrega.strftime("%Y-%m-%d"),
+            f"{prefix}-fecha_devolucion": alquiler.fecha_devolucion.strftime("%Y-%m-%d"),
+            f"{prefix}-cliente_nombre": alquiler.cliente_nombre,
+            f"{prefix}-cliente_telefono": alquiler.cliente_telefono,
+            f"{prefix}-persona1_nombre": alquiler.persona1_nombre,
+            f"{prefix}-persona2_nombre": alquiler.persona2_nombre,
+            f"{prefix}-total_bruto": str(alquiler.total_bruto),
+            f"{prefix}-descuento_pct": "" if alquiler.descuento_pct is None else str(alquiler.descuento_pct),
+            f"{prefix}-sena": str(alquiler.sena),
+            f"{prefix}-metodo_sena": alquiler.metodo_sena,
+            f"{prefix}-p1_ruedo_pantalon_valor": "",
+            f"{prefix}-p1_ruedo_pantalon_tipo": "",
+            f"{prefix}-p1_ruedo_saco_valor": "",
+            f"{prefix}-p1_ruedo_saco_tipo": "",
+            f"{prefix}-p2_ruedo_pantalon_valor": "",
+            f"{prefix}-p2_ruedo_pantalon_tipo": "",
+            f"{prefix}-p2_ruedo_saco_valor": "",
+            f"{prefix}-p2_ruedo_saco_tipo": "",
+        }
+
+        for item in alquiler.items.select_related("prenda"):
+            short = SHORT_POR_CATEGORIA[item.prenda.categoria]
+            who = f"p{item.persona_num}"
+            field_name = f"{prefix}-{who}_{short}"
+            payload[field_name] = item.prenda.codigo
+            payload[f"{field_name}_numero"] = item.prenda.codigo.split("-", 1)[1]
+
+            if short == "pantalon":
+                payload[f"{prefix}-{who}_ruedo_pantalon_valor"] = "" if item.ruedo_valor is None else str(item.ruedo_valor)
+                payload[f"{prefix}-{who}_ruedo_pantalon_tipo"] = item.ruedo_tipo
+            if short == "saco":
+                payload[f"{prefix}-{who}_ruedo_saco_valor"] = "" if item.ruedo_valor is None else str(item.ruedo_valor)
+                payload[f"{prefix}-{who}_ruedo_saco_tipo"] = item.ruedo_tipo
+
+        payload.update(overrides)
+        return payload
 
     def test_crear_alquiler_reserva_prenda_y_asigna_fecha_visita(self):
         saco = Prenda.objects.create(
@@ -321,22 +364,23 @@ class AlquileresViewsTests(TestCase):
         AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco)
 
         prefix = f"alq-edit-{alquiler.id}"
-        response = self.client.post(reverse("alquileres:entregas"), {
-            "alq_id": alquiler.id,
-            "accion": "editar",
-            "hasta": (hoy + timezone.timedelta(days=4)).strftime("%Y-%m-%d"),
-            f"{prefix}-fecha_reserva": hoy.strftime("%Y-%m-%d"),
-            f"{prefix}-fecha_entrega": hoy.strftime("%Y-%m-%d"),
-            f"{prefix}-fecha_devolucion": (hoy + timezone.timedelta(days=3)).strftime("%Y-%m-%d"),
-            f"{prefix}-cliente_nombre": "Cliente Entrega Editado",
-            f"{prefix}-cliente_telefono": "119999",
-            f"{prefix}-persona1_nombre": "Juan Editado",
-            f"{prefix}-persona2_nombre": "",
-            f"{prefix}-total_bruto": "2200",
-            f"{prefix}-descuento_pct": "5",
-            f"{prefix}-sena": "600",
-            f"{prefix}-metodo_sena": Alquiler.MP_TRANS,
-        }, follow=True)
+        response = self.client.post(reverse("alquileres:entregas"), self._edit_payload(
+            alquiler,
+            **{
+                "hasta": (hoy + timezone.timedelta(days=4)).strftime("%Y-%m-%d"),
+                f"{prefix}-fecha_reserva": hoy.strftime("%Y-%m-%d"),
+                f"{prefix}-fecha_entrega": hoy.strftime("%Y-%m-%d"),
+                f"{prefix}-fecha_devolucion": (hoy + timezone.timedelta(days=3)).strftime("%Y-%m-%d"),
+                f"{prefix}-cliente_nombre": "Cliente Entrega Editado",
+                f"{prefix}-cliente_telefono": "119999",
+                f"{prefix}-persona1_nombre": "Juan Editado",
+                f"{prefix}-persona2_nombre": "",
+                f"{prefix}-total_bruto": "2200",
+                f"{prefix}-descuento_pct": "5",
+                f"{prefix}-sena": "600",
+                f"{prefix}-metodo_sena": Alquiler.MP_TRANS,
+            },
+        ), follow=True)
 
         self.assertEqual(response.status_code, 200)
         alquiler.refresh_from_db()
@@ -367,23 +411,24 @@ class AlquileresViewsTests(TestCase):
         AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco)
 
         prefix = f"alq-edit-{alquiler.id}"
-        response = self.client.post(reverse("alquileres:ver"), {
-            "alq_id": alquiler.id,
-            "accion": "editar",
-            "fecha_desde": "",
-            "fecha_hasta": "",
-            f"{prefix}-fecha_reserva": "2026-04-18",
-            f"{prefix}-fecha_entrega": "2026-04-22",
-            f"{prefix}-fecha_devolucion": "2026-04-28",
-            f"{prefix}-cliente_nombre": "Cliente Editado",
-            f"{prefix}-cliente_telefono": "2222",
-            f"{prefix}-persona1_nombre": "Juan Editado",
-            f"{prefix}-persona2_nombre": "",
-            f"{prefix}-total_bruto": "2000",
-            f"{prefix}-descuento_pct": "10",
-            f"{prefix}-sena": "500",
-            f"{prefix}-metodo_sena": Alquiler.MP_TRANS,
-        }, follow=True)
+        response = self.client.post(reverse("alquileres:ver"), self._edit_payload(
+            alquiler,
+            **{
+                "fecha_desde": "",
+                "fecha_hasta": "",
+                f"{prefix}-fecha_reserva": "2026-04-18",
+                f"{prefix}-fecha_entrega": "2026-04-22",
+                f"{prefix}-fecha_devolucion": "2026-04-28",
+                f"{prefix}-cliente_nombre": "Cliente Editado",
+                f"{prefix}-cliente_telefono": "2222",
+                f"{prefix}-persona1_nombre": "Juan Editado",
+                f"{prefix}-persona2_nombre": "",
+                f"{prefix}-total_bruto": "2000",
+                f"{prefix}-descuento_pct": "10",
+                f"{prefix}-sena": "500",
+                f"{prefix}-metodo_sena": Alquiler.MP_TRANS,
+            },
+        ), follow=True)
 
         self.assertEqual(response.status_code, 200)
         alquiler.refresh_from_db()
@@ -434,28 +479,146 @@ class AlquileresViewsTests(TestCase):
         AlquilerItem.objects.create(alquiler=futuro, persona_num=1, prenda=saco)
 
         prefix = f"alq-edit-{actual.id}"
-        response = self.client.post(reverse("alquileres:ver"), {
-            "alq_id": actual.id,
-            "accion": "editar",
-            "fecha_desde": "",
-            "fecha_hasta": "",
-            f"{prefix}-fecha_reserva": "2026-05-20",
-            f"{prefix}-fecha_entrega": "2026-05-30",
-            f"{prefix}-fecha_devolucion": "2026-06-03",
-            f"{prefix}-cliente_nombre": actual.cliente_nombre,
-            f"{prefix}-cliente_telefono": actual.cliente_telefono,
-            f"{prefix}-persona1_nombre": actual.persona1_nombre,
-            f"{prefix}-persona2_nombre": "",
-            f"{prefix}-total_bruto": "1000",
-            f"{prefix}-descuento_pct": "",
-            f"{prefix}-sena": "100",
-            f"{prefix}-metodo_sena": Alquiler.MP_EFEC,
-        })
+        response = self.client.post(reverse("alquileres:ver"), self._edit_payload(
+            actual,
+            **{
+                "fecha_desde": "",
+                "fecha_hasta": "",
+                f"{prefix}-fecha_reserva": "2026-05-20",
+                f"{prefix}-fecha_entrega": "2026-05-30",
+                f"{prefix}-fecha_devolucion": "2026-06-03",
+                f"{prefix}-cliente_nombre": actual.cliente_nombre,
+                f"{prefix}-cliente_telefono": actual.cliente_telefono,
+                f"{prefix}-persona1_nombre": actual.persona1_nombre,
+                f"{prefix}-persona2_nombre": "",
+                f"{prefix}-total_bruto": "1000",
+                f"{prefix}-descuento_pct": "",
+                f"{prefix}-sena": "100",
+                f"{prefix}-metodo_sena": Alquiler.MP_EFEC,
+            },
+        ))
 
         self.assertEqual(response.status_code, 200)
         actual.refresh_from_db()
         self.assertEqual(actual.fecha_entrega, date(2026, 4, 20))
         self.assertContains(response, "SA-042")
+
+    def test_ver_alquileres_permite_editar_prendas_y_ruedos(self):
+        pantalon_original = Prenda.objects.create(
+            codigo="PA-051",
+            categoria=Prenda.C_PANTALON,
+            marca="Oxford",
+            color="Negro",
+            talle="40",
+        )
+        pantalon_nuevo = Prenda.objects.create(
+            codigo="PA-052",
+            categoria=Prenda.C_PANTALON,
+            marca="Oxford",
+            color="Gris",
+            talle="42",
+        )
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Cliente Prendas",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        AlquilerItem.objects.create(
+            alquiler=alquiler,
+            persona_num=1,
+            prenda=pantalon_original,
+            ruedo_valor="1",
+            ruedo_tipo=AlquilerItem.RUEDO_CM,
+        )
+
+        prefix = f"alq-edit-{alquiler.id}"
+        response = self.client.post(reverse("alquileres:ver"), self._edit_payload(
+            alquiler,
+            **{
+                "fecha_desde": "",
+                "fecha_hasta": "",
+                f"{prefix}-p1_pantalon": pantalon_nuevo.codigo,
+                f"{prefix}-p1_pantalon_numero": "052",
+                f"{prefix}-p1_ruedo_pantalon_valor": "3",
+                f"{prefix}-p1_ruedo_pantalon_tipo": AlquilerItem.RUEDO_BOTON,
+            },
+        ), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        item = alquiler.items.select_related("prenda").get(persona_num=1)
+        self.assertEqual(item.prenda.codigo, "PA-052")
+        self.assertEqual(str(item.ruedo_valor), "3.00")
+        self.assertEqual(item.ruedo_tipo, AlquilerItem.RUEDO_BOTON)
+        pantalon_original.refresh_from_db()
+        pantalon_nuevo.refresh_from_db()
+        self.assertEqual(pantalon_original.estado, Prenda.E_DISP)
+        self.assertEqual(pantalon_nuevo.estado, Prenda.E_RES)
+
+    def test_ver_alquileres_no_deja_cambiar_prenda_si_esta_ocupada(self):
+        saco_actual = Prenda.objects.create(
+            codigo="SA-061",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+        )
+        saco_ocupado = Prenda.objects.create(
+            codigo="SA-062",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Azul",
+            talle="6",
+            estado=Prenda.E_RES,
+        )
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Cliente Cambio",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        otro = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 22),
+            fecha_devolucion=date(2026, 4, 27),
+            cliente_nombre="Otro",
+            cliente_telefono="2222",
+            persona1_nombre="Pedro",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco_actual)
+        AlquilerItem.objects.create(alquiler=otro, persona_num=1, prenda=saco_ocupado)
+
+        prefix = f"alq-edit-{alquiler.id}"
+        response = self.client.post(reverse("alquileres:ver"), self._edit_payload(
+            alquiler,
+            **{
+                "fecha_desde": "",
+                "fecha_hasta": "",
+                f"{prefix}-p1_saco": saco_ocupado.codigo,
+                f"{prefix}-p1_saco_numero": "062",
+            },
+        ))
+
+        self.assertEqual(response.status_code, 200)
+        item = alquiler.items.select_related("prenda").get(persona_num=1)
+        self.assertEqual(item.prenda.codigo, "SA-061")
+        self.assertContains(response, "22/04/2026 al 27/04/2026")
 
     def test_crear_alquiler_permited_usar_prenda_si_se_libera_antes_de_la_entrega(self):
         saco = Prenda.objects.create(

@@ -174,7 +174,7 @@
                       <details class="ab-detail-toggle ab-detail-toggle-split" {% if edit_open_id == a.id %}open{% endif %}>
                         <summary class="ab-detail-summary">
                           <span>Editar</span>
-                          <span class="ab-small">Nombres, fechas y pagos</span>
+                          <span class="ab-small">Nombres, fechas, pagos y prendas</span>
                         </summary>
                         <div class="ab-detail-panel">
                           {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
@@ -232,7 +232,7 @@
               <details class="ab-detail-toggle" style="margin-top: 14px;" {% if edit_open_id == a.id %}open{% endif %}>
                 <summary class="ab-detail-summary">
                   <span>Editar</span>
-                  <span class="ab-small">Nombres, fechas y pagos</span>
+                  <span class="ab-small">Nombres, fechas, pagos y prendas</span>
                 </summary>
                 <div class="ab-detail-panel">
                   {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
@@ -301,6 +301,68 @@ function abNum(value) {
   return Number.isNaN(parsed) ? 0 : parsed;
 }
 
+function abOnlyDigits(value) {
+  return (value || "").toString().replace(/\D/g, "");
+}
+
+function abNormalizedDigits(value) {
+  const digits = abOnlyDigits(value);
+  if (!digits) return "";
+  return digits.replace(/^0+/, "") || "0";
+}
+
+function abMatchesCodeNumber(code, prefix, typed) {
+  if (!typed) return true;
+  const rawCode = (code || "").toUpperCase();
+  const fullPrefix = `${(prefix || "").toUpperCase()}-`;
+  const suffix = rawCode.startsWith(fullPrefix) ? rawCode.slice(fullPrefix.length) : rawCode;
+  const codeDigits = abOnlyDigits(suffix);
+  const cleanTyped = abOnlyDigits(typed);
+  const normalizedTyped = abNormalizedDigits(cleanTyped);
+  const normalizedCode = abNormalizedDigits(codeDigits);
+  return codeDigits.startsWith(cleanTyped) || normalizedCode.startsWith(normalizedTyped);
+}
+
+function abCloneOption(optionData) {
+  const option = document.createElement("option");
+  option.value = optionData.value;
+  option.textContent = optionData.label;
+  return option;
+}
+
+function abFilterCodeSelect(input) {
+  const selectId = input.dataset.targetSelect;
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  if (!select._allOptions) {
+    select._allOptions = Array.from(select.options).map(function (option) {
+      return { value: option.value, label: option.textContent };
+    });
+  }
+
+  const prefix = input.dataset.prefix || "";
+  const typed = abOnlyDigits(input.value);
+  if (input.value !== typed) {
+    input.value = typed;
+  }
+
+  const previousValue = select.value;
+  const matchingOptions = select._allOptions.filter(function (option) {
+    return !option.value || abMatchesCodeNumber(option.value, prefix, typed);
+  });
+
+  select.innerHTML = "";
+  matchingOptions.forEach(function (optionData) {
+    select.appendChild(abCloneOption(optionData));
+  });
+
+  const stillExists = matchingOptions.some(function (optionData) {
+    return optionData.value === previousValue;
+  });
+  select.value = stillExists ? previousValue : "";
+}
+
 function recalcEditForm(form) {
   const totalInput = form.querySelector('[name$="-total_bruto"]');
   const discountInput = form.querySelector('[name$="-descuento_pct"]');
@@ -320,6 +382,13 @@ function recalcEditForm(form) {
 }
 
 document.querySelectorAll(".js-alq-edit-form").forEach(function (form) {
+  form.querySelectorAll(".js-code-filter").forEach(function (input) {
+    input.addEventListener("input", function () {
+      abFilterCodeSelect(input);
+    });
+    abFilterCodeSelect(input);
+  });
+
   ["[name$='-total_bruto']", "[name$='-descuento_pct']", "[name$='-sena']"].forEach(function (selector) {
     const input = form.querySelector(selector);
     if (input) {
