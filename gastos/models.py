@@ -10,6 +10,7 @@ class Gasto(models.Model):
     metodo = models.CharField(max_length=30, blank=True, default="")
 
     descripcion = models.CharField(max_length=140, blank=True, default="")
+    notas = models.CharField(max_length=200, blank=True, default="")
     monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     creado_en = models.DateTimeField(auto_now_add=True)

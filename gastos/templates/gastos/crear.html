@@ -4,7 +4,7 @@
   <div class="ab-head">
     <div>
       <h1 class="ab-title">Cargar gasto</h1>
-      <p class="ab-sub">Proceso 4 — cargar y guardar un gasto</p>
+      <p class="ab-sub">Registra fecha, monto, en que se gasto y notas opcionales.</p>
     </div>
     <div class="ab-row">
       <a class="ab-btn2" href="{% url 'gastos:home' %}">Volver</a>
@@ -12,35 +12,51 @@
   </div>
 
   <div class="ab-body">
-    <form method="post" autocomplete="off">
+    <form method="post" autocomplete="off" class="ab-stack">
       {% csrf_token %}
 
       <div class="ab-grid">
-        <div class="col-3"><label class="ab-lab">Fecha</label>{{ form.fecha }}</div>
-        <div class="col-3"><label class="ab-lab">Categoría</label>{{ form.categoria }}</div>
-        <div class="col-3"><label class="ab-lab">Método</label>{{ form.metodo }}</div>
-        <div class="col-3"><label class="ab-lab">Monto</label>{{ form.monto }}</div>
+        <div class="col-3 ab-field">
+          <label class="ab-lab" for="{{ form.fecha.id_for_label }}">Fecha</label>
+          {{ form.fecha }}
+          {% if form.fecha.errors %}<div class="ab-field-errors">{{ form.fecha.errors }}</div>{% endif %}
+        </div>
+        <div class="col-3 ab-field">
+          <label class="ab-lab" for="{{ form.categoria.id_for_label }}">Categoria</label>
+          {{ form.categoria }}
+          {% if form.categoria.errors %}<div class="ab-field-errors">{{ form.categoria.errors }}</div>{% endif %}
+        </div>
+        <div class="col-3 ab-field">
+          <label class="ab-lab" for="{{ form.metodo.id_for_label }}">Metodo</label>
+          {{ form.metodo }}
+          {% if form.metodo.errors %}<div class="ab-field-errors">{{ form.metodo.errors }}</div>{% endif %}
+        </div>
+        <div class="col-3 ab-field">
+          <label class="ab-lab" for="{{ form.monto.id_for_label }}">Monto</label>
+          {{ form.monto }}
+          {% if form.monto.errors %}<div class="ab-field-errors">{{ form.monto.errors }}</div>{% endif %}
+        </div>
 
-        <div class="col-12"><label class="ab-lab">Descripción (opcional)</label>{{ form.descripcion }}</div>
+        <div class="col-6 ab-field">
+          <label class="ab-lab" for="{{ form.descripcion.id_for_label }}">En que fue gastado</label>
+          {{ form.descripcion }}
+          {% if form.descripcion.errors %}<div class="ab-field-errors">{{ form.descripcion.errors }}</div>{% endif %}
+        </div>
+        <div class="col-6 ab-field">
+          <label class="ab-lab" for="{{ form.notas.id_for_label }}">Notas</label>
+          {{ form.notas }}
+          {% if form.notas.errors %}<div class="ab-field-errors">{{ form.notas.errors }}</div>{% endif %}
+        </div>
       </div>
 
       {% if form.non_field_errors %}
-        <div class="ab-msg err" style="margin-top:12px;">{{ form.non_field_errors }}</div>
+        <div class="ab-msg err">{{ form.non_field_errors }}</div>
       {% endif %}
 
-      <div class="ab-hr"></div>
-      <div class="ab-row">
+      <div class="ab-actions">
         <button class="ab-btn" type="submit">Guardar gasto</button>
         <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
       </div>
-
-      <datalist id="dl_gasto_cat">
-        {% for c in cats %}<option value="{{ c }}"></option>{% endfor %}
-      </datalist>
-      <datalist id="dl_gasto_met">
-        {% for m in mets %}<option value="{{ m }}"></option>{% endfor %}
-      </datalist>
-
     </form>
   </div>
 </div>

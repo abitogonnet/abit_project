@@ -33,14 +33,23 @@ def _in_list(val: str, options: list[str]) -> bool:
 
 
 class GastoForm(forms.ModelForm):
+    categoria = forms.ChoiceField(
+        choices=[("", "Elegir categoria")] + [(c, c) for c in CATEGORIAS],
+        widget=forms.Select(attrs={"class": "ab-sel"}),
+    )
+    metodo = forms.ChoiceField(
+        choices=[("", "Elegir metodo")] + [(m, m) for m in METODOS],
+        required=False,
+        widget=forms.Select(attrs={"class": "ab-sel"}),
+    )
+
     class Meta:
         model = Gasto
-        fields = ["fecha", "categoria", "metodo", "descripcion", "monto"]
+        fields = ["fecha", "categoria", "metodo", "descripcion", "notas", "monto"]
         widgets = {
             "fecha": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-            "categoria": forms.TextInput(attrs={"class": "ab-inp", "list": "dl_gasto_cat", "autocomplete": "off"}),
-            "metodo": forms.TextInput(attrs={"class": "ab-inp", "list": "dl_gasto_met", "autocomplete": "off"}),
-            "descripcion": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Opcional"}),
+            "descripcion": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Ej: tela, limpieza, publicidad"}),
+            "notas": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Opcional"}),
             "monto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
         }
 

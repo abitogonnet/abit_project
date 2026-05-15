@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ab-card" style="max-width: 520px; margin: 0 auto;">
+  <div class="ab-head">
+    <div>
+      <h1 class="ab-title">Gastos protegidos</h1>
+      <p class="ab-sub">Ingresa la contrasena para abrir gastos y division de dinero.</p>
+    </div>
+  </div>
+
+  <div class="ab-body">
+    <form method="post" class="ab-stack" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="access_action" value="unlock">
+
+      <div class="ab-field">
+        <label class="ab-lab" for="id_access_password">Contrasena</label>
+        <input class="ab-inp" id="id_access_password" type="password" name="access_password" autofocus>
+      </div>
+
+      {% if error_msg %}
+        <div class="ab-msg err">{{ error_msg }}</div>
+      {% endif %}
+
+      <div class="ab-actions">
+        <button class="ab-btn" type="submit">Entrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

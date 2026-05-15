@@ -4,98 +4,232 @@
   <div class="ab-head">
     <div>
       <h1 class="ab-title">Gastos</h1>
-      <p class="ab-sub">Cargá gastos y divisiones de bienes</p>
+      <p class="ab-sub">Control de gastos y divisiones de dinero con acceso protegido.</p>
     </div>
-    <div class="ab-row" style="gap:10px;">
+    <div class="ab-row" style="gap: 10px;">
       <a class="ab-btn2" href="{% url 'gastos:crear' %}">+ Cargar gasto</a>
-      <a class="ab-btn" href="{% url 'gastos:division_bienes' %}">+ División de bienes</a>
+      <a class="ab-btn" href="{% url 'gastos:division_bienes' %}">+ Division de bienes</a>
     </div>
   </div>
 
-  <div class="ab-body">
-    <div class="ab-grid" style="grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px;">
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">Gastos (mes)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_gastos_mes }}</div>
-        </div>
+  <div class="ab-body ab-stack">
+    <div class="ab-summary-grid">
+      <div class="ab-summary-card">
+        <span class="ab-small">Gastos del mes</span>
+        <strong>${{ total_gastos_mes }}</strong>
       </div>
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">Gastos (total)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_gastos_general }}</div>
-        </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Gastos totales</span>
+        <strong>${{ total_gastos_general }}</strong>
       </div>
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">División bienes (mes)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_div_mes }}</div>
-        </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Division del mes</span>
+        <strong>${{ total_div_mes }}</strong>
       </div>
-      <div class="ab-card" style="border-radius:14px;">
-        <div class="ab-body">
-          <div class="ab-muted">División bienes (total)</div>
-          <div style="font-weight:900; font-size:22px;">${{ total_div_general }}</div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Division total</span>
+        <strong>${{ total_div_general }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Total esperado en cuentas</span>
+        <strong>${{ total_cuentas }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Tade acumulado</span>
+        <strong>${{ total_tade }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Bauti acumulado</span>
+        <strong>${{ total_bauti }}</strong>
+      </div>
+    </div>
+
+    <div class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body">
+        <div class="ab-section-title">
+          <h2>Gastos cargados</h2>
+          <span class="ab-pill">{{ gastos|length }} gasto{{ gastos|length|pluralize }}</span>
+        </div>
+
+        <div class="ab-table-wrap ab-desktop-only">
+          <table class="ab-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Categoria</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in gastos %}
+                <tr>
+                  <td class="ab-muted">{{ g.fecha|date:"d/m/Y" }}</td>
+                  <td style="font-weight: 900;">${{ g.monto }}</td>
+                  <td>{{ g.categoria }}</td>
+                  <td>
+                    <details class="ab-detail-toggle">
+                      <summary class="ab-detail-summary">
+                        <span>Ver detallado</span>
+                        <span class="ab-small">{% if g.metodo %}{{ g.metodo }}{% else %}Sin metodo{% endif %}</span>
+                      </summary>
+                      <div class="ab-detail-panel">
+                        <div class="ab-detail-summary-grid">
+                          <div class="ab-detail-summary-card">
+                            <span class="ab-spec-label">En que fue gastado</span>
+                            <strong>{% if g.descripcion %}{{ g.descripcion }}{% else %}-{% endif %}</strong>
+                          </div>
+                          <div class="ab-detail-summary-card">
+                            <span class="ab-spec-label">Metodo</span>
+                            <strong>{% if g.metodo %}{{ g.metodo }}{% else %}-{% endif %}</strong>
+                          </div>
+                          <div class="ab-detail-summary-card">
+                            <span class="ab-spec-label">Notas</span>
+                            <strong>{% if g.notas %}{{ g.notas }}{% else %}-{% endif %}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="ab-muted">No hay gastos cargados todavia.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="ab-mobile-list">
+          {% for g in gastos %}
+            <article class="ab-list-card">
+              <div class="ab-row" style="justify-content: space-between;">
+                <h3>{{ g.fecha|date:"d/m/Y" }}</h3>
+                <span class="ab-pill">${{ g.monto }}</span>
+              </div>
+              <div class="ab-meta" style="margin-top: 10px;">
+                <div>Categoria: {{ g.categoria }}</div>
+                <div>Metodo: {% if g.metodo %}{{ g.metodo }}{% else %}-{% endif %}</div>
+              </div>
+              <details class="ab-detail-toggle" style="margin-top: 14px;">
+                <summary class="ab-detail-summary">
+                  <span>Ver detallado</span>
+                  <span class="ab-small">Gasto</span>
+                </summary>
+                <div class="ab-detail-panel">
+                  <div class="ab-detail-summary-grid">
+                    <div class="ab-detail-summary-card">
+                      <span class="ab-spec-label">En que fue gastado</span>
+                      <strong>{% if g.descripcion %}{{ g.descripcion }}{% else %}-{% endif %}</strong>
+                    </div>
+                    <div class="ab-detail-summary-card">
+                      <span class="ab-spec-label">Notas</span>
+                      <strong>{% if g.notas %}{{ g.notas }}{% else %}-{% endif %}</strong>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </article>
+          {% empty %}
+            <div class="ab-empty">No hay gastos cargados todavia.</div>
+          {% endfor %}
         </div>
       </div>
     </div>
 
-    <div class="ab-hr" style="margin:14px 0;"></div>
+    <div class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body">
+        <div class="ab-section-title">
+          <h2>Divisiones de dinero</h2>
+          <span class="ab-pill">{{ divisiones|length }} division{{ divisiones|length|pluralize }}</span>
+        </div>
 
-    <h2 style="margin:0 0 10px 0;">Últimos gastos</h2>
-    <table class="ab-table">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Categoría</th>
-          <th>Método</th>
-          <th>Descripción</th>
-          <th>Monto</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for g in gastos %}
-        <tr>
-          <td class="ab-muted">{{ g.fecha|date:"d/m/Y" }}</td>
-          <td>{{ g.categoria }}</td>
-          <td class="ab-muted">{{ g.metodo|default:"—" }}</td>
-          <td class="ab-muted">{{ g.descripcion|default:"—" }}</td>
-          <td style="font-weight:900;">${{ g.monto }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="ab-muted">No hay gastos todavía.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        <div class="ab-table-wrap ab-desktop-only">
+          <table class="ab-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Resumen</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in divisiones %}
+                <tr>
+                  <td class="ab-muted">{{ d.fecha|date:"d/m/Y" }}</td>
+                  <td style="font-weight: 900;">${{ d.monto_total }}</td>
+                  <td class="ab-muted">Tade: ${{ d.para_tade }}<br>Bauti: ${{ d.para_bauti }}</td>
+                  <td>
+                    <details class="ab-detail-toggle">
+                      <summary class="ab-detail-summary">
+                        <span>Ver detallado</span>
+                        <span class="ab-small">Division</span>
+                      </summary>
+                      <div class="ab-detail-panel">
+                        <div class="ab-detail-summary-grid">
+                          <div class="ab-detail-summary-card">
+                            <span class="ab-spec-label">Cuando</span>
+                            <strong>{{ d.fecha|date:"d/m/Y" }}</strong>
+                          </div>
+                          <div class="ab-detail-summary-card">
+                            <span class="ab-spec-label">Cuanto</span>
+                            <strong>${{ d.monto_total }}</strong>
+                          </div>
+                          <div class="ab-detail-summary-card">
+                            <span class="ab-spec-label">Reparto</span>
+                            <div class="ab-detail-date-list">
+                              <div>Tade: ${{ d.para_tade }}</div>
+                              <div>Bauti: ${{ d.para_bauti }}</div>
+                            </div>
+                          </div>
+                          <div class="ab-detail-summary-card">
+                            <span class="ab-spec-label">Notas</span>
+                            <strong>{% if d.notas %}{{ d.notas }}{% else %}-{% endif %}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="ab-muted">No hay divisiones cargadas todavia.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
 
-    <div class="ab-hr" style="margin:14px 0;"></div>
-
-    <h2 style="margin:0 0 10px 0;">División de bienes</h2>
-    <table class="ab-table">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Total</th>
-          <th>Tade</th>
-          <th>Bauti</th>
-          <th>Notas</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for d in divisiones %}
-        <tr>
-          <td class="ab-muted">{{ d.fecha|date:"d/m/Y" }}</td>
-          <td style="font-weight:900;">${{ d.monto_total }}</td>
-          <td class="ab-muted">${{ d.para_tade }}</td>
-          <td class="ab-muted">${{ d.para_bauti }}</td>
-          <td class="ab-muted">{{ d.notas|default:"—" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="ab-muted">No hay divisiones todavía.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
+        <div class="ab-mobile-list">
+          {% for d in divisiones %}
+            <article class="ab-list-card">
+              <div class="ab-row" style="justify-content: space-between;">
+                <h3>{{ d.fecha|date:"d/m/Y" }}</h3>
+                <span class="ab-pill">${{ d.monto_total }}</span>
+              </div>
+              <div class="ab-meta" style="margin-top: 10px;">
+                <div>Tade: ${{ d.para_tade }}</div>
+                <div>Bauti: ${{ d.para_bauti }}</div>
+              </div>
+              <details class="ab-detail-toggle" style="margin-top: 14px;">
+                <summary class="ab-detail-summary">
+                  <span>Ver detallado</span>
+                  <span class="ab-small">Division</span>
+                </summary>
+                <div class="ab-detail-panel">
+                  <div class="ab-detail-summary-grid">
+                    <div class="ab-detail-summary-card">
+                      <span class="ab-spec-label">Notas</span>
+                      <strong>{% if d.notas %}{{ d.notas }}{% else %}-{% endif %}</strong>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </article>
+          {% empty %}
+            <div class="ab-empty">No hay divisiones cargadas todavia.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
