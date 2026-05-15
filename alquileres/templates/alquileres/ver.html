@@ -82,33 +82,35 @@
                   <td>
                     <div style="font-weight: 800;">{{ a.cliente_nombre }}</div>
                     <div class="ab-muted">{{ a.cliente_telefono }}</div>
+                    <div class="ab-chip-row" style="margin-top: 10px;">
+                      {% for persona in a.detalle_personas %}
+                        <span class="ab-chip">{{ persona.nombre }}</span>
+                      {% endfor %}
+                    </div>
                   </td>
                   <td class="ab-muted">
                     Reserva: {{ a.fecha_reserva|date:"d/m/Y" }}<br>
-                    Entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
+                    Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
                     Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}
                   </td>
                   <td class="ab-muted">
-                    <strong>{{ a.persona1_nombre }}</strong><br>
-                    {% for item in a.items.all %}
-                      {% if item.persona_num == 1 %}
-                        {{ item.prenda.codigo }} · {{ item.prenda.get_categoria_display }}<br>
+                    {% for persona in a.detalle_personas %}
+                      <div class="ab-stack" style="gap: 4px;">
+                        <strong>{{ persona.nombre }}</strong>
+                        <span>{{ persona.cantidad }} prenda{{ persona.cantidad|pluralize }}</span>
+                        {% if persona.codigos %}
+                          <span class="ab-small">Codigos: {{ persona.codigos }}</span>
+                        {% endif %}
+                      </div>
+                      {% if not forloop.last %}
+                        <div class="ab-hr" style="margin: 10px 0;"></div>
                       {% endif %}
                     {% endfor %}
-                    {% if a.persona2_nombre %}
-                      <div class="ab-hr" style="margin: 10px 0;"></div>
-                      <strong>{{ a.persona2_nombre }}</strong><br>
-                      {% for item in a.items.all %}
-                        {% if item.persona_num == 2 %}
-                          {{ item.prenda.codigo }} · {{ item.prenda.get_categoria_display }}<br>
-                        {% endif %}
-                      {% endfor %}
-                    {% endif %}
                   </td>
                   <td class="ab-muted">
                     Final: <strong>${{ a.total_final }}</strong><br>
                     Sena: ${{ a.sena }}<br>
-                    Saldo: ${{ a.saldo }}<br>
+                    Saldo restante: ${{ a.saldo }}<br>
                     Sena por: {% if a.metodo_sena %}{{ a.get_metodo_sena_display }}{% else %}-{% endif %}<br>
                     Saldo por: {% if a.metodo_saldo %}{{ a.get_metodo_saldo_display }}{% else %}-{% endif %}
                   </td>
@@ -156,6 +158,31 @@
                     </form>
                   </td>
                 </tr>
+                <tr class="ab-table-detail-row">
+                  <td colspan="7">
+                    <div class="ab-detail-actions">
+                      <details class="ab-detail-toggle ab-detail-toggle-split">
+                        <summary class="ab-detail-summary">
+                          <span>Ver detallado</span>
+                          <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }} para preparar</span>
+                        </summary>
+                        <div class="ab-detail-panel">
+                          {% include "alquileres/_detalle_personas.html" with alquiler=a %}
+                        </div>
+                      </details>
+
+                      <details class="ab-detail-toggle ab-detail-toggle-split" {% if edit_open_id == a.id %}open{% endif %}>
+                        <summary class="ab-detail-summary">
+                          <span>Editar</span>
+                          <span class="ab-small">Nombres, fechas y pagos</span>
+                        </summary>
+                        <div class="ab-detail-panel">
+                          {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                        </div>
+                      </details>
+                    </div>
+                  </td>
+                </tr>
               {% empty %}
                 <tr>
                   <td colspan="7" class="ab-muted">
@@ -175,7 +202,7 @@
           {% for a in alquileres %}
             <article class="ab-list-card">
               <div class="ab-row" style="justify-content: space-between;">
-                <h3>#{{ a.id }} · {{ a.cliente_nombre }}</h3>
+                <h3>#{{ a.id }} - {{ a.cliente_nombre }}</h3>
                 <span class="ab-badge {% if a.estado_alquiler == 'CERRADO' %}ok{% elif a.estado_alquiler == 'ENTREGADO' %}warn{% else %}secondary{% endif %}">
                   {{ a.get_estado_alquiler_display }}
                 </span>
@@ -183,32 +210,34 @@
 
               <div class="ab-meta" style="margin-top: 10px;">
                 <div>Telefono: {{ a.cliente_telefono }}</div>
+                <div>Personas: {{ a.personas_resumen }}</div>
                 <div>Reserva: {{ a.fecha_reserva|date:"d/m/Y" }}</div>
-                <div>Entrega: {{ a.fecha_entrega|date:"d/m/Y" }}</div>
+                <div>Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}</div>
                 <div>Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}</div>
+                <div>Sena: ${{ a.sena }}</div>
+                <div>Saldo restante: ${{ a.saldo }}</div>
                 <div>Total final: ${{ a.total_final }}</div>
-                <div>Saldo: ${{ a.saldo }}</div>
               </div>
 
-              <div class="ab-hr"></div>
+              <details class="ab-detail-toggle" style="margin-top: 14px;">
+                <summary class="ab-detail-summary">
+                  <span>Ver detallado</span>
+                  <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }}</span>
+                </summary>
+                <div class="ab-detail-panel">
+                  {% include "alquileres/_detalle_personas.html" with alquiler=a %}
+                </div>
+              </details>
 
-              <div class="ab-meta">
-                <div><strong>{{ a.persona1_nombre }}</strong></div>
-                {% for item in a.items.all %}
-                  {% if item.persona_num == 1 %}
-                    <div>{{ item.prenda.codigo }} · {{ item.prenda.get_categoria_display }}</div>
-                  {% endif %}
-                {% endfor %}
-                {% if a.persona2_nombre %}
-                  <div class="ab-hr" style="margin: 6px 0;"></div>
-                  <div><strong>{{ a.persona2_nombre }}</strong></div>
-                  {% for item in a.items.all %}
-                    {% if item.persona_num == 2 %}
-                      <div>{{ item.prenda.codigo }} · {{ item.prenda.get_categoria_display }}</div>
-                    {% endif %}
-                  {% endfor %}
-                {% endif %}
-              </div>
+              <details class="ab-detail-toggle" style="margin-top: 14px;" {% if edit_open_id == a.id %}open{% endif %}>
+                <summary class="ab-detail-summary">
+                  <span>Editar</span>
+                  <span class="ab-small">Nombres, fechas y pagos</span>
+                </summary>
+                <div class="ab-detail-panel">
+                  {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                </div>
+              </details>
 
               <form method="post" class="ab-stack" style="margin-top: 14px;">
                 {% csrf_token %}
@@ -264,4 +293,42 @@
     </div>
   </div>
 </section>
+
+<script>
+function abNum(value) {
+  const text = (value || "").toString().replace(",", ".").trim();
+  const parsed = parseFloat(text);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function recalcEditForm(form) {
+  const totalInput = form.querySelector('[name$="-total_bruto"]');
+  const discountInput = form.querySelector('[name$="-descuento_pct"]');
+  const senaInput = form.querySelector('[name$="-sena"]');
+  const totalFinalOutput = form.querySelector(".js-edit-total-final");
+  const saldoOutput = form.querySelector(".js-edit-saldo");
+  if (!totalInput || !discountInput || !senaInput || !totalFinalOutput || !saldoOutput) return;
+
+  const total = abNum(totalInput.value);
+  const descuento = Math.min(Math.max(abNum(discountInput.value), 0), 100);
+  const sena = Math.max(abNum(senaInput.value), 0);
+  const totalFinal = Math.max(total - (total * descuento / 100), 0);
+  const saldo = Math.max(totalFinal - sena, 0);
+
+  totalFinalOutput.value = totalFinal.toFixed(2);
+  saldoOutput.value = saldo.toFixed(2);
+}
+
+document.querySelectorAll(".js-alq-edit-form").forEach(function (form) {
+  ["[name$='-total_bruto']", "[name$='-descuento_pct']", "[name$='-sena']"].forEach(function (selector) {
+    const input = form.querySelector(selector);
+    if (input) {
+      input.addEventListener("input", function () {
+        recalcEditForm(form);
+      });
+    }
+  });
+  recalcEditForm(form);
+});
+</script>
 {% endblock %}

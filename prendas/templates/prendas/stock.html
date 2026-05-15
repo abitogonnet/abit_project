@@ -24,6 +24,88 @@
     </div>
 
     <div class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body ab-stack">
+        <div class="ab-row" style="justify-content: space-between; gap: 14px;">
+          <div>
+            <h2 class="ab-mini-title">Carga rapida de origen</h2>
+            <p class="ab-sub" style="margin-top: 6px;">
+              Aqui aparecen solo sacos y pantalones sin origen para que completes varios juntos y los guardes de una sola vez.
+            </p>
+          </div>
+          <span class="ab-pill" id="pendingOriginCount">{{ prendas_sin_origen|length }} pendiente{{ prendas_sin_origen|length|pluralize }}</span>
+        </div>
+
+        {% if prendas_sin_origen %}
+          <form method="post" class="ab-stack">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="guardar_origenes">
+
+            <div class="ab-grid">
+              <div class="col-4 ab-field">
+                <label class="ab-lab" for="pendingOriginCategory">Categoria</label>
+                <select class="ab-sel" id="pendingOriginCategory">
+                  <option value="">Todas</option>
+                  <option value="SACO">Sacos</option>
+                  <option value="PANTALON">Pantalones</option>
+                </select>
+              </div>
+
+              <div class="col-8 ab-field" style="justify-content: flex-end;">
+                <label class="ab-lab">&nbsp;</label>
+                <div class="ab-actions">
+                  <button class="ab-btn2" type="button" data-fill-origin="NACIONAL">Marcar visibles como Nacional</button>
+                  <button class="ab-btn2" type="button" data-fill-origin="IMPORTADO">Marcar visibles como Importado</button>
+                  <button class="ab-btn2" type="button" id="pendingOriginClear">Limpiar visibles</button>
+                  <button class="ab-btn" type="submit">Guardar origenes</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ab-table-wrap">
+              <table class="ab-table" id="pendingOriginTable">
+                <thead>
+                  <tr>
+                    <th>Codigo</th>
+                    <th>Categoria</th>
+                    <th>Marca</th>
+                    <th>Color</th>
+                    <th>Talle</th>
+                    <th>Origen</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in prendas_sin_origen %}
+                    <tr data-origin-category="{{ p.categoria }}">
+                      <td><span class="ab-pill">{{ p.codigo }}</span></td>
+                      <td>{{ p.get_categoria_display }}</td>
+                      <td>{{ p.marca|default:"-" }}</td>
+                      <td>{{ p.color|default:"-" }}</td>
+                      <td>{{ p.talle|default:"-" }}</td>
+                      <td>
+                        <select class="ab-sel" name="origen_{{ p.id }}">
+                          <option value="">Elegir origen</option>
+                          {% for value, label in origenes %}
+                            <option value="{{ value }}">{{ label }}</option>
+                          {% endfor %}
+                        </select>
+                      </td>
+                      <td>
+                        <a class="ab-btn2" href="{% url 'prendas:editar' p.id %}">Modificar</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </form>
+        {% else %}
+          <div class="ab-msg ok">No hay sacos o pantalones pendientes de origen.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-grid">
           <div class="col-4 ab-field">
@@ -165,12 +247,43 @@
 
 <script>
   (function () {
+    const pendingCategory = document.getElementById("pendingOriginCategory");
+    const pendingClear = document.getElementById("pendingOriginClear");
+    const pendingCount = document.getElementById("pendingOriginCount");
+    const pendingRows = Array.from(document.querySelectorAll("#pendingOriginTable tbody tr[data-origin-category]"));
+    const pendingFillButtons = Array.from(document.querySelectorAll("[data-fill-origin]"));
     const category = document.getElementById("stockCategory");
     const state = document.getElementById("stockState");
     const clear = document.getElementById("stockClear");
     const tableRows = Array.from(document.querySelectorAll("#stockTable tbody tr[data-category]"));
     const cards = Array.from(document.querySelectorAll("#stockCards [data-category]"));
     const count = document.getElementById("stockCount");
+
+    function updatePendingCount(visible) {
+      if (!pendingCount) return;
+      pendingCount.textContent = visible + (visible === 1 ? " pendiente" : " pendientes");
+    }
+
+    function applyPendingFilter() {
+      const wantedCategory = (pendingCategory && pendingCategory.value) || "";
+      let visible = 0;
+
+      pendingRows.forEach(function (row) {
+        const show = !wantedCategory || row.dataset.originCategory === wantedCategory;
+        row.style.display = show ? "" : "none";
+        if (show) visible += 1;
+      });
+
+      updatePendingCount(visible);
+    }
+
+    function fillVisibleOrigins(value) {
+      pendingRows.forEach(function (row) {
+        if (row.style.display === "none") return;
+        const field = row.querySelector("select[name^='origen_']");
+        if (field) field.value = value;
+      });
+    }
 
     function applyFilters() {
       const wantedCategory = (category && category.value) || "";
@@ -202,6 +315,22 @@
       }
     }
 
+    if (pendingCategory) pendingCategory.addEventListener("change", applyPendingFilter);
+    if (pendingClear) {
+      pendingClear.addEventListener("click", function () {
+        pendingRows.forEach(function (row) {
+          if (row.style.display === "none") return;
+          const field = row.querySelector("select[name^='origen_']");
+          if (field) field.value = "";
+        });
+      });
+    }
+    pendingFillButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        fillVisibleOrigins(button.dataset.fillOrigin || "");
+      });
+    });
+
     if (category) category.addEventListener("change", applyFilters);
     if (state) state.addEventListener("change", applyFilters);
     if (clear) {
@@ -213,6 +342,7 @@
     }
 
     window.addEventListener("resize", applyFilters);
+    applyPendingFilter();
     applyFilters();
   })();
 </script>

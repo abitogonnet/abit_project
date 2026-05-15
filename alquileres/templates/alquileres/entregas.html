@@ -8,7 +8,7 @@
     </div>
 
     <form method="get" class="ab-row">
-      <div style="min-width:220px;">
+      <div style="min-width: 220px;">
         <label class="ab-lab">Hasta</label>
         <input class="ab-inp" type="date" name="hasta" value="{{ hasta|date:'Y-m-d' }}">
       </div>
@@ -17,7 +17,7 @@
   </div>
 
   <div class="ab-body">
-    <div class="ab-table-wrap">
+    <div class="ab-table-wrap ab-desktop-only">
       <table class="ab-table">
         <thead>
           <tr>
@@ -30,48 +30,158 @@
         </thead>
         <tbody>
           {% for a in alquileres %}
-          <tr>
-            <td><span class="ab-pill">#{{ a.id }}</span></td>
-            <td>
-              <div style="font-weight:900;">{{ a.cliente_nombre }}</div>
-              <div class="ab-muted">{{ a.cliente_telefono }}</div>
-            </td>
-            <td class="ab-muted">
-              Entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
-              Dev: {{ a.fecha_devolucion|date:"d/m/Y" }}
-            </td>
-            <td class="ab-muted">
-              <div style="font-weight:800;">P1: {{ a.persona1_nombre }}</div>
-              {% for it in a.items.all %}
-                {% if it.persona_num == 1 %}
-                  - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
-                {% endif %}
-              {% endfor %}
-
-              {% if a.persona2_nombre %}
-                <div class="ab-hr" style="margin:8px 0;"></div>
-                <div style="font-weight:800;">P2: {{ a.persona2_nombre }}</div>
-                {% for it in a.items.all %}
-                  {% if it.persona_num == 2 %}
-                    - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
+            <tr>
+              <td><span class="ab-pill">#{{ a.id }}</span></td>
+              <td>
+                <div style="font-weight: 900;">{{ a.cliente_nombre }}</div>
+                <div class="ab-muted">{{ a.cliente_telefono }}</div>
+                <div class="ab-chip-row" style="margin-top: 10px;">
+                  {% for persona in a.detalle_personas %}
+                    <span class="ab-chip">{{ persona.nombre }}</span>
+                  {% endfor %}
+                </div>
+              </td>
+              <td class="ab-muted">
+                Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
+                Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}
+              </td>
+              <td class="ab-muted">
+                {% for persona in a.detalle_personas %}
+                  <div class="ab-stack" style="gap: 4px;">
+                    <strong>{{ persona.nombre }}</strong>
+                    <span>{{ persona.cantidad }} prenda{{ persona.cantidad|pluralize }}</span>
+                    {% if persona.codigos %}
+                      <span class="ab-small">Codigos: {{ persona.codigos }}</span>
+                    {% endif %}
+                  </div>
+                  {% if not forloop.last %}
+                    <div class="ab-hr" style="margin: 10px 0;"></div>
                   {% endif %}
                 {% endfor %}
-              {% endif %}
-            </td>
-            <td>
-              {% if a.fecha_entrega == hoy %}
-                <span class="ab-badge warn">HOY</span>
-              {% else %}
-                <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
-              {% endif %}
-            </td>
-          </tr>
+              </td>
+              <td>
+                {% if a.fecha_entrega == hoy %}
+                  <span class="ab-badge warn">HOY</span>
+                {% else %}
+                  <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr class="ab-table-detail-row">
+              <td colspan="5">
+                <div class="ab-detail-actions">
+                  <details class="ab-detail-toggle ab-detail-toggle-split">
+                    <summary class="ab-detail-summary">
+                      <span>Ver detallado</span>
+                      <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }} para preparar</span>
+                    </summary>
+                    <div class="ab-detail-panel">
+                      {% include "alquileres/_detalle_personas.html" with alquiler=a %}
+                    </div>
+                  </details>
+
+                  <details class="ab-detail-toggle ab-detail-toggle-split" {% if edit_open_id == a.id %}open{% endif %}>
+                    <summary class="ab-detail-summary">
+                      <span>Editar</span>
+                      <span class="ab-small">Nombres, fechas y pagos</span>
+                    </summary>
+                    <div class="ab-detail-panel">
+                      {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                    </div>
+                  </details>
+                </div>
+              </td>
+            </tr>
           {% empty %}
-          <tr><td colspan="5" class="ab-muted">No hay entregas en ese período.</td></tr>
+            <tr>
+              <td colspan="5" class="ab-muted">No hay entregas en ese periodo.</td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    <div class="ab-mobile-list">
+      {% for a in alquileres %}
+        <article class="ab-list-card">
+          <div class="ab-row" style="justify-content: space-between;">
+            <h3>#{{ a.id }} - {{ a.cliente_nombre }}</h3>
+            {% if a.fecha_entrega == hoy %}
+              <span class="ab-badge warn">HOY</span>
+            {% else %}
+              <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
+            {% endif %}
+          </div>
+
+          <div class="ab-meta" style="margin-top: 10px;">
+            <div>Telefono: {{ a.cliente_telefono }}</div>
+            <div>Personas: {{ a.personas_resumen }}</div>
+            <div>Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}</div>
+            <div>Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}</div>
+          </div>
+
+          <details class="ab-detail-toggle" style="margin-top: 14px;">
+            <summary class="ab-detail-summary">
+              <span>Ver detallado</span>
+              <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }}</span>
+            </summary>
+            <div class="ab-detail-panel">
+              {% include "alquileres/_detalle_personas.html" with alquiler=a %}
+            </div>
+          </details>
+
+          <details class="ab-detail-toggle" style="margin-top: 14px;" {% if edit_open_id == a.id %}open{% endif %}>
+            <summary class="ab-detail-summary">
+              <span>Editar</span>
+              <span class="ab-small">Nombres, fechas y pagos</span>
+            </summary>
+            <div class="ab-detail-panel">
+              {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+            </div>
+          </details>
+        </article>
+      {% empty %}
+        <div class="ab-empty">No hay entregas en ese periodo.</div>
+      {% endfor %}
+    </div>
   </div>
 </div>
+
+<script>
+function abNum(value) {
+  const text = (value || "").toString().replace(",", ".").trim();
+  const parsed = parseFloat(text);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function recalcEditForm(form) {
+  const totalInput = form.querySelector('[name$="-total_bruto"]');
+  const discountInput = form.querySelector('[name$="-descuento_pct"]');
+  const senaInput = form.querySelector('[name$="-sena"]');
+  const totalFinalOutput = form.querySelector(".js-edit-total-final");
+  const saldoOutput = form.querySelector(".js-edit-saldo");
+  if (!totalInput || !discountInput || !senaInput || !totalFinalOutput || !saldoOutput) return;
+
+  const total = abNum(totalInput.value);
+  const descuento = Math.min(Math.max(abNum(discountInput.value), 0), 100);
+  const sena = Math.max(abNum(senaInput.value), 0);
+  const totalFinal = Math.max(total - (total * descuento / 100), 0);
+  const saldo = Math.max(totalFinal - sena, 0);
+
+  totalFinalOutput.value = totalFinal.toFixed(2);
+  saldoOutput.value = saldo.toFixed(2);
+}
+
+document.querySelectorAll(".js-alq-edit-form").forEach(function (form) {
+  ["[name$='-total_bruto']", "[name$='-descuento_pct']", "[name$='-sena']"].forEach(function (selector) {
+    const input = form.querySelector(selector);
+    if (input) {
+      input.addEventListener("input", function () {
+        recalcEditForm(form);
+      });
+    }
+  });
+  recalcEditForm(form);
+});
+</script>
 {% endblock %}

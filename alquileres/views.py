@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from prendas.models import Prenda
 
-from .forms import AlquilerForm, VerAlquileresFiltroForm
+from .forms import AlquilerEdicionForm, AlquilerForm, VerAlquileresFiltroForm
 from .models import Alquiler, AlquilerItem
 
 
@@ -29,6 +29,65 @@ def _descripcion_prenda(prenda: Prenda) -> str:
     if prenda.talle:
         partes.append(f"talle {prenda.talle}")
     return " ".join(partes)
+
+
+def _texto_ruedo(item: AlquilerItem) -> str:
+    partes = []
+    if item.ruedo_valor is not None:
+        partes.append(str(item.ruedo_valor))
+    if item.ruedo_tipo:
+        partes.append(item.get_ruedo_tipo_display())
+    return " ".join(partes)
+
+
+def _adjuntar_detalle_alquiler(alquileres):
+    for alquiler in alquileres:
+        items = list(alquiler.items.all())
+        personas = []
+
+        for persona_num, persona_nombre in (
+            (1, alquiler.persona1_nombre),
+            (2, alquiler.persona2_nombre),
+        ):
+            items_persona = []
+            for item in items:
+                if item.persona_num != persona_num:
+                    continue
+
+                prenda = item.prenda
+                items_persona.append({
+                    "categoria": prenda.get_categoria_display(),
+                    "codigo": prenda.codigo,
+                    "marca": prenda.marca or "-",
+                    "color": prenda.color or "-",
+                    "talle": prenda.talle or "-",
+                    "ruedo": _texto_ruedo(item) or "Sin ruedo",
+                    "notas": item.notas or prenda.notas or "",
+                })
+
+            if not ((persona_nombre or "").strip() or items_persona):
+                continue
+
+            personas.append({
+                "numero": persona_num,
+                "nombre": (persona_nombre or "").strip() or f"Persona {persona_num}",
+                "cantidad": len(items_persona),
+                "codigos": ", ".join(item["codigo"] for item in items_persona),
+                "items": items_persona,
+            })
+
+        alquiler.detalle_personas = personas
+        alquiler.total_prendas_detalle = sum(persona["cantidad"] for persona in personas)
+        alquiler.personas_resumen = ", ".join(persona["nombre"] for persona in personas)
+
+
+def _adjuntar_formularios_edicion(alquileres, form_por_alquiler_id=None):
+    form_por_alquiler_id = form_por_alquiler_id or {}
+    for alquiler in alquileres:
+        alquiler.edit_form = form_por_alquiler_id.get(
+            alquiler.id,
+            AlquilerEdicionForm(instance=alquiler, prefix=f"alq-edit-{alquiler.id}"),
+        )
 
 
 def _armar_mensaje_cliente(alq: Alquiler) -> str:
@@ -236,6 +295,105 @@ def _redirect_ver_con_filtros(request):
     return redirect(url)
 
 
+def _redirect_entregas_con_filtro(request):
+    hasta = (request.POST.get("hasta") or "").strip()
+    url = reverse("alquileres:entregas")
+    if hasta:
+        url = f"{url}?{urlencode({'hasta': hasta})}"
+    return redirect(url)
+
+
+def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=None):
+    filtros_form = VerAlquileresFiltroForm(data or None)
+    alquileres = (
+        Alquiler.objects
+        .all()
+        .order_by("-fecha_entrega", "-fecha_devolucion", "-id")
+        .prefetch_related("items__prenda")
+    )
+
+    filtros_activos = False
+    if filtros_form.is_bound and filtros_form.is_valid():
+        fecha_desde = filtros_form.cleaned_data.get("fecha_desde")
+        fecha_hasta = filtros_form.cleaned_data.get("fecha_hasta")
+
+        if fecha_desde:
+            alquileres = alquileres.filter(fecha_entrega__gte=fecha_desde)
+            filtros_activos = True
+        if fecha_hasta:
+            alquileres = alquileres.filter(fecha_entrega__lte=fecha_hasta)
+            filtros_activos = True
+
+    resumen = [
+        {"label": "Activos", "valor": alquileres.exclude(estado_alquiler=Alquiler.EST_CERRADO).count()},
+        {"label": "Reservados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_RESERVADO).count()},
+        {"label": "Entregados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_ENTREGADO).count()},
+        {"label": "Cerrados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_CERRADO).count()},
+    ]
+
+    alquileres = list(alquileres)
+    _adjuntar_detalle_alquiler(alquileres)
+    _adjuntar_formularios_edicion(alquileres, form_por_alquiler_id=form_por_alquiler_id)
+
+    fecha_desde_valor = filtros_form["fecha_desde"].value() or ""
+    fecha_hasta_valor = filtros_form["fecha_hasta"].value() or ""
+    for alquiler in alquileres:
+        alquiler.edit_hidden_fields = [
+            ("fecha_desde", fecha_desde_valor),
+            ("fecha_hasta", fecha_hasta_valor),
+        ]
+
+    return {
+        "alquileres": alquileres,
+        "estados_alquiler": Alquiler.ESTADOS_ALQUILER,
+        "estados_saldo": Alquiler.ESTADOS_SALDO,
+        "metodos_pago": Alquiler.METODOS_PAGO,
+        "resumen": resumen,
+        "filtros_form": filtros_form,
+        "filtros_activos": filtros_activos,
+        "edit_open_id": edit_open_id,
+    }
+
+
+def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
+    hoy = timezone.localdate()
+    hasta_str = ""
+    if data is not None:
+        hasta_str = (data.get("hasta") or "").strip()
+
+    try:
+        if hasta_str:
+            hasta = timezone.datetime.strptime(hasta_str, "%Y-%m-%d").date()
+        else:
+            hasta = hoy + timezone.timedelta(days=7)
+    except Exception:
+        hasta = hoy + timezone.timedelta(days=7)
+
+    if hasta < hoy:
+        hasta = hoy
+
+    alquileres = (
+        Alquiler.objects
+        .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
+        .order_by("fecha_entrega", "fecha_devolucion", "id")
+        .prefetch_related("items__prenda")
+    )
+    alquileres = list(alquileres)
+    _adjuntar_detalle_alquiler(alquileres)
+    _adjuntar_formularios_edicion(alquileres, form_por_alquiler_id=form_por_alquiler_id)
+
+    hasta_valor = hasta.strftime("%Y-%m-%d")
+    for alquiler in alquileres:
+        alquiler.edit_hidden_fields = [("hasta", hasta_valor)]
+
+    return {
+        "hoy": hoy,
+        "hasta": hasta,
+        "alquileres": alquileres,
+        "edit_open_id": edit_open_id,
+    }
+
+
 def ver(request):
     if request.method == "POST":
         alquiler_id = request.POST.get("alq_id")
@@ -249,6 +407,28 @@ def ver(request):
                 _refresh_prendas_estado_por_ids(prenda_ids)
             messages.success(request, f"Alquiler #{alquiler_id} eliminado.")
             return _redirect_ver_con_filtros(request)
+
+        if accion == "editar":
+            edit_form = AlquilerEdicionForm(
+                request.POST,
+                instance=alquiler,
+                prefix=f"alq-edit-{alquiler.id}",
+            )
+            if edit_form.is_valid():
+                edit_form.save()
+                messages.success(request, f"Alquiler #{alquiler.id} editado.")
+                return _redirect_ver_con_filtros(request)
+
+            messages.error(request, "Revisa los datos del alquiler antes de guardar.")
+            return render(
+                request,
+                "alquileres/ver.html",
+                _contexto_ver_alquileres(
+                    request.POST,
+                    form_por_alquiler_id={alquiler.id: edit_form},
+                    edit_open_id=alquiler.id,
+                ),
+            )
 
         nuevo_saldo = request.POST.get("estado_saldo")
         nuevo_estado = request.POST.get("estado_alquiler")
@@ -289,70 +469,46 @@ def ver(request):
 
         return _redirect_ver_con_filtros(request)
 
-    filtros_form = VerAlquileresFiltroForm(request.GET or None)
-    alquileres = (
-        Alquiler.objects
-        .all()
-        .order_by("-fecha_entrega", "-fecha_devolucion", "-id")
-        .prefetch_related("items__prenda")
-    )
-
-    filtros_activos = False
-    if filtros_form.is_bound and filtros_form.is_valid():
-        fecha_desde = filtros_form.cleaned_data.get("fecha_desde")
-        fecha_hasta = filtros_form.cleaned_data.get("fecha_hasta")
-
-        if fecha_desde:
-            alquileres = alquileres.filter(fecha_entrega__gte=fecha_desde)
-            filtros_activos = True
-        if fecha_hasta:
-            alquileres = alquileres.filter(fecha_entrega__lte=fecha_hasta)
-            filtros_activos = True
-
-    resumen = [
-        {"label": "Activos", "valor": alquileres.exclude(estado_alquiler=Alquiler.EST_CERRADO).count()},
-        {"label": "Reservados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_RESERVADO).count()},
-        {"label": "Entregados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_ENTREGADO).count()},
-        {"label": "Cerrados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_CERRADO).count()},
-    ]
-
-    return render(request, "alquileres/ver.html", {
-        "alquileres": alquileres,
-        "estados_alquiler": Alquiler.ESTADOS_ALQUILER,
-        "estados_saldo": Alquiler.ESTADOS_SALDO,
-        "metodos_pago": Alquiler.METODOS_PAGO,
-        "resumen": resumen,
-        "filtros_form": filtros_form,
-        "filtros_activos": filtros_activos,
-    })
+    return render(request, "alquileres/ver.html", _contexto_ver_alquileres(request.GET or None))
 
 
 def entregas(request):
-    hoy = timezone.localdate()
-    hasta_str = request.GET.get("hasta", "")
-    try:
-        if hasta_str:
-            hasta = timezone.datetime.strptime(hasta_str, "%Y-%m-%d").date()
-        else:
-            hasta = hoy + timezone.timedelta(days=7)
-    except Exception:
-        hasta = hoy + timezone.timedelta(days=7)
+    if request.method == "POST":
+        alquiler_id = request.POST.get("alq_id")
+        alquiler = get_object_or_404(Alquiler, id=alquiler_id)
+        accion = request.POST.get("accion", "editar")
 
-    if hasta < hoy:
-        hasta = hoy
+        if accion == "eliminar":
+            with transaction.atomic():
+                prenda_ids = list(alquiler.items.values_list("prenda_id", flat=True))
+                alquiler.delete()
+                _refresh_prendas_estado_por_ids(prenda_ids)
+            messages.success(request, f"Alquiler #{alquiler_id} eliminado.")
+            return _redirect_entregas_con_filtro(request)
 
-    alquileres = (
-        Alquiler.objects
-        .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
-        .order_by("fecha_entrega", "fecha_devolucion", "id")
-        .prefetch_related("items__prenda")
-    )
+        if accion == "editar":
+            edit_form = AlquilerEdicionForm(
+                request.POST,
+                instance=alquiler,
+                prefix=f"alq-edit-{alquiler.id}",
+            )
+            if edit_form.is_valid():
+                edit_form.save()
+                messages.success(request, f"Alquiler #{alquiler.id} editado.")
+                return _redirect_entregas_con_filtro(request)
 
-    return render(request, "alquileres/entregas.html", {
-        "hoy": hoy,
-        "hasta": hasta,
-        "alquileres": alquileres,
-    })
+            messages.error(request, "Revisa los datos del alquiler antes de guardar.")
+            return render(
+                request,
+                "alquileres/entregas.html",
+                _contexto_entregas(
+                    request.POST,
+                    form_por_alquiler_id={alquiler.id: edit_form},
+                    edit_open_id=alquiler.id,
+                ),
+            )
+
+    return render(request, "alquileres/entregas.html", _contexto_entregas(request.GET or None))
 
 
 def retrasados(request):

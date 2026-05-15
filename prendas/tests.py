@@ -288,3 +288,44 @@ class PrendaViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Prenda.objects.filter(id=prenda.id).exists())
+
+    def test_stock_actualiza_origenes_en_lote(self):
+        saco = Prenda.objects.create(
+            codigo="SA-101",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+            origen="",
+        )
+        pantalon = Prenda.objects.create(
+            codigo="PA-101",
+            categoria=Prenda.C_PANTALON,
+            marca="Boiler",
+            color="Azul oscuro",
+            talle="40",
+            origen="",
+        )
+        camisa = Prenda.objects.create(
+            codigo="CA-101",
+            categoria=Prenda.C_CAMISA,
+            marca="Sportfino",
+            color="Blanco",
+            talle="40",
+            origen="",
+        )
+
+        response = self.client.post(reverse("prendas:stock"), {
+            "accion": "guardar_origenes",
+            f"origen_{saco.id}": Prenda.O_NAC,
+            f"origen_{pantalon.id}": Prenda.O_IMP,
+            f"origen_{camisa.id}": Prenda.O_NAC,
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        saco.refresh_from_db()
+        pantalon.refresh_from_db()
+        camisa.refresh_from_db()
+        self.assertEqual(saco.origen, Prenda.O_NAC)
+        self.assertEqual(pantalon.origen, Prenda.O_IMP)
+        self.assertEqual(camisa.origen, "")

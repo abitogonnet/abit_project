@@ -1,0 +1,136 @@
+<form method="post" class="ab-edit-layout js-alq-edit-form">
+  {% csrf_token %}
+  <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
+  {% for field_name, field_value in alquiler.edit_hidden_fields %}
+    <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
+  {% endfor %}
+
+  <div class="ab-edit-main">
+    {% if alquiler.edit_form.non_field_errors %}
+      <div class="ab-msg err">{{ alquiler.edit_form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="ab-edit-block">
+      <div class="ab-edit-block-title">Datos principales</div>
+      <div class="ab-edit-table-wrap">
+        <table class="ab-edit-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Telefono</th>
+              <th>Persona 1</th>
+              <th>Persona 2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                {{ alquiler.edit_form.cliente_nombre }}
+                {% if alquiler.edit_form.cliente_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_nombre.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.cliente_telefono }}
+                {% if alquiler.edit_form.cliente_telefono.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_telefono.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.persona1_nombre }}
+                {% if alquiler.edit_form.persona1_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona1_nombre.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.persona2_nombre }}
+                {% if alquiler.edit_form.persona2_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona2_nombre.errors }}</div>{% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ab-edit-block">
+      <div class="ab-edit-block-title">Fechas</div>
+      <div class="ab-edit-table-wrap">
+        <table class="ab-edit-table">
+          <thead>
+            <tr>
+              <th>Reserva</th>
+              <th>Retiro / entrega</th>
+              <th>Devolucion</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                {{ alquiler.edit_form.fecha_reserva }}
+                {% if alquiler.edit_form.fecha_reserva.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_reserva.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.fecha_entrega }}
+                {% if alquiler.edit_form.fecha_entrega.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_entrega.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.fecha_devolucion }}
+                {% if alquiler.edit_form.fecha_devolucion.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_devolucion.errors }}</div>{% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ab-edit-block">
+      <div class="ab-edit-block-title">Pago</div>
+      <div class="ab-edit-table-wrap">
+        <table class="ab-edit-table">
+          <thead>
+            <tr>
+              <th>Total bruto</th>
+              <th>Descuento %</th>
+              <th>Sena</th>
+              <th>Metodo sena</th>
+              <th>Total final</th>
+              <th>Saldo restante</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                {{ alquiler.edit_form.total_bruto }}
+                {% if alquiler.edit_form.total_bruto.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.total_bruto.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.descuento_pct }}
+                {% if alquiler.edit_form.descuento_pct.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.descuento_pct.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.sena }}
+                {% if alquiler.edit_form.sena.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.sena.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ alquiler.edit_form.metodo_sena }}
+                {% if alquiler.edit_form.metodo_sena.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.metodo_sena.errors }}</div>{% endif %}
+              </td>
+              <td>
+                <input class="ab-inp js-edit-total-final" type="text" value="{{ alquiler.total_final }}" readonly>
+              </td>
+              <td>
+                <input class="ab-inp js-edit-saldo" type="text" value="{{ alquiler.saldo }}" readonly>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <aside class="ab-edit-side">
+    <div class="ab-edit-side-card">
+      <span class="ab-spec-label">Acciones</span>
+      <button class="ab-btn" type="submit" name="accion" value="editar">Guardar cambios</button>
+      <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ alquiler.id }}. Continuar?');">Eliminar</button>
+      <div class="ab-edit-side-note">
+        Estado alquiler: {{ alquiler.get_estado_alquiler_display }}<br>
+        Estado saldo: {{ alquiler.get_estado_saldo_display }}
+      </div>
+    </div>
+  </aside>
+</form>

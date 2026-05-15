@@ -1,0 +1,73 @@
+<div class="ab-detail-summary-grid">
+  <div class="ab-detail-summary-card">
+    <span class="ab-spec-label">Cliente</span>
+    <strong>{{ alquiler.cliente_nombre }}</strong>
+    <div class="ab-muted">{{ alquiler.cliente_telefono }}</div>
+  </div>
+  <div class="ab-detail-summary-card">
+    <span class="ab-spec-label">Fechas</span>
+    <div class="ab-detail-date-list">
+      <div>Reserva: {{ alquiler.fecha_reserva|date:"d/m/Y" }}</div>
+      <div>Retiro / entrega: {{ alquiler.fecha_entrega|date:"d/m/Y" }}</div>
+      <div>Devolucion: {{ alquiler.fecha_devolucion|date:"d/m/Y" }}</div>
+    </div>
+  </div>
+  <div class="ab-detail-summary-card">
+    <span class="ab-spec-label">Pago</span>
+    <div class="ab-detail-date-list">
+      <div>Sena: ${{ alquiler.sena }}</div>
+      <div>Saldo restante: ${{ alquiler.saldo }}</div>
+      <div>Total final: ${{ alquiler.total_final }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="ab-person-grid">
+  {% for persona in alquiler.detalle_personas %}
+    <section class="ab-person-card">
+      <div class="ab-person-head">
+        <div>
+          <h4>{{ persona.nombre }}</h4>
+          <p class="ab-caption">{{ persona.cantidad }} prenda{{ persona.cantidad|pluralize }} para preparar</p>
+        </div>
+        <span class="ab-pill">Persona {{ persona.numero }}</span>
+      </div>
+
+      <div class="ab-item-list">
+        {% for item in persona.items %}
+          <article class="ab-item-card">
+            <div class="ab-item-title">
+              <strong>{{ item.categoria }}</strong>
+              <span class="ab-pill">{{ item.codigo }}</span>
+            </div>
+
+            <div class="ab-item-specs">
+              <div class="ab-spec">
+                <span class="ab-spec-label">Marca</span>
+                <span class="ab-spec-value">{{ item.marca }}</span>
+              </div>
+              <div class="ab-spec">
+                <span class="ab-spec-label">Color</span>
+                <span class="ab-spec-value">{{ item.color }}</span>
+              </div>
+              <div class="ab-spec">
+                <span class="ab-spec-label">Talle</span>
+                <span class="ab-spec-value">{{ item.talle }}</span>
+              </div>
+              <div class="ab-spec">
+                <span class="ab-spec-label">Ruedo</span>
+                <span class="ab-spec-value">{{ item.ruedo }}</span>
+              </div>
+            </div>
+
+            {% if item.notas %}
+              <div class="ab-inline-note">Notas: {{ item.notas }}</div>
+            {% endif %}
+          </article>
+        {% empty %}
+          <div class="ab-empty">No tiene prendas cargadas.</div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</div>

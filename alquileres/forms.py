@@ -40,11 +40,11 @@ def _prenda_choices(prendas):
     return choices
 
 
-def _buscar_conflicto(prenda: Prenda, fecha_entrega, fecha_devolucion):
+def _buscar_conflicto(prenda: Prenda, fecha_entrega, fecha_devolucion, exclude_alquiler_id=None):
     if not prenda or not fecha_entrega or not fecha_devolucion:
         return None
 
-    return (
+    conflictos = (
         AlquilerItem.objects
         .select_related("alquiler")
         .filter(
@@ -54,8 +54,12 @@ def _buscar_conflicto(prenda: Prenda, fecha_entrega, fecha_devolucion):
             alquiler__fecha_devolucion__gte=fecha_entrega,
         )
         .order_by("alquiler__fecha_entrega", "alquiler__id")
-        .first()
     )
+
+    if exclude_alquiler_id:
+        conflictos = conflictos.exclude(alquiler_id=exclude_alquiler_id)
+
+    return conflictos.first()
 
 
 class AlquilerForm(forms.ModelForm):
@@ -258,5 +262,83 @@ class VerAlquileresFiltroForm(forms.Form):
 
         if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
             self.add_error("fecha_hasta", "La fecha final no puede ser menor que la inicial.")
+
+        return cleaned
+
+
+class AlquilerEdicionForm(forms.ModelForm):
+    class Meta:
+        model = Alquiler
+        fields = [
+            "fecha_reserva",
+            "fecha_entrega",
+            "fecha_devolucion",
+            "cliente_nombre",
+            "cliente_telefono",
+            "persona1_nombre",
+            "persona2_nombre",
+            "total_bruto",
+            "descuento_pct",
+            "sena",
+            "metodo_sena",
+        ]
+        widgets = {
+            "fecha_reserva": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+            "fecha_entrega": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+            "fecha_devolucion": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+            "cliente_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
+            "cliente_telefono": forms.TextInput(attrs={"class": "ab-inp"}),
+            "persona1_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
+            "persona2_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
+            "total_bruto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
+            "descuento_pct": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0", "max": "100"}),
+            "sena": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
+            "metodo_sena": forms.Select(attrs={"class": "ab-sel"}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        fecha_reserva = cleaned.get("fecha_reserva")
+        fecha_entrega = cleaned.get("fecha_entrega")
+        fecha_devolucion = cleaned.get("fecha_devolucion")
+
+        if fecha_reserva and fecha_entrega and fecha_reserva > fecha_entrega:
+            self.add_error("fecha_entrega", "La entrega no puede ser anterior a la reserva.")
+
+        if fecha_entrega and fecha_devolucion and fecha_entrega > fecha_devolucion:
+            self.add_error("fecha_devolucion", "La devolucion no puede ser anterior a la entrega.")
+
+        total = Decimal(cleaned.get("total_bruto") or 0)
+        sena = Decimal(cleaned.get("sena") or 0)
+        if total < 0:
+            self.add_error("total_bruto", "El total no puede ser negativo.")
+        if sena < 0:
+            self.add_error("sena", "La sena no puede ser negativa.")
+
+        metodo_sena = (cleaned.get("metodo_sena") or "").strip()
+        if sena > 0 and not metodo_sena:
+            self.add_error("metodo_sena", "Elige el metodo de pago de la sena.")
+
+        tiene_persona2 = self.instance.items.filter(persona_num=2).exists()
+        if tiene_persona2 and not (cleaned.get("persona2_nombre") or "").strip():
+            self.add_error("persona2_nombre", "Completa el nombre de la persona 2.")
+
+        if fecha_entrega and fecha_devolucion:
+            for item in self.instance.items.select_related("prenda"):
+                conflicto = _buscar_conflicto(
+                    item.prenda,
+                    fecha_entrega,
+                    fecha_devolucion,
+                    exclude_alquiler_id=self.instance.id,
+                )
+                if conflicto:
+                    self.add_error(
+                        "fecha_entrega",
+                        "La prenda "
+                        f"{item.prenda.codigo} ya esta ocupada del "
+                        f"{conflicto.alquiler.fecha_entrega.strftime('%d/%m/%Y')} al "
+                        f"{conflicto.alquiler.fecha_devolucion.strftime('%d/%m/%Y')}.",
+                    )
+                    break
 
         return cleaned

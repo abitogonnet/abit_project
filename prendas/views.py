@@ -122,6 +122,18 @@ def _prenda_form_context(form, *, titulo, subtitulo, accion_label, cancel_url, s
     }
 
 
+def _categorias_con_origen():
+    return [Prenda.C_SACO, Prenda.C_PANTALON]
+
+
+def _prendas_sin_origen():
+    return (
+        Prenda.objects
+        .filter(categoria__in=_categorias_con_origen(), origen="")
+        .order_by("categoria", "marca", "talle", "codigo")
+    )
+
+
 def _ocupar_prendas_con_alquiler(prendas):
     if not prendas:
         return
@@ -226,9 +238,49 @@ def editar_prenda(request, pk):
 @require_http_methods(["GET", "POST"])
 def stock(request):
     if request.method == "POST":
+        accion = request.POST.get("accion", "actualizar")
+
+        if accion == "guardar_origenes":
+            origenes_validos = {value for value, _label in Prenda.ORIGENES}
+            cambios = {}
+
+            for key, value in request.POST.items():
+                if not key.startswith("origen_"):
+                    continue
+                try:
+                    prenda_id = int(key.split("_", 1)[1])
+                except (IndexError, ValueError):
+                    continue
+                nuevo_origen = (value or "").strip()
+                if nuevo_origen in origenes_validos:
+                    cambios[prenda_id] = nuevo_origen
+
+            prendas = list(
+                Prenda.objects.filter(
+                    id__in=cambios.keys(),
+                    categoria__in=_categorias_con_origen(),
+                )
+            )
+            actualizadas = []
+            for prenda in prendas:
+                nuevo_origen = cambios.get(prenda.id, "")
+                if nuevo_origen and prenda.origen != nuevo_origen:
+                    prenda.origen = nuevo_origen
+                    actualizadas.append(prenda)
+
+            if actualizadas:
+                Prenda.objects.bulk_update(actualizadas, ["origen"])
+                total = len(actualizadas)
+                messages.success(
+                    request,
+                    f"Origen actualizado en {total} prenda{'s' if total != 1 else ''}.",
+                )
+            else:
+                messages.info(request, "No se guardaron cambios de origen.")
+            return redirect("prendas:stock")
+
         prenda_id = request.POST.get("prenda_id")
         prenda = get_object_or_404(Prenda, id=prenda_id)
-        accion = request.POST.get("accion", "actualizar")
 
         if accion == "eliminar":
             codigo = prenda.codigo
@@ -255,17 +307,21 @@ def stock(request):
         return redirect("prendas:stock")
 
     prendas = Prenda.objects.all().order_by("categoria", "-creado_en", "-codigo")
+    prendas_sin_origen = list(_prendas_sin_origen())
     resumen = [
         {"label": "Total", "valor": prendas.count()},
         {"label": "Disponibles", "valor": prendas.filter(estado=Prenda.E_DISP).count()},
         {"label": "Reservadas", "valor": prendas.filter(estado=Prenda.E_RES).count()},
         {"label": "Entregadas", "valor": prendas.filter(estado=Prenda.E_ENT).count()},
         {"label": "Danadas", "valor": prendas.filter(estado=Prenda.E_DAN).count()},
+        {"label": "Sin origen", "valor": len(prendas_sin_origen)},
     ]
 
     return render(request, "prendas/stock.html", {
         "prendas": prendas,
+        "prendas_sin_origen": prendas_sin_origen,
         "estados": Prenda.ESTADOS,
+        "origenes": Prenda.ORIGENES,
         "resumen": resumen,
         "categorias": Prenda.CATEGORIAS,
     })
