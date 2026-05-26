@@ -221,13 +221,14 @@ class AlquileresViewsTests(TestCase):
         self.assertContains(response, f"#{fin.id}")
         self.assertNotContains(response, f"#{fuera.id}")
 
-    def test_ver_alquileres_muestra_detallado_por_persona_con_prendas_y_ruedos(self):
+    def test_ver_alquileres_muestra_prendas_con_descripcion_y_sin_ver_detallado(self):
         saco = Prenda.objects.create(
             codigo="SA-030",
             categoria=Prenda.C_SACO,
             marca="Boiler",
             color="Negro",
             talle="4",
+            origen=Prenda.O_NAC,
         )
         pantalon = Prenda.objects.create(
             codigo="PA-030",
@@ -235,6 +236,7 @@ class AlquileresViewsTests(TestCase):
             marca="Oxford",
             color="Gris",
             talle="42",
+            origen=Prenda.O_IMP,
         )
         alquiler = Alquiler.objects.create(
             fecha_visita=date(2026, 4, 16),
@@ -267,13 +269,14 @@ class AlquileresViewsTests(TestCase):
         response = self.client.get(reverse("alquileres:ver"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ver detallado")
-        self.assertContains(response, "Retiro / entrega")
-        self.assertContains(response, "Saldo restante")
+        self.assertNotContains(response, "Ver detallado")
+        self.assertContains(response, "Editar")
         self.assertContains(response, "Juan")
         self.assertContains(response, "Pedro")
-        self.assertContains(response, "SA-030")
-        self.assertContains(response, "PA-030")
+        self.assertContains(response, "Saco 030")
+        self.assertContains(response, "Pantalón 030")
+        self.assertContains(response, "Saco Negro Boiler Nacional")
+        self.assertContains(response, "Pantalón Gris Oxford Importado")
         self.assertContains(response, "Boiler")
         self.assertContains(response, "Oxford")
         self.assertContains(response, "Negro")

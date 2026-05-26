@@ -89,11 +89,6 @@
                     <div class="ab-cell-stack">
                       <div style="font-weight: 800;">{{ a.cliente_nombre }}</div>
                       <span class="ab-pill">#{{ a.id }}</span>
-                      <div class="ab-chip-row">
-                        {% for persona in a.detalle_personas %}
-                          <span class="ab-chip">{{ persona.nombre }}</span>
-                        {% endfor %}
-                      </div>
                     </div>
                   </td>
                   <td>
@@ -103,11 +98,20 @@
                     </div>
                   </td>
                   <td>
-                    <div class="ab-cell-stack">
+                    <div class="ab-inline-persona-grid">
                       {% for prenda in a.prendas_tabla %}
-                        <div class="ab-cell-block">
-                          <strong>{{ prenda.persona }}</strong>
-                          <span class="ab-small">{{ prenda.detalle }}</span>
+                        <div class="ab-inline-persona-row">
+                          <div class="ab-inline-persona-name">{{ prenda.persona }}</div>
+                          <div class="ab-inline-persona-items">
+                            {% for item in prenda.items %}
+                              <div class="ab-cell-block">
+                                <strong>{{ item.titulo }}</strong>
+                                <span class="ab-small">{{ item.descripcion }}</span>
+                              </div>
+                            {% empty %}
+                              <span class="ab-small">Sin prendas</span>
+                            {% endfor %}
+                          </div>
                         </div>
                       {% endfor %}
                     </div>
@@ -225,32 +229,20 @@
                 </tr>
                 <tr class="ab-table-detail-row">
                   <td colspan="11">
-                    <div class="ab-detail-actions">
-                      <details class="ab-detail-toggle ab-detail-toggle-split">
-                        <summary class="ab-detail-summary">
-                          <span>Ver detallado</span>
-                          <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }} para preparar</span>
-                        </summary>
-                        <div class="ab-detail-panel">
-                          {% include "alquileres/_detalle_personas.html" with alquiler=a %}
-                        </div>
-                      </details>
-
-                      <details class="ab-detail-toggle ab-detail-toggle-split" {% if edit_open_id == a.id %}open{% endif %}>
-                        <summary class="ab-detail-summary">
-                          <span>Editar</span>
-                          <span class="ab-small">Nombres, fechas, pagos y prendas</span>
-                        </summary>
-                        <div class="ab-detail-panel">
-                          {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
-                        </div>
-                      </details>
-                    </div>
+                    <details class="ab-detail-toggle" {% if edit_open_id == a.id %}open{% endif %}>
+                      <summary class="ab-detail-summary">
+                        <span>Editar</span>
+                        <span class="ab-small">Nombres, fechas, pagos y prendas</span>
+                      </summary>
+                      <div class="ab-detail-panel">
+                        {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                      </div>
+                    </details>
                   </td>
                 </tr>
               {% empty %}
                 <tr>
-                  <td colspan="7" class="ab-muted">
+                  <td colspan="11" class="ab-muted">
                     {% if filtros_activos %}
                       No hay alquileres dentro de ese rango de fechas.
                     {% else %}
@@ -298,7 +290,13 @@
               <div class="ab-meta">
                 <div><strong>Prendas</strong></div>
                 {% for prenda in a.prendas_tabla %}
-                  <div>{{ prenda.persona }}: {{ prenda.detalle }}</div>
+                  <div><strong>{{ prenda.persona }}</strong></div>
+                  {% for item in prenda.items %}
+                    <div>{{ item.titulo }}</div>
+                    <div class="ab-small">{{ item.descripcion }}</div>
+                  {% empty %}
+                    <div>Sin prendas</div>
+                  {% endfor %}
                 {% endfor %}
                 <div><strong>Ruedo saco</strong></div>
                 {% for ruedo in a.ruedos_tabla.saco %}
@@ -313,16 +311,6 @@
                   <div>Sin ruedo</div>
                 {% endfor %}
               </div>
-
-              <details class="ab-detail-toggle" style="margin-top: 14px;">
-                <summary class="ab-detail-summary">
-                  <span>Ver detallado</span>
-                  <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }}</span>
-                </summary>
-                <div class="ab-detail-panel">
-                  {% include "alquileres/_detalle_personas.html" with alquiler=a %}
-                </div>
-              </details>
 
               <details class="ab-detail-toggle" style="margin-top: 14px;" {% if edit_open_id == a.id %}open{% endif %}>
                 <summary class="ab-detail-summary">

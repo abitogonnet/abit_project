@@ -504,6 +504,28 @@ textarea.ab-inp:focus {
   gap: 3px;
 }
 
+.ab-inline-persona-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.ab-inline-persona-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.ab-inline-persona-name {
+  font-weight: 800;
+  padding-top: 2px;
+}
+
+.ab-inline-persona-items {
+  display: grid;
+  gap: 8px;
+}
+
 .ab-table tbody tr:hover td {
   background: rgba(255, 255, 255, 0.52);
 }
@@ -1048,6 +1070,11 @@ textarea.ab-inp:focus {
   .ab-item-title {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .ab-inline-persona-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .ab-item-specs {

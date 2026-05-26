@@ -41,6 +41,29 @@ def _texto_ruedo(item: AlquilerItem) -> str:
     return " ".join(partes)
 
 
+def _numero_codigo(codigo: str) -> str:
+    if not codigo:
+        return ""
+    if "-" in codigo:
+        return codigo.split("-", 1)[1]
+    return codigo
+
+
+def _descripcion_prenda_tabla(item: dict) -> str:
+    partes = [item["categoria"]]
+    for key in ("color", "marca", "origen"):
+        valor = (item.get(key) or "").strip()
+        if valor and valor != "-":
+            partes.append(valor)
+
+    if len(partes) == 1:
+        talle = (item.get("talle") or "").strip()
+        if talle and talle != "-":
+            partes.append(f"talle {talle}")
+
+    return " ".join(partes)
+
+
 def _badge_estado_alquiler(value: str) -> str:
     if value == Alquiler.EST_CERRADO:
         return "ok"
@@ -112,9 +135,11 @@ def _adjuntar_detalle_alquiler(alquileres):
                     "categoria_key": prenda.categoria,
                     "categoria": prenda.get_categoria_display(),
                     "codigo": prenda.codigo,
+                    "codigo_numero": _numero_codigo(prenda.codigo),
                     "marca": prenda.marca or "-",
                     "color": prenda.color or "-",
                     "talle": prenda.talle or "-",
+                    "origen": prenda.get_origen_display() or "-",
                     "ruedo": _texto_ruedo(item) or "Sin ruedo",
                     "estado_prenda": prenda.estado,
                     "estado_prenda_display": prenda.get_estado_display(),
@@ -144,13 +169,15 @@ def _adjuntar_detalle_alquiler(alquileres):
         estados_prenda_count = {}
 
         for persona in personas:
-            detalle_prendas = ", ".join(
-                f'{item["codigo"]} ({item["categoria"]})'
-                for item in persona["items"]
-            ) or "Sin prendas"
             alquiler.prendas_tabla.append({
                 "persona": persona["nombre"],
-                "detalle": detalle_prendas,
+                "items": [
+                    {
+                        "titulo": f'{item["categoria"]} {item["codigo_numero"]}'.strip(),
+                        "descripcion": _descripcion_prenda_tabla(item),
+                    }
+                    for item in persona["items"]
+                ],
             })
 
             for item in persona["items"]:
