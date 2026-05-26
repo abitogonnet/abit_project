@@ -3,6 +3,8 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
+from alquileres.models import Alquiler
+
 from .forms import GastoForm
 from .models import DivisionBienes, Gasto
 
@@ -27,6 +29,23 @@ class GastoFormTests(TestCase):
 
 
 class GastosViewsTests(TestCase):
+    def _crear_alquiler(self, *, total_bruto, sena, estado_saldo=Alquiler.SAL_PEND, metodo_saldo="", saldo_pagado_en=None):
+        return Alquiler.objects.create(
+            fecha_visita=date(2026, 5, 1),
+            fecha_reserva=date(2026, 5, 1),
+            fecha_entrega=date(2026, 5, 10),
+            fecha_devolucion=date(2026, 5, 12),
+            cliente_nombre="Cliente Caja",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto=total_bruto,
+            sena=sena,
+            metodo_sena=Alquiler.MP_EFEC if str(sena) != "0" else "",
+            estado_saldo=estado_saldo,
+            metodo_saldo=metodo_saldo,
+            saldo_pagado_en=saldo_pagado_en,
+        )
+
     def _unlock_gastos(self, path_name="gastos:home"):
         return self.client.post(reverse(path_name), {
             "access_action": "unlock",
@@ -52,6 +71,13 @@ class GastosViewsTests(TestCase):
         session["gastos_access_ok"] = True
         session.save()
 
+        self._crear_alquiler(
+            total_bruto="95000",
+            sena="75000",
+            estado_saldo=Alquiler.SAL_PAG,
+            metodo_saldo=Alquiler.MP_TRANS,
+            saldo_pagado_en=date(2026, 5, 10),
+        )
         Gasto.objects.create(
             fecha=date(2026, 5, 10),
             categoria="Publicidad",
@@ -75,8 +101,50 @@ class GastosViewsTests(TestCase):
         self.assertContains(response, "Campana de Instagram")
         self.assertContains(response, "Semana del evento")
         self.assertContains(response, "Retiro de mitad de mes")
-        self.assertContains(response, "Total esperado en cuentas")
+        self.assertContains(response, "Saldo actual en cuenta")
+        self.assertContains(response, "Ingresos por senas")
+        self.assertContains(response, "Saldos ya pagados")
+        self.assertContains(response, "Ingresos de alquileres")
+        self.assertContains(response, "$75000")
+        self.assertContains(response, "$20000")
+        self.assertContains(response, "$95000")
         self.assertContains(response, "$40000")
+        self.assertNotContains(response, "Tade acumulado")
+        self.assertNotContains(response, "Bauti acumulado")
+
+    def test_home_calcula_saldo_actual_de_cuenta_desde_alquileres(self):
+        session = self.client.session
+        session["gastos_access_ok"] = True
+        session.save()
+
+        self._crear_alquiler(
+            total_bruto="95000",
+            sena="75000",
+            estado_saldo=Alquiler.SAL_PAG,
+            metodo_saldo=Alquiler.MP_TRANS,
+            saldo_pagado_en=date(2026, 5, 10),
+        )
+        self._crear_alquiler(
+            total_bruto="50000",
+            sena="10000",
+            estado_saldo=Alquiler.SAL_PEND,
+        )
+        Gasto.objects.create(
+            fecha=date(2026, 5, 10),
+            categoria="Arreglo",
+            monto="5000",
+        )
+        DivisionBienes.objects.create(
+            fecha=date(2026, 5, 11),
+            monto_total="10000",
+            para_tade="5000",
+            para_bauti="5000",
+        )
+
+        response = self.client.get(reverse("gastos:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "$90000")
 
     def test_vista_crear_renderiza_selectores_y_notas_tras_desbloqueo(self):
         self._unlock_gastos()
@@ -87,11 +155,23 @@ class GastosViewsTests(TestCase):
         self.assertContains(response, '<select name="metodo"', html=False)
         self.assertContains(response, 'name="notas"', html=False)
 
-    def test_division_muestra_totales_en_cuentas(self):
+    def test_division_muestra_saldo_actual_en_lugar_de_totales_por_persona(self):
         session = self.client.session
         session["gastos_access_ok"] = True
         session.save()
 
+        self._crear_alquiler(
+            total_bruto="95000",
+            sena="75000",
+            estado_saldo=Alquiler.SAL_PAG,
+            metodo_saldo=Alquiler.MP_TRANS,
+            saldo_pagado_en=date(2026, 5, 10),
+        )
+        Gasto.objects.create(
+            fecha=date(2026, 5, 10),
+            categoria="Publicidad",
+            monto="5000",
+        )
         DivisionBienes.objects.create(
             fecha=date(2026, 5, 1),
             monto_total="10000",
@@ -110,7 +190,11 @@ class GastosViewsTests(TestCase):
         response = self.client.get(reverse("gastos:division_bienes"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Total esperado en cuentas")
-        self.assertContains(response, "$15000")
-        self.assertContains(response, "$8500")
-        self.assertContains(response, "$6500")
+        self.assertContains(response, "Saldo actual en cuenta")
+        self.assertContains(response, "Ingresos por senas")
+        self.assertContains(response, "Saldos ya pagados")
+        self.assertContains(response, "Dinero ya dividido")
+        self.assertContains(response, "$75000")
+        self.assertNotContains(response, "Total esperado en cuentas")
+        self.assertNotContains(response, "Tade acumulado")
+        self.assertNotContains(response, "Bauti acumulado")

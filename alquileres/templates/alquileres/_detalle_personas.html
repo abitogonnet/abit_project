@@ -15,9 +15,12 @@
   <div class="ab-detail-summary-card">
     <span class="ab-spec-label">Pago</span>
     <div class="ab-detail-date-list">
-      <div>Sena: ${{ alquiler.sena }}</div>
-      <div>Saldo restante: ${{ alquiler.saldo }}</div>
+      <div>Abonado actual: ${{ alquiler.abono_actual }}</div>
+      <div>Saldo restante: ${{ alquiler.saldo_restante_actual }}</div>
       <div>Total final: ${{ alquiler.total_final }}</div>
+      {% for metodo in alquiler.metodos_pago_actuales %}
+        <div>{{ metodo }}</div>
+      {% endfor %}
     </div>
   </div>
 </div>

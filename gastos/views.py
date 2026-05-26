@@ -5,6 +5,8 @@ from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from alquileres.models import Alquiler
+
 from .forms import DivisionBienesForm, GastoForm
 from .models import DivisionBienes, Gasto
 
@@ -31,16 +33,26 @@ def _require_gastos_access(request):
     })
 
 
-def _totales_division():
-    totales = DivisionBienes.objects.aggregate(
-        total=Sum("monto_total"),
-        tade=Sum("para_tade"),
-        bauti=Sum("para_bauti"),
+def _resumen_cuenta():
+    total_senas = Alquiler.objects.aggregate(total=Sum("sena"))["total"] or Decimal("0")
+    total_saldos_pagados = (
+        Alquiler.objects
+        .filter(estado_saldo=Alquiler.SAL_PAG)
+        .aggregate(total=Sum("saldo"))["total"]
+        or Decimal("0")
     )
+    total_ingresos_alquileres = total_senas + total_saldos_pagados
+    total_gastos = Gasto.objects.aggregate(total=Sum("monto"))["total"] or Decimal("0")
+    total_dividido = DivisionBienes.objects.aggregate(total=Sum("monto_total"))["total"] or Decimal("0")
+    saldo_actual_cuenta = total_ingresos_alquileres - total_gastos - total_dividido
+
     return {
-        "total_cuentas": totales["total"] or Decimal("0"),
-        "total_tade": totales["tade"] or Decimal("0"),
-        "total_bauti": totales["bauti"] or Decimal("0"),
+        "total_senas": total_senas,
+        "total_saldos_pagados": total_saldos_pagados,
+        "total_ingresos_alquileres": total_ingresos_alquileres,
+        "total_gastos_registrados": total_gastos,
+        "total_dividido": total_dividido,
+        "saldo_actual_cuenta": saldo_actual_cuenta,
     }
 
 
@@ -69,7 +81,7 @@ def home(request):
         "total_gastos_mes": total_gastos_mes,
         "total_div_general": total_div_general,
         "total_div_mes": total_div_mes,
-        **_totales_division(),
+        **_resumen_cuenta(),
     })
 
 
@@ -108,5 +120,5 @@ def division_bienes(request):
 
     return render(request, "gastos/division.html", {
         "form": form,
-        **_totales_division(),
+        **_resumen_cuenta(),
     })

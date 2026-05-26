@@ -173,21 +173,21 @@ class AlquileresViewsTests(TestCase):
         saco.refresh_from_db()
         self.assertEqual(saco.estado, Prenda.E_DISP)
 
-    def test_ver_alquileres_muestra_primero_la_fecha_entrega_mas_lejana(self):
-        lejano = self._create_alquiler("Lejano")
-        cercano = self._create_alquiler("Cercano")
-        lejano.fecha_entrega = date(2026, 5, 20)
-        lejano.fecha_devolucion = date(2026, 5, 25)
-        lejano.save()
-        cercano.fecha_entrega = date(2026, 4, 20)
-        cercano.fecha_devolucion = date(2026, 4, 25)
-        cercano.save()
+    def test_ver_alquileres_muestra_primero_el_alquiler_mas_reciente(self):
+        viejo = self._create_alquiler("Viejo")
+        nuevo = self._create_alquiler("Nuevo")
+        viejo.fecha_entrega = date(2026, 5, 20)
+        viejo.fecha_devolucion = date(2026, 5, 25)
+        viejo.save()
+        nuevo.fecha_entrega = date(2026, 4, 20)
+        nuevo.fecha_devolucion = date(2026, 4, 25)
+        nuevo.save()
 
         response = self.client.get(reverse("alquileres:ver"))
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertLess(content.index(f"#{lejano.id}"), content.index(f"#{cercano.id}"))
+        self.assertLess(content.index(f"#{nuevo.id}"), content.index(f"#{viejo.id}"))
 
     def test_ver_alquileres_filtra_por_fecha_entrega_incluyendo_extremos(self):
         inicio = self._create_alquiler("Inicio")
@@ -279,6 +279,30 @@ class AlquileresViewsTests(TestCase):
         self.assertContains(response, "Negro")
         self.assertContains(response, "Gris")
         self.assertContains(response, "Ruedo")
+
+    def test_ver_alquileres_muestra_resta_en_cero_cuando_el_saldo_ya_fue_pagado(self):
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Cliente Pago Completo",
+            cliente_telefono="117777",
+            persona1_nombre="Juan",
+            total_bruto="2000",
+            sena="500",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_saldo=Alquiler.SAL_PAG,
+            metodo_saldo=Alquiler.MP_TRANS,
+            saldo_pagado_en=date(2026, 4, 19),
+        )
+
+        response = self.client.get(reverse("alquileres:ver"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Abonado: $2000,00")
+        self.assertContains(response, "Resta: $0,00")
+        self.assertContains(response, "Saldo: Transferencia")
 
     def test_entregas_muestra_ver_detallado_en_resultados_filtrados(self):
         hoy = timezone.localdate()

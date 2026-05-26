@@ -15,6 +15,22 @@
   <div class="ab-body ab-stack">
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
+        <span class="ab-small">Saldo actual en cuenta</span>
+        <strong>${{ saldo_actual_cuenta }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Ingresos por senas</span>
+        <strong>${{ total_senas }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Saldos ya pagados</span>
+        <strong>${{ total_saldos_pagados }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Ingresos de alquileres</span>
+        <strong>${{ total_ingresos_alquileres }}</strong>
+      </div>
+      <div class="ab-summary-card">
         <span class="ab-small">Gastos del mes</span>
         <strong>${{ total_gastos_mes }}</strong>
       </div>
@@ -30,18 +46,10 @@
         <span class="ab-small">Division total</span>
         <strong>${{ total_div_general }}</strong>
       </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Total esperado en cuentas</span>
-        <strong>${{ total_cuentas }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Tade acumulado</span>
-        <strong>${{ total_tade }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Bauti acumulado</span>
-        <strong>${{ total_bauti }}</strong>
-      </div>
+    </div>
+
+    <div class="ab-form-note">
+      El saldo actual se calcula sumando todas las senas mas los saldos marcados como pagados, y restando los gastos y las divisiones ya retiradas.
     </div>
 
     <div class="ab-card" style="border-radius: 22px;">

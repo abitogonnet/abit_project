@@ -1,3 +1,4 @@
+from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -40,6 +41,58 @@ def _texto_ruedo(item: AlquilerItem) -> str:
     return " ".join(partes)
 
 
+def _badge_estado_alquiler(value: str) -> str:
+    if value == Alquiler.EST_CERRADO:
+        return "ok"
+    if value == Alquiler.EST_ENTREGADO:
+        return "warn"
+    return "secondary"
+
+
+def _badge_estado_saldo(value: str) -> str:
+    if value == Alquiler.SAL_PAG:
+        return "ok"
+    return "warn"
+
+
+def _badge_estado_prenda(value: str) -> str:
+    if value == Prenda.E_DISP:
+        return "ok"
+    if value == Prenda.E_ENT:
+        return "warn"
+    if value == Prenda.E_DAN:
+        return "danger"
+    return "secondary"
+
+
+def _saldo_restante_actual(alquiler: Alquiler) -> Decimal:
+    if alquiler.saldo <= 0 or alquiler.estado_saldo == Alquiler.SAL_PAG:
+        return Decimal("0.00")
+    return alquiler.saldo
+
+
+def _estado_saldo_actual(alquiler: Alquiler) -> str:
+    if alquiler.saldo <= 0:
+        return Alquiler.SAL_PAG
+    return alquiler.estado_saldo
+
+
+def _metodos_pago_actuales(alquiler: Alquiler) -> list[str]:
+    detalles = []
+
+    if alquiler.sena > 0 and alquiler.metodo_sena:
+        etiqueta = "Pago total" if alquiler.saldo <= 0 else "Seña"
+        detalles.append(f"{etiqueta}: {alquiler.get_metodo_sena_display()}")
+
+    if alquiler.saldo > 0 and alquiler.estado_saldo == Alquiler.SAL_PAG and alquiler.metodo_saldo:
+        detalles.append(f"Saldo: {alquiler.get_metodo_saldo_display()}")
+
+    if not detalles:
+        detalles.append("Sin medio cargado")
+
+    return detalles
+
+
 def _adjuntar_detalle_alquiler(alquileres):
     for alquiler in alquileres:
         items = list(alquiler.items.all())
@@ -56,12 +109,15 @@ def _adjuntar_detalle_alquiler(alquileres):
 
                 prenda = item.prenda
                 items_persona.append({
+                    "categoria_key": prenda.categoria,
                     "categoria": prenda.get_categoria_display(),
                     "codigo": prenda.codigo,
                     "marca": prenda.marca or "-",
                     "color": prenda.color or "-",
                     "talle": prenda.talle or "-",
                     "ruedo": _texto_ruedo(item) or "Sin ruedo",
+                    "estado_prenda": prenda.estado,
+                    "estado_prenda_display": prenda.get_estado_display(),
                     "notas": item.notas or prenda.notas or "",
                 })
 
@@ -79,6 +135,60 @@ def _adjuntar_detalle_alquiler(alquileres):
         alquiler.detalle_personas = personas
         alquiler.total_prendas_detalle = sum(persona["cantidad"] for persona in personas)
         alquiler.personas_resumen = ", ".join(persona["nombre"] for persona in personas)
+
+        alquiler.prendas_tabla = []
+        alquiler.ruedos_tabla = {
+            "saco": [],
+            "pantalon": [],
+        }
+        estados_prenda_count = {}
+
+        for persona in personas:
+            detalle_prendas = ", ".join(
+                f'{item["codigo"]} ({item["categoria"]})'
+                for item in persona["items"]
+            ) or "Sin prendas"
+            alquiler.prendas_tabla.append({
+                "persona": persona["nombre"],
+                "detalle": detalle_prendas,
+            })
+
+            for item in persona["items"]:
+                estado_actual = item["estado_prenda"]
+                if estado_actual not in estados_prenda_count:
+                    estados_prenda_count[estado_actual] = {
+                        "value": estado_actual,
+                        "label": item["estado_prenda_display"],
+                        "count": 0,
+                        "badge_class": _badge_estado_prenda(estado_actual),
+                    }
+                estados_prenda_count[estado_actual]["count"] += 1
+
+                if item["categoria_key"] == Prenda.C_SACO:
+                    alquiler.ruedos_tabla["saco"].append({
+                        "persona": persona["nombre"],
+                        "ruedo": item["ruedo"],
+                    })
+                if item["categoria_key"] == Prenda.C_PANTALON:
+                    alquiler.ruedos_tabla["pantalon"].append({
+                        "persona": persona["nombre"],
+                        "ruedo": item["ruedo"],
+                    })
+
+        alquiler.estado_prendas = [
+            estados_prenda_count[value]
+            for value, _ in Prenda.ESTADOS
+            if value in estados_prenda_count
+        ]
+
+        alquiler.saldo_restante_actual = _saldo_restante_actual(alquiler)
+        alquiler.abono_actual = alquiler.total_final - alquiler.saldo_restante_actual
+        alquiler.estado_saldo_actual = _estado_saldo_actual(alquiler)
+        alquiler.estado_saldo_actual_label = dict(Alquiler.ESTADOS_SALDO)[alquiler.estado_saldo_actual]
+        alquiler.metodos_pago_actuales = _metodos_pago_actuales(alquiler)
+        alquiler.estado_alquiler_badge = _badge_estado_alquiler(alquiler.estado_alquiler)
+        alquiler.estado_saldo_badge = _badge_estado_saldo(alquiler.estado_saldo_actual)
+        alquiler.saldo_editable = alquiler.saldo > 0
 
 
 def _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=None):
@@ -346,7 +456,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
     alquileres = (
         Alquiler.objects
         .all()
-        .order_by("-fecha_entrega", "-fecha_devolucion", "-id")
+        .order_by("-creado_en", "-id")
         .prefetch_related("items__prenda")
     )
 
@@ -480,10 +590,11 @@ def ver(request):
         nuevo_saldo = request.POST.get("estado_saldo")
         nuevo_estado = request.POST.get("estado_alquiler")
         metodo_saldo = (request.POST.get("metodo_saldo") or "").strip()
+        saldo_editable = alquiler.saldo > 0
 
         changed = False
 
-        if nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
+        if saldo_editable and nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
             if alquiler.estado_saldo != nuevo_saldo:
                 if nuevo_saldo == Alquiler.SAL_PAG:
                     if not metodo_saldo:

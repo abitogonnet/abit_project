@@ -5,7 +5,7 @@
     <div>
       <p class="ab-kicker">Alquileres</p>
       <h1 class="ab-title">Ver alquileres</h1>
-      <p class="ab-sub">La lista funciona como pila por fecha de entrega: arriba ves los alquileres con fecha mas lejana.</p>
+      <p class="ab-sub">La tabla deja los alquileres mas nuevos arriba y va empujando los mas viejos hacia abajo, como una cola.</p>
     </div>
     <div class="ab-actions">
       <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
@@ -58,76 +58,148 @@
     <div class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-section-title">
-          <h2>Listado por fecha de entrega</h2>
+          <h2>Listado de alquileres</h2>
           <span class="ab-pill">{{ alquileres|length }} alquiler{{ alquileres|length|pluralize }}</span>
         </div>
 
         <div class="ab-table-wrap ab-desktop-only">
-          <table class="ab-table">
+          <table class="ab-table ab-table-compact">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Fechas</th>
-                <th>Prendas</th>
-                <th>Pago</th>
-                <th>Estados</th>
-                <th>Acciones</th>
+                <th rowspan="2">Cliente</th>
+                <th rowspan="2">Cita</th>
+                <th rowspan="2">Prendas</th>
+                <th colspan="2">Ruedos</th>
+                <th rowspan="2">Abono actual</th>
+                <th rowspan="2">Entrega</th>
+                <th rowspan="2">Devolucion</th>
+                <th rowspan="2">Estado</th>
+                <th rowspan="2">Telefono</th>
+                <th rowspan="2">Acciones</th>
+              </tr>
+              <tr>
+                <th>Saco</th>
+                <th>Pantalon</th>
               </tr>
             </thead>
             <tbody>
               {% for a in alquileres %}
                 <tr>
-                  <td><span class="ab-pill">#{{ a.id }}</span></td>
                   <td>
-                    <div style="font-weight: 800;">{{ a.cliente_nombre }}</div>
-                    <div class="ab-muted">{{ a.cliente_telefono }}</div>
-                    <div class="ab-chip-row" style="margin-top: 10px;">
-                      {% for persona in a.detalle_personas %}
-                        <span class="ab-chip">{{ persona.nombre }}</span>
+                    <div class="ab-cell-stack">
+                      <div style="font-weight: 800;">{{ a.cliente_nombre }}</div>
+                      <span class="ab-pill">#{{ a.id }}</span>
+                      <div class="ab-chip-row">
+                        {% for persona in a.detalle_personas %}
+                          <span class="ab-chip">{{ persona.nombre }}</span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="ab-cell-stack">
+                      <strong>{{ a.fecha_reserva|date:"d/m/Y" }}</strong>
+                      <span class="ab-small">Reserva</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="ab-cell-stack">
+                      {% for prenda in a.prendas_tabla %}
+                        <div class="ab-cell-block">
+                          <strong>{{ prenda.persona }}</strong>
+                          <span class="ab-small">{{ prenda.detalle }}</span>
+                        </div>
                       {% endfor %}
                     </div>
                   </td>
-                  <td class="ab-muted">
-                    Reserva: {{ a.fecha_reserva|date:"d/m/Y" }}<br>
-                    Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
-                    Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}
-                  </td>
-                  <td class="ab-muted">
-                    {% for persona in a.detalle_personas %}
-                      <div class="ab-stack" style="gap: 4px;">
-                        <strong>{{ persona.nombre }}</strong>
-                        <span>{{ persona.cantidad }} prenda{{ persona.cantidad|pluralize }}</span>
-                        {% if persona.codigos %}
-                          <span class="ab-small">Codigos: {{ persona.codigos }}</span>
-                        {% endif %}
-                      </div>
-                      {% if not forloop.last %}
-                        <div class="ab-hr" style="margin: 10px 0;"></div>
-                      {% endif %}
-                    {% endfor %}
-                  </td>
-                  <td class="ab-muted">
-                    Final: <strong>${{ a.total_final }}</strong><br>
-                    Sena: ${{ a.sena }}<br>
-                    Saldo restante: ${{ a.saldo }}<br>
-                    Sena por: {% if a.metodo_sena %}{{ a.get_metodo_sena_display }}{% else %}-{% endif %}<br>
-                    Saldo por: {% if a.metodo_saldo %}{{ a.get_metodo_saldo_display }}{% else %}-{% endif %}
+                  <td>
+                    <div class="ab-cell-stack">
+                      {% for ruedo in a.ruedos_tabla.saco %}
+                        <div class="ab-cell-block">
+                          <strong>{{ ruedo.persona }}</strong>
+                          <span class="ab-small">{{ ruedo.ruedo }}</span>
+                        </div>
+                      {% empty %}
+                        <span class="ab-small">Sin ruedo</span>
+                      {% endfor %}
+                    </div>
                   </td>
                   <td>
-                    <div class="ab-stack">
+                    <div class="ab-cell-stack">
+                      {% for ruedo in a.ruedos_tabla.pantalon %}
+                        <div class="ab-cell-block">
+                          <strong>{{ ruedo.persona }}</strong>
+                          <span class="ab-small">{{ ruedo.ruedo }}</span>
+                        </div>
+                      {% empty %}
+                        <span class="ab-small">Sin ruedo</span>
+                      {% endfor %}
+                    </div>
+                  </td>
+                  <td>
+                    <div class="ab-cell-stack">
+                      <div class="ab-cell-block">
+                        <strong>Abonado: ${{ a.abono_actual }}</strong>
+                        <span class="ab-small">Resta: ${{ a.saldo_restante_actual }}</span>
+                      </div>
+                      <div class="ab-cell-block">
+                        <strong>Total: ${{ a.total_final }}</strong>
+                        {% for metodo in a.metodos_pago_actuales %}
+                          <span class="ab-small">{{ metodo }}</span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="ab-cell-stack">
+                      <strong>{{ a.fecha_entrega|date:"d/m/Y" }}</strong>
+                      <span class="ab-small">Retiro / entrega</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="ab-cell-stack">
+                      <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
+                      <span class="ab-small">Devolucion</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="ab-cell-stack">
+                      <span class="ab-badge {{ a.estado_alquiler_badge }}">{{ a.get_estado_alquiler_display }}</span>
+                      <span class="ab-badge {{ a.estado_saldo_badge }}">Saldo {{ a.estado_saldo_actual_label }}</span>
+                      <div class="ab-chip-row">
+                        {% for estado in a.estado_prendas %}
+                          <span class="ab-badge {{ estado.badge_class }}">{{ estado.label }} x{{ estado.count }}</span>
+                        {% empty %}
+                          <span class="ab-small">Sin prendas</span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </td>
+                  <td class="ab-muted">
+                    {{ a.cliente_telefono|default:"-" }}
+                  </td>
+                  <td>
+                    <form method="post" id="alq-form-{{ a.id }}" class="ab-stack">
+                      {% csrf_token %}
+                      <input type="hidden" name="alq_id" value="{{ a.id }}">
+                      <input type="hidden" name="fecha_desde" value="{{ filtros_form.fecha_desde.value|default:'' }}">
+                      <input type="hidden" name="fecha_hasta" value="{{ filtros_form.fecha_hasta.value|default:'' }}">
+
                       <div class="ab-field">
                         <label class="ab-lab">Saldo</label>
-                        <select class="ab-sel" name="estado_saldo" form="alq-form-{{ a.id }}">
+                        <select class="ab-sel" name="estado_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
                           {% for value, label in estados_saldo %}
-                            <option value="{{ value }}" {% if a.estado_saldo == value %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ value }}" {% if a.estado_saldo_actual == value %}selected{% endif %}>{{ label }}</option>
                           {% endfor %}
                         </select>
+                        {% if not a.saldo_editable %}
+                          <span class="ab-small">Quedo pago completo desde el alta.</span>
+                        {% endif %}
                       </div>
 
                       <div class="ab-field">
                         <label class="ab-lab">Metodo saldo</label>
-                        <select class="ab-sel" name="metodo_saldo" form="alq-form-{{ a.id }}">
+                        <select class="ab-sel" name="metodo_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
                           <option value="">Elegir si esta pagado</option>
                           {% for value, label in metodos_pago %}
                             <option value="{{ value }}" {% if a.metodo_saldo == value %}selected{% endif %}>{{ label }}</option>
@@ -137,20 +209,13 @@
 
                       <div class="ab-field">
                         <label class="ab-lab">Estado alquiler</label>
-                        <select class="ab-sel" name="estado_alquiler" form="alq-form-{{ a.id }}">
+                        <select class="ab-sel" name="estado_alquiler">
                           {% for value, label in estados_alquiler %}
                             <option value="{{ value }}" {% if a.estado_alquiler == value %}selected{% endif %}>{{ label }}</option>
                           {% endfor %}
                         </select>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <form method="post" id="alq-form-{{ a.id }}" class="ab-stack">
-                      {% csrf_token %}
-                      <input type="hidden" name="alq_id" value="{{ a.id }}">
-                      <input type="hidden" name="fecha_desde" value="{{ filtros_form.fecha_desde.value|default:'' }}">
-                      <input type="hidden" name="fecha_hasta" value="{{ filtros_form.fecha_hasta.value|default:'' }}">
+
                       <div class="ab-actions-column">
                         <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar</button>
                         <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ a.id }}. Continuar?');">Eliminar</button>
@@ -159,7 +224,7 @@
                   </td>
                 </tr>
                 <tr class="ab-table-detail-row">
-                  <td colspan="7">
+                  <td colspan="11">
                     <div class="ab-detail-actions">
                       <details class="ab-detail-toggle ab-detail-toggle-split">
                         <summary class="ab-detail-summary">
@@ -203,20 +268,50 @@
             <article class="ab-list-card">
               <div class="ab-row" style="justify-content: space-between;">
                 <h3>#{{ a.id }} - {{ a.cliente_nombre }}</h3>
-                <span class="ab-badge {% if a.estado_alquiler == 'CERRADO' %}ok{% elif a.estado_alquiler == 'ENTREGADO' %}warn{% else %}secondary{% endif %}">
+                <span class="ab-badge {{ a.estado_alquiler_badge }}">
                   {{ a.get_estado_alquiler_display }}
                 </span>
               </div>
 
               <div class="ab-meta" style="margin-top: 10px;">
-                <div>Telefono: {{ a.cliente_telefono }}</div>
-                <div>Personas: {{ a.personas_resumen }}</div>
-                <div>Reserva: {{ a.fecha_reserva|date:"d/m/Y" }}</div>
-                <div>Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}</div>
+                <div>Telefono: {{ a.cliente_telefono|default:"-" }}</div>
+                <div>Cita: {{ a.fecha_reserva|date:"d/m/Y" }}</div>
+                <div>Entrega: {{ a.fecha_entrega|date:"d/m/Y" }}</div>
                 <div>Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}</div>
-                <div>Sena: ${{ a.sena }}</div>
-                <div>Saldo restante: ${{ a.saldo }}</div>
+                <div>Personas: {{ a.personas_resumen }}</div>
+                <div>Abonado: ${{ a.abono_actual }}</div>
+                <div>Resta: ${{ a.saldo_restante_actual }}</div>
                 <div>Total final: ${{ a.total_final }}</div>
+                {% for metodo in a.metodos_pago_actuales %}
+                  <div>{{ metodo }}</div>
+                {% endfor %}
+                <div class="ab-chip-row" style="margin-top: 4px;">
+                  <span class="ab-badge {{ a.estado_saldo_badge }}">Saldo {{ a.estado_saldo_actual_label }}</span>
+                  {% for estado in a.estado_prendas %}
+                    <span class="ab-badge {{ estado.badge_class }}">{{ estado.label }} x{{ estado.count }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="ab-hr" style="margin: 14px 0;"></div>
+
+              <div class="ab-meta">
+                <div><strong>Prendas</strong></div>
+                {% for prenda in a.prendas_tabla %}
+                  <div>{{ prenda.persona }}: {{ prenda.detalle }}</div>
+                {% endfor %}
+                <div><strong>Ruedo saco</strong></div>
+                {% for ruedo in a.ruedos_tabla.saco %}
+                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
+                {% empty %}
+                  <div>Sin ruedo</div>
+                {% endfor %}
+                <div><strong>Ruedo pantalon</strong></div>
+                {% for ruedo in a.ruedos_tabla.pantalon %}
+                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
+                {% empty %}
+                  <div>Sin ruedo</div>
+                {% endfor %}
               </div>
 
               <details class="ab-detail-toggle" style="margin-top: 14px;">
@@ -247,16 +342,19 @@
 
                 <div class="ab-field">
                   <label class="ab-lab">Saldo</label>
-                  <select class="ab-sel" name="estado_saldo">
+                  <select class="ab-sel" name="estado_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
                     {% for value, label in estados_saldo %}
-                      <option value="{{ value }}" {% if a.estado_saldo == value %}selected{% endif %}>{{ label }}</option>
+                      <option value="{{ value }}" {% if a.estado_saldo_actual == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                   </select>
+                  {% if not a.saldo_editable %}
+                    <span class="ab-small">Quedo pago completo desde el alta.</span>
+                  {% endif %}
                 </div>
 
                 <div class="ab-field">
                   <label class="ab-lab">Metodo saldo</label>
-                  <select class="ab-sel" name="metodo_saldo">
+                  <select class="ab-sel" name="metodo_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
                     <option value="">Elegir si esta pagado</option>
                     {% for value, label in metodos_pago %}
                       <option value="{{ value }}" {% if a.metodo_saldo == value %}selected{% endif %}>{{ label }}</option>

@@ -14,21 +14,33 @@
   <div class="ab-body ab-stack">
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
-        <span class="ab-small">Total esperado en cuentas</span>
-        <strong>${{ total_cuentas }}</strong>
+        <span class="ab-small">Saldo actual en cuenta</span>
+        <strong>${{ saldo_actual_cuenta }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Tade acumulado</span>
-        <strong>${{ total_tade }}</strong>
+        <span class="ab-small">Ingresos por senas</span>
+        <strong>${{ total_senas }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Bauti acumulado</span>
-        <strong>${{ total_bauti }}</strong>
+        <span class="ab-small">Saldos ya pagados</span>
+        <strong>${{ total_saldos_pagados }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Ingresos de alquileres</span>
+        <strong>${{ total_ingresos_alquileres }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Gastos registrados</span>
+        <strong>${{ total_gastos_registrados }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Dinero ya dividido</span>
+        <strong>${{ total_dividido }}</strong>
       </div>
     </div>
 
     <div class="ab-form-note">
-      El total esperado en cuentas es la suma acumulada de todas las divisiones guardadas.
+      El saldo actual se calcula desde cero con lo que entro por alquileres: senas + saldos pagados - gastos - divisiones ya retiradas.
     </div>
 
     <form method="post" autocomplete="off" class="ab-stack">

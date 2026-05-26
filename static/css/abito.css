@@ -481,6 +481,29 @@ textarea.ab-inp:focus {
   letter-spacing: 0.08em;
 }
 
+.ab-table-compact {
+  min-width: 1380px;
+}
+
+.ab-table-compact thead th[rowspan] {
+  vertical-align: middle;
+}
+
+.ab-table-compact thead tr:nth-child(2) th {
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.72rem;
+}
+
+.ab-cell-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.ab-cell-block {
+  display: grid;
+  gap: 3px;
+}
+
 .ab-table tbody tr:hover td {
   background: rgba(255, 255, 255, 0.52);
 }
