@@ -1,61 +1,81 @@
 {% extends "base.html" %}
+{% load abito_tags %}
 {% block content %}
 <div class="ab-card">
   <div class="ab-head">
     <div>
       <h1 class="ab-title">Gastos</h1>
-      <p class="ab-sub">Control de gastos y divisiones de dinero con acceso protegido.</p>
+      <p class="ab-sub">Lectura mensual para ver rapido cuanto entro por alquileres, cuanto salio y como impacta eso en la cuenta.</p>
     </div>
     <div class="ab-row" style="gap: 10px;">
-      <a class="ab-btn2" href="{% url 'gastos:crear' %}">+ Cargar gasto</a>
-      <a class="ab-btn" href="{% url 'gastos:division_bienes' %}">+ Division de bienes</a>
+      <a class="ab-btn2" href="{% url 'gastos:crear' %}?ym={{ ym_value }}">+ Cargar gasto</a>
+      <a class="ab-btn" href="{% url 'gastos:division_bienes' %}?ym={{ ym_value }}">+ Division de bienes</a>
     </div>
   </div>
 
   <div class="ab-body ab-stack">
+    <form method="get" class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body">
+        <div class="ab-grid">
+          <div class="col-4 ab-field">
+            <label class="ab-lab" for="id_ym">Mes visible</label>
+            <input class="ab-inp" type="month" name="ym" id="id_ym" value="{{ ym_value }}">
+          </div>
+          <div class="col-8 ab-field" style="justify-content: flex-end;">
+            <label class="ab-lab">&nbsp;</label>
+            <div class="ab-actions">
+              <button class="ab-btn" type="submit">Ver mes</button>
+            </div>
+          </div>
+        </div>
+        <div class="ab-form-note" style="margin-top: 16px;">
+          Estás viendo <strong>{{ month_label }}</strong>. Las listas de abajo muestran solo lo guardado en ese mes.
+          El <strong>saldo actual en cuenta</strong> sigue siendo el acumulado real de toda la cuenta.
+        </div>
+      </div>
+    </form>
+
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
         <span class="ab-small">Saldo actual en cuenta</span>
-        <strong>${{ saldo_actual_cuenta }}</strong>
+        <strong>${{ saldo_actual_cuenta|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Ingresos por senas</span>
-        <strong>${{ total_senas }}</strong>
+        <span class="ab-small">Señas de {{ month_label }}</span>
+        <strong>${{ total_senas_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Saldos ya pagados</span>
-        <strong>${{ total_saldos_pagados }}</strong>
+        <span class="ab-small">Saldos cobrados en {{ month_label }}</span>
+        <strong>${{ total_saldos_pagados_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Ingresos de alquileres</span>
-        <strong>${{ total_ingresos_alquileres }}</strong>
+        <span class="ab-small">Ingresos por alquileres del mes</span>
+        <strong>${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Gastos del mes</span>
-        <strong>${{ total_gastos_mes }}</strong>
+        <span class="ab-small">Gastos de {{ month_label }}</span>
+        <strong>${{ total_gastos_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Gastos totales</span>
-        <strong>${{ total_gastos_general }}</strong>
+        <span class="ab-small">Divisiones de {{ month_label }}</span>
+        <strong>${{ total_dividido_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Division del mes</span>
-        <strong>${{ total_div_mes }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Division total</span>
-        <strong>${{ total_div_general }}</strong>
+        <span class="ab-small">Resultado neto del mes</span>
+        <strong>${{ saldo_neto_periodo|miles0 }}</strong>
       </div>
     </div>
 
     <div class="ab-form-note">
-      El saldo actual se calcula sumando todas las senas mas los saldos marcados como pagados, y restando los gastos y las divisiones ya retiradas.
+      La lectura es simple:
+      entró por <strong>señas</strong> y <strong>saldos cobrados</strong>,
+      salió por <strong>gastos</strong> y <strong>divisiones</strong>.
     </div>
 
     <div class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-section-title">
-          <h2>Gastos cargados</h2>
+          <h2>Gastos de {{ month_label }}</h2>
           <span class="ab-pill">{{ gastos|length }} gasto{{ gastos|length|pluralize }}</span>
         </div>
 
@@ -73,7 +93,7 @@
               {% for g in gastos %}
                 <tr>
                   <td class="ab-muted">{{ g.fecha|date:"d/m/Y" }}</td>
-                  <td style="font-weight: 900;">${{ g.monto }}</td>
+                  <td style="font-weight: 900;">${{ g.monto|miles0 }}</td>
                   <td>{{ g.categoria }}</td>
                   <td>
                     <details class="ab-detail-toggle">
@@ -101,7 +121,7 @@
                   </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4" class="ab-muted">No hay gastos cargados todavia.</td></tr>
+                <tr><td colspan="4" class="ab-muted">No hay gastos cargados en {{ month_label }}.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -112,7 +132,7 @@
             <article class="ab-list-card">
               <div class="ab-row" style="justify-content: space-between;">
                 <h3>{{ g.fecha|date:"d/m/Y" }}</h3>
-                <span class="ab-pill">${{ g.monto }}</span>
+                <span class="ab-pill">${{ g.monto|miles0 }}</span>
               </div>
               <div class="ab-meta" style="margin-top: 10px;">
                 <div>Categoria: {{ g.categoria }}</div>
@@ -138,7 +158,7 @@
               </details>
             </article>
           {% empty %}
-            <div class="ab-empty">No hay gastos cargados todavia.</div>
+            <div class="ab-empty">No hay gastos cargados en {{ month_label }}.</div>
           {% endfor %}
         </div>
       </div>
@@ -147,7 +167,7 @@
     <div class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
         <div class="ab-section-title">
-          <h2>Divisiones de dinero</h2>
+          <h2>Divisiones de {{ month_label }}</h2>
           <span class="ab-pill">{{ divisiones|length }} division{{ divisiones|length|pluralize }}</span>
         </div>
 
@@ -165,8 +185,8 @@
               {% for d in divisiones %}
                 <tr>
                   <td class="ab-muted">{{ d.fecha|date:"d/m/Y" }}</td>
-                  <td style="font-weight: 900;">${{ d.monto_total }}</td>
-                  <td class="ab-muted">Tade: ${{ d.para_tade }}<br>Bauti: ${{ d.para_bauti }}</td>
+                  <td style="font-weight: 900;">${{ d.monto_total|miles0 }}</td>
+                  <td class="ab-muted">Tade: ${{ d.para_tade|miles0 }}<br>Bauti: ${{ d.para_bauti|miles0 }}</td>
                   <td>
                     <details class="ab-detail-toggle">
                       <summary class="ab-detail-summary">
@@ -181,13 +201,13 @@
                           </div>
                           <div class="ab-detail-summary-card">
                             <span class="ab-spec-label">Cuanto</span>
-                            <strong>${{ d.monto_total }}</strong>
+                            <strong>${{ d.monto_total|miles0 }}</strong>
                           </div>
                           <div class="ab-detail-summary-card">
                             <span class="ab-spec-label">Reparto</span>
                             <div class="ab-detail-date-list">
-                              <div>Tade: ${{ d.para_tade }}</div>
-                              <div>Bauti: ${{ d.para_bauti }}</div>
+                              <div>Tade: ${{ d.para_tade|miles0 }}</div>
+                              <div>Bauti: ${{ d.para_bauti|miles0 }}</div>
                             </div>
                           </div>
                           <div class="ab-detail-summary-card">
@@ -200,7 +220,7 @@
                   </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4" class="ab-muted">No hay divisiones cargadas todavia.</td></tr>
+                <tr><td colspan="4" class="ab-muted">No hay divisiones cargadas en {{ month_label }}.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -211,11 +231,11 @@
             <article class="ab-list-card">
               <div class="ab-row" style="justify-content: space-between;">
                 <h3>{{ d.fecha|date:"d/m/Y" }}</h3>
-                <span class="ab-pill">${{ d.monto_total }}</span>
+                <span class="ab-pill">${{ d.monto_total|miles0 }}</span>
               </div>
               <div class="ab-meta" style="margin-top: 10px;">
-                <div>Tade: ${{ d.para_tade }}</div>
-                <div>Bauti: ${{ d.para_bauti }}</div>
+                <div>Tade: ${{ d.para_tade|miles0 }}</div>
+                <div>Bauti: ${{ d.para_bauti|miles0 }}</div>
               </div>
               <details class="ab-detail-toggle" style="margin-top: 14px;">
                 <summary class="ab-detail-summary">
@@ -233,7 +253,7 @@
               </details>
             </article>
           {% empty %}
-            <div class="ab-empty">No hay divisiones cargadas todavia.</div>
+            <div class="ab-empty">No hay divisiones cargadas en {{ month_label }}.</div>
           {% endfor %}
         </div>
       </div>

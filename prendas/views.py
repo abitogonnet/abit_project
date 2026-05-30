@@ -165,6 +165,22 @@ def _ocupar_prendas_con_alquiler(prendas):
         prenda.alquiler_activo = alquileres_activos[0] if alquileres_activos else None
 
 
+def _buscar_por_codigo(q: str):
+    codigo = (q or "").strip().upper()
+    if not codigo:
+        return []
+
+    qs = Prenda.objects.all()
+    if "-" in codigo:
+        qs = qs.filter(codigo__icontains=codigo)
+    else:
+        qs = qs.filter(codigo__icontains=codigo)
+
+    prendas = list(qs.order_by("categoria", "codigo")[:20])
+    _ocupar_prendas_con_alquiler(prendas)
+    return prendas
+
+
 def crear_prenda(request):
     codigo_preview = None
 
@@ -330,21 +346,26 @@ def stock(request):
 @require_http_methods(["GET"])
 def buscar_prenda(request):
     marcas_db = _mixed_sort(Prenda.objects.exclude(marca="").values_list("marca", flat=True).distinct())
+    colores_db = _mixed_sort(Prenda.objects.exclude(color="").values_list("color", flat=True).distinct())
     talles_db = _mixed_sort(Prenda.objects.exclude(talle="").values_list("talle", flat=True).distinct())
 
     marcas = _mixed_sort(BRANDS + marcas_db)
+    colores = colores_db
     talles = talles_db
 
-    form = BuscarPrendaForm(request.GET or None, marcas=marcas, talles=talles)
+    form = BuscarPrendaForm(request.GET or None, marcas=marcas, colores=colores, talles=talles)
     prendas = []
+    prendas_por_codigo = []
     buscado = False
+    codigo_buscado = (request.GET.get("codigo") or "").strip().upper()
 
     if form.is_bound and form.is_valid():
         categoria = form.cleaned_data.get("categoria") or ""
         marca = form.cleaned_data.get("marca") or ""
+        color = form.cleaned_data.get("color") or ""
         talle = form.cleaned_data.get("talle") or ""
         origen = form.cleaned_data.get("origen") or ""
-        buscado = bool(categoria or marca or talle or origen)
+        buscado = bool(categoria or marca or color or talle or origen)
 
         if buscado:
             qs = Prenda.objects.all()
@@ -352,6 +373,8 @@ def buscar_prenda(request):
                 qs = qs.filter(categoria=categoria)
             if marca:
                 qs = qs.filter(marca=marca)
+            if color:
+                qs = qs.filter(color=color)
             if talle:
                 qs = qs.filter(talle=talle)
             if origen:
@@ -359,8 +382,13 @@ def buscar_prenda(request):
             prendas = list(qs.order_by("categoria", "-codigo"))
             _ocupar_prendas_con_alquiler(prendas)
 
+    if codigo_buscado:
+        prendas_por_codigo = _buscar_por_codigo(codigo_buscado)
+
     return render(request, "prendas/buscar_codigo.html", {
         "form": form,
         "prendas": prendas,
+        "prendas_por_codigo": prendas_por_codigo,
         "buscado": buscado,
+        "codigo_buscado": codigo_buscado,
     })

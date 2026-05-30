@@ -46,6 +46,15 @@
         <div class="ab-msg err">{{ form.non_field_errors }}</div>
       {% endif %}
 
+      <div class="ab-actions">
+        {% if show_generate %}
+          <button class="ab-btn2" type="submit" name="accion" value="generar">Ver codigo</button>
+          <button class="ab-btn" type="submit" name="accion" value="confirmar">{{ accion_label }}</button>
+        {% else %}
+          <button class="ab-btn" type="submit">{{ accion_label }}</button>
+        {% endif %}
+      </div>
+
       <div class="ab-grid">
         <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.categoria.id_for_label }}">Categoria</label>

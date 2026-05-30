@@ -1,6 +1,7 @@
 import csv
 from collections import defaultdict
 from datetime import date, timedelta
+import unicodedata
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -8,6 +9,41 @@ from django.utils import timezone
 
 from alquileres.models import Alquiler, AlquilerItem
 from prendas.models import Prenda
+
+
+MESES_ES = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+]
+
+COLOR_FILL_MAP = {
+    "beige": "#cdb79e",
+    "negro": "#1f1f24",
+    "azul oscuro": "#1d3d63",
+    "azul francia": "#2b66d9",
+    "gris perla": "#c9c9cf",
+    "gris oscuro": "#595b63",
+    "gris": "#8c9097",
+    "celeste": "#84c5f4",
+    "verde oscuro": "#295f4e",
+    "pistacho": "#98b65f",
+    "rosa": "#d97f98",
+    "violeta": "#7f5ea7",
+    "bordo": "#6d213c",
+    "marron": "#7a5536",
+    "blanco": "#e8e6df",
+    "sin color": "#b9b2a8",
+}
 
 
 def _first_day_next_month(day: date) -> date:
@@ -20,6 +56,20 @@ def _weeks_in_month(year: int, month: int) -> int:
     start = date(year, month, 1)
     end = _first_day_next_month(start) - timedelta(days=1)
     return ((end.day - 1) // 7) + 1
+
+
+def _month_label(day: date) -> str:
+    return f"{MESES_ES[day.month - 1].capitalize()} {day.year}"
+
+
+def _normalize_color_key(value: str) -> str:
+    text = unicodedata.normalize("NFD", (value or "").strip().casefold())
+    return "".join(char for char in text if unicodedata.category(char) != "Mn")
+
+
+def _fill_color_for_label(label: str):
+    key = _normalize_color_key(label)
+    return COLOR_FILL_MAP.get(key)
 
 
 def _resolve_period(request):
@@ -58,7 +108,7 @@ def _top_k_from_weekly(data, limit=8):
     return [key for key, _value in totals[:limit]]
 
 
-def _bar_items_from_pairs(items, tone):
+def _bar_items_from_pairs(items, tone, *, color_mode=False):
     max_value = max((value for _label, value in items), default=0) or 1
     bars = []
     for label, value in items:
@@ -67,11 +117,12 @@ def _bar_items_from_pairs(items, tone):
             "value": value,
             "pct": round((value * 100) / max_value, 2),
             "tone": tone,
+            "fill_color": _fill_color_for_label(label) if color_mode else None,
         })
     return bars
 
 
-def _decorate_week_rows(rows, tone):
+def _decorate_week_rows(rows, tone, *, color_mode=False):
     max_total = max((row["total"] for row in rows), default=0) or 1
     max_week = max((max(row["weeks"]) for row in rows), default=0) or 1
 
@@ -86,6 +137,7 @@ def _decorate_week_rows(rows, tone):
                 for value in row["weeks"]
             ],
             "tone": tone,
+            "fill_color": _fill_color_for_label(row["key"]) if color_mode else None,
         })
     return decorated
 
@@ -158,7 +210,7 @@ def home(request):
     report = []
     for categoria, label in Prenda.CATEGORIAS:
         if period == "mensual":
-            colors = _bar_items_from_pairs(_top_k_from_monthly(monthly_color.get(categoria, {})), "accent")
+            colors = _bar_items_from_pairs(_top_k_from_monthly(monthly_color.get(categoria, {})), "accent", color_mode=True)
             talles = _bar_items_from_pairs(_top_k_from_monthly(monthly_talle.get(categoria, {})), "secondary")
             marcas = _bar_items_from_pairs(_top_k_from_monthly(monthly_marca.get(categoria, {})), "warn")
             report.append({
@@ -207,7 +259,7 @@ def home(request):
                 "mode": "semanal",
                 "weeks_labels": list(range(1, weeks_n + 1)),
                 "cards": [
-                    {"title": "Por color", "rows": _decorate_week_rows(color_rows, "accent")},
+                    {"title": "Por color", "rows": _decorate_week_rows(color_rows, "accent", color_mode=True)},
                     {"title": "Por talle", "rows": _decorate_week_rows(talle_rows, "secondary")},
                     {"title": "Por marca", "rows": _decorate_week_rows(marca_rows, "warn")},
                 ],
@@ -294,15 +346,16 @@ def home(request):
         total_general = round(sum(totals_by_week), 2)
 
     summary = [
-        {"label": "Periodo", "value": start.strftime("%m/%Y")},
-        {"label": "Prendas movidas", "value": total_items},
+        {"label": "Mes analizado", "value": _month_label(start)},
+        {"label": "Prendas alquiladas", "value": total_items},
         {"label": "Semanas del mes", "value": weeks_n},
-        {"label": "Ingresos del periodo", "value": f"${total_general:.2f}"},
+        {"label": "Ingresos cobrados en el mes", "value": total_general, "money": True},
     ]
 
     return render(request, "reportes/home.html", {
         "periodo": period,
         "ym_value": f"{start.year:04d}-{start.month:02d}",
+        "month_label": _month_label(start),
         "start": start,
         "weeks_n": weeks_n,
         "total_items": total_items,

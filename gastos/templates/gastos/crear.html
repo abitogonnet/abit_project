@@ -4,16 +4,26 @@
   <div class="ab-head">
     <div>
       <h1 class="ab-title">Cargar gasto</h1>
-      <p class="ab-sub">Registra fecha, monto, en que se gasto y notas opcionales.</p>
+      <p class="ab-sub">Registra fecha, monto y detalle del gasto dentro del mes que estas revisando.</p>
     </div>
     <div class="ab-row">
-      <a class="ab-btn2" href="{% url 'gastos:home' %}">Volver</a>
+      <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Volver</a>
     </div>
   </div>
 
   <div class="ab-body">
     <form method="post" autocomplete="off" class="ab-stack">
       {% csrf_token %}
+      <input type="hidden" name="ym" value="{{ ym_value }}">
+
+      <div class="ab-form-note">
+        Se va a guardar dentro de <strong>{{ month_label }}</strong>.
+      </div>
+
+      <div class="ab-actions">
+        <button class="ab-btn" type="submit">Guardar gasto</button>
+        <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
+      </div>
 
       <div class="ab-grid">
         <div class="col-3 ab-field">
@@ -55,7 +65,7 @@
 
       <div class="ab-actions">
         <button class="ab-btn" type="submit">Guardar gasto</button>
-        <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
+        <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
       </div>
     </form>
   </div>

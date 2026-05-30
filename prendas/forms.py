@@ -258,19 +258,23 @@ class PrendaForm(forms.ModelForm):
 class BuscarPrendaForm(forms.Form):
     categoria = forms.ChoiceField(required=False)
     marca = forms.ChoiceField(required=False)
+    color = forms.ChoiceField(required=False)
     talle = forms.ChoiceField(required=False)
     origen = forms.ChoiceField(required=False)
 
     def __init__(self, *args, **kwargs):
         marcas = kwargs.pop("marcas", [])
+        colores = kwargs.pop("colores", [])
         talles = kwargs.pop("talles", [])
         super().__init__(*args, **kwargs)
         self.fields["categoria"].choices = [("", "Todas las prendas")] + list(Prenda.CATEGORIAS)
         self.fields["marca"].choices = _choices(marcas, "Todas las marcas", current=self._bound("marca"))
+        self.fields["color"].choices = _choices(colores, "Todos los colores", current=self._bound("color"))
         self.fields["talle"].choices = _choices(talles, "Todos los talles", current=self._bound("talle"))
         self.fields["origen"].choices = [("", "Nacional o importado")] + list(Prenda.ORIGENES)
         self.fields["categoria"].widget.attrs.update({"class": "ab-sel"})
         self.fields["marca"].widget.attrs.update({"class": "ab-sel"})
+        self.fields["color"].widget.attrs.update({"class": "ab-sel"})
         self.fields["talle"].widget.attrs.update({"class": "ab-sel"})
         self.fields["origen"].widget.attrs.update({"class": "ab-sel", "id": "id_origen"})
 

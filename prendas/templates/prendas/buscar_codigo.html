@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="ab-card">
-  <div class="ab-head">    <div>
+  <div class="ab-head">
+    <div>
       <p class="ab-kicker">Busqueda</p>
       <h1 class="ab-title">Buscar prenda</h1>
-      <p class="ab-sub">Filtra por prenda, marca, talle y origen para encontrar rapido la prenda.</p>
+      <p class="ab-sub">Puedes buscar directo por codigo o filtrar por prenda, marca, color, talle y origen.</p>
     </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
@@ -14,14 +15,92 @@
   <div class="ab-body ab-stack">
     <form method="get" class="ab-card" style="border-radius: 22px;">
       <div class="ab-body">
+        <div class="ab-section-title">
+          <h2>Buscar solo por codigo</h2>
+        </div>
         <div class="ab-grid">
-          <div class="col-3 ab-field">
+          <div class="col-8 ab-field">
+            <label class="ab-lab" for="id_codigo">Codigo</label>
+            <input class="ab-inp" type="text" name="codigo" id="id_codigo" value="{{ codigo_buscado }}" placeholder="Ej: SA-001 o 001" autocomplete="off">
+          </div>
+          <div class="col-4 ab-field" style="justify-content: flex-end;">
+            <label class="ab-lab">&nbsp;</label>
+            <div class="ab-actions">
+              <button class="ab-btn" type="submit">Buscar codigo</button>
+              <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Limpiar</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    {% if codigo_buscado %}
+      <div class="ab-card" style="border-radius: 22px;">
+        <div class="ab-body">
+          <div class="ab-section-title">
+            <h2>Resultado por codigo</h2>
+            <span class="ab-pill">{{ prendas_por_codigo|length }} coincidencia{{ prendas_por_codigo|length|pluralize }}</span>
+          </div>
+
+          {% if prendas_por_codigo %}
+            <div class="ab-card-grid">
+              {% for prenda in prendas_por_codigo %}
+                <article class="ab-list-card">
+                  <div class="ab-row" style="justify-content: space-between;">
+                    <h3>{{ prenda.codigo }}</h3>
+                    <span class="ab-badge {% if prenda.estado == 'DISPONIBLE' %}ok{% elif prenda.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
+                      {{ prenda.get_estado_display }}
+                    </span>
+                  </div>
+
+                  <div class="ab-meta" style="margin-top: 10px;">
+                    <div><strong>Prenda: {{ prenda.get_categoria_display }}</strong></div>
+                    <div>Marca: {{ prenda.marca|default:"-" }}</div>
+                    <div>Color: {{ prenda.color|default:"-" }}</div>
+                    <div>Talle: {{ prenda.talle|default:"-" }}</div>
+                    <div>Origen: {{ prenda.get_origen_display|default:"-" }}</div>
+                    {% if prenda.alquileres_activos %}
+                      <div style="margin-top: 10px;"><strong>Reservas activas</strong></div>
+                      {% for alquiler in prenda.alquileres_activos %}
+                        <div>
+                          {{ alquiler.get_estado_alquiler_display }}:
+                          {{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}
+                          {% if alquiler.cliente_nombre %} - {{ alquiler.cliente_nombre }}{% endif %}
+                        </div>
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+
+                  <div class="ab-actions" style="margin-top: 14px;">
+                    <a class="ab-btn2" href="{% url 'prendas:editar' prenda.id %}">Modificar</a>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="ab-empty">No se encontraron prendas con ese codigo.</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="get" class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body">
+        <div class="ab-section-title">
+          <h2>Buscar con filtros</h2>
+        </div>
+        <div class="ab-grid">
+          <div class="col-2 ab-field">
             <label class="ab-lab" for="{{ form.categoria.id_for_label }}">Prenda</label>
             {{ form.categoria }}
           </div>
-          <div class="col-3 ab-field">
+          <div class="col-2 ab-field">
             <label class="ab-lab" for="{{ form.marca.id_for_label }}">Marca</label>
             {{ form.marca }}
+          </div>
+          <div class="col-2 ab-field">
+            <label class="ab-lab" for="{{ form.color.id_for_label }}">Color</label>
+            {{ form.color }}
           </div>
           <div class="col-2 ab-field">
             <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
@@ -33,7 +112,9 @@
           </div>
           <div class="col-2 ab-field" style="justify-content: flex-end;">
             <label class="ab-lab">&nbsp;</label>
-            <button class="ab-btn" type="submit">Buscar</button>
+            <div class="ab-actions">
+              <button class="ab-btn" type="submit">Buscar</button>
+            </div>
           </div>
         </div>
 
@@ -47,7 +128,7 @@
       <div class="ab-card" style="border-radius: 22px;">
         <div class="ab-body">
           <div class="ab-section-title">
-            <h2>Resultados</h2>
+            <h2>Resultados por filtros</h2>
             <span class="ab-pill">{{ prendas|length }} codigo{{ prendas|length|pluralize }}</span>
           </div>
 
@@ -74,7 +155,7 @@
                         <div>
                           {{ alquiler.get_estado_alquiler_display }}:
                           {{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}
-                          {% if alquiler.cliente_nombre %} · {{ alquiler.cliente_nombre }}{% endif %}
+                          {% if alquiler.cliente_nombre %} - {{ alquiler.cliente_nombre }}{% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -93,7 +174,8 @@
       </div>
     {% else %}
       <div class="ab-form-note">
-        Puedes buscar con una sola opcion o combinar prenda, marca, talle y origen para encontrar rapido la prenda.
+        El bloque de filtros sirve para cruzar prenda, marca, color, talle y origen.
+        Si ya conoces el codigo, usa la busqueda exclusiva de arriba.
       </div>
     {% endif %}
   </div>

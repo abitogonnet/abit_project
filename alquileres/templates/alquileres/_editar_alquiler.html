@@ -5,6 +5,17 @@
     <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
   {% endfor %}
 
+  <div class="ab-edit-topbar">
+    <div class="ab-actions">
+      <button class="ab-btn" type="submit" name="accion" value="editar">Guardar cambios</button>
+      <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ alquiler.id }}. Continuar?');">Eliminar</button>
+    </div>
+    <div class="ab-edit-side-note">
+      Estado alquiler: {{ alquiler.get_estado_alquiler_display }}<br>
+      Estado saldo: {{ alquiler.get_estado_saldo_display }}
+    </div>
+  </div>
+
   <div class="ab-edit-main">
     {% if alquiler.edit_form.non_field_errors %}
       <div class="ab-msg err">{{ alquiler.edit_form.non_field_errors }}</div>
@@ -239,9 +250,7 @@
 
   <aside class="ab-edit-side">
     <div class="ab-edit-side-card">
-      <span class="ab-spec-label">Acciones</span>
-      <button class="ab-btn" type="submit" name="accion" value="editar">Guardar cambios</button>
-      <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ alquiler.id }}. Continuar?');">Eliminar</button>
+      <span class="ab-spec-label">Resumen</span>
       <div class="ab-edit-side-note">
         Estado alquiler: {{ alquiler.get_estado_alquiler_display }}<br>
         Estado saldo: {{ alquiler.get_estado_saldo_display }}

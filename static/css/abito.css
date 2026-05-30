@@ -526,6 +526,12 @@ textarea.ab-inp:focus {
   gap: 8px;
 }
 
+.ab-inline-ruedo-row {
+  display: grid;
+  gap: 4px;
+  padding: 2px 0;
+}
+
 .ab-table tbody tr:hover td {
   background: rgba(255, 255, 255, 0.52);
 }
@@ -766,6 +772,18 @@ textarea.ab-inp:focus {
   align-items: start;
 }
 
+.ab-edit-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.84);
+}
+
 .ab-edit-main {
   display: grid;
   gap: 14px;
@@ -895,6 +913,15 @@ textarea.ab-inp:focus {
   grid-template-columns: minmax(110px, 160px) 1fr auto;
   gap: 12px;
   align-items: center;
+  min-width: 0;
+}
+
+.ab-bar-row strong,
+.ab-dual-meter-line span,
+.ab-detail-summary,
+.ab-row strong,
+.ab-row h3 {
+  overflow-wrap: anywhere;
 }
 
 .ab-bar-track {
@@ -1059,6 +1086,10 @@ textarea.ab-inp:focus {
   .ab-edit-layout,
   .ab-edit-person-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ab-edit-topbar {
+    flex-direction: column;
   }
 
   .ab-edit-side {

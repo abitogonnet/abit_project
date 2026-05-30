@@ -1,50 +1,74 @@
 {% extends "base.html" %}
+{% load abito_tags %}
 {% block content %}
 <div class="ab-card">
   <div class="ab-head">
     <div>
       <h1 class="ab-title">Division de bienes</h1>
-      <p class="ab-sub">Registra cuando se saca dinero y como se divide entre Tade y Bauti.</p>
+      <p class="ab-sub">Registra cuando se saca dinero de la cuenta y como se reparte en el mes que estas mirando.</p>
     </div>
     <div class="ab-row">
-      <a class="ab-btn2" href="{% url 'gastos:home' %}">Volver</a>
+      <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Volver</a>
     </div>
   </div>
 
   <div class="ab-body ab-stack">
+    <form method="get" class="ab-card" style="border-radius: 22px;">
+      <div class="ab-body">
+        <div class="ab-grid">
+          <div class="col-4 ab-field">
+            <label class="ab-lab" for="id_ym">Mes visible</label>
+            <input class="ab-inp" type="month" name="ym" id="id_ym" value="{{ ym_value }}">
+          </div>
+          <div class="col-8 ab-field" style="justify-content: flex-end;">
+            <label class="ab-lab">&nbsp;</label>
+            <div class="ab-actions">
+              <button class="ab-btn" type="submit">Ver mes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
         <span class="ab-small">Saldo actual en cuenta</span>
-        <strong>${{ saldo_actual_cuenta }}</strong>
+        <strong>${{ saldo_actual_cuenta|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Ingresos por senas</span>
-        <strong>${{ total_senas }}</strong>
+        <span class="ab-small">Señas de {{ month_label }}</span>
+        <strong>${{ total_senas_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Saldos ya pagados</span>
-        <strong>${{ total_saldos_pagados }}</strong>
+        <span class="ab-small">Saldos cobrados en {{ month_label }}</span>
+        <strong>${{ total_saldos_pagados_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Ingresos de alquileres</span>
-        <strong>${{ total_ingresos_alquileres }}</strong>
+        <span class="ab-small">Ingresos por alquileres del mes</span>
+        <strong>${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Gastos registrados</span>
-        <strong>${{ total_gastos_registrados }}</strong>
+        <span class="ab-small">Gastos de {{ month_label }}</span>
+        <strong>${{ total_gastos_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Dinero ya dividido</span>
-        <strong>${{ total_dividido }}</strong>
+        <span class="ab-small">Dinero ya dividido en {{ month_label }}</span>
+        <strong>${{ total_dividido_periodo|miles0 }}</strong>
       </div>
     </div>
 
     <div class="ab-form-note">
-      El saldo actual se calcula desde cero con lo que entro por alquileres: senas + saldos pagados - gastos - divisiones ya retiradas.
+      Estas cargando una salida dentro de <strong>{{ month_label }}</strong>. El saldo actual siempre toma toda la historia real de la cuenta.
     </div>
 
     <form method="post" autocomplete="off" class="ab-stack">
       {% csrf_token %}
+      <input type="hidden" name="ym" value="{{ ym_value }}">
+
+      <div class="ab-actions">
+        <button class="ab-btn" type="submit">Guardar division</button>
+        <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
+      </div>
 
       <div class="ab-grid">
         <div class="col-3 ab-field">
@@ -80,7 +104,7 @@
 
       <div class="ab-actions">
         <button class="ab-btn" type="submit">Guardar division</button>
-        <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
+        <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
       </div>
     </form>
   </div>

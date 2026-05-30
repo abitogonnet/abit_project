@@ -64,6 +64,13 @@ def _descripcion_prenda_tabla(item: dict) -> str:
     return " ".join(partes)
 
 
+def _texto_ruedo_categoria(items_persona: list[dict], categoria: str) -> str:
+    items_categoria = [item for item in items_persona if item["categoria_key"] == categoria]
+    if not items_categoria:
+        return "Sin prenda"
+    return " / ".join(item["ruedo"] for item in items_categoria) or "Sin ruedo"
+
+
 def _badge_estado_alquiler(value: str) -> str:
     if value == Alquiler.EST_CERRADO:
         return "ok"
@@ -178,6 +185,8 @@ def _adjuntar_detalle_alquiler(alquileres):
                     }
                     for item in persona["items"]
                 ],
+                "ruedo_saco": _texto_ruedo_categoria(persona["items"], Prenda.C_SACO),
+                "ruedo_pantalon": _texto_ruedo_categoria(persona["items"], Prenda.C_PANTALON),
             })
 
             for item in persona["items"]:

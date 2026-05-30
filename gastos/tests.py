@@ -102,13 +102,13 @@ class GastosViewsTests(TestCase):
         self.assertContains(response, "Semana del evento")
         self.assertContains(response, "Retiro de mitad de mes")
         self.assertContains(response, "Saldo actual en cuenta")
-        self.assertContains(response, "Ingresos por senas")
-        self.assertContains(response, "Saldos ya pagados")
-        self.assertContains(response, "Ingresos de alquileres")
-        self.assertContains(response, "$75000")
-        self.assertContains(response, "$20000")
-        self.assertContains(response, "$95000")
-        self.assertContains(response, "$40000")
+        self.assertContains(response, "Señas de Mayo 2026")
+        self.assertContains(response, "Saldos cobrados en Mayo 2026")
+        self.assertContains(response, "Ingresos por alquileres del mes")
+        self.assertContains(response, "$75.000")
+        self.assertContains(response, "$20.000")
+        self.assertContains(response, "$95.000")
+        self.assertContains(response, "$40.000")
         self.assertNotContains(response, "Tade acumulado")
         self.assertNotContains(response, "Bauti acumulado")
 
@@ -144,7 +144,7 @@ class GastosViewsTests(TestCase):
         response = self.client.get(reverse("gastos:home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "$90000")
+        self.assertContains(response, "$90.000")
 
     def test_vista_crear_renderiza_selectores_y_notas_tras_desbloqueo(self):
         self._unlock_gastos()
@@ -191,10 +191,37 @@ class GastosViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Saldo actual en cuenta")
-        self.assertContains(response, "Ingresos por senas")
-        self.assertContains(response, "Saldos ya pagados")
-        self.assertContains(response, "Dinero ya dividido")
-        self.assertContains(response, "$75000")
+        self.assertContains(response, "Señas de Mayo 2026")
+        self.assertContains(response, "Saldos cobrados en Mayo 2026")
+        self.assertContains(response, "Dinero ya dividido en Mayo 2026")
+        self.assertContains(response, "$75.000")
         self.assertNotContains(response, "Total esperado en cuentas")
         self.assertNotContains(response, "Tade acumulado")
         self.assertNotContains(response, "Bauti acumulado")
+
+    def test_home_filtra_listas_por_mes_elegido(self):
+        session = self.client.session
+        session["gastos_access_ok"] = True
+        session.save()
+
+        Gasto.objects.create(
+            fecha=date(2026, 5, 10),
+            categoria="Publicidad",
+            monto="5000",
+            descripcion="Mayo",
+        )
+        Gasto.objects.create(
+            fecha=date(2026, 4, 10),
+            categoria="Publicidad",
+            monto="3000",
+            descripcion="Abril",
+        )
+
+        response = self.client.get(reverse("gastos:home"), {
+            "ym": "2026-04",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Abril 2026")
+        self.assertContains(response, "Abril")
+        self.assertNotContains(response, "Mayo")

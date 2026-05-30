@@ -78,8 +78,8 @@
                 <th rowspan="2">Acciones</th>
               </tr>
               <tr>
-                <th>Saco</th>
-                <th>Pantalon</th>
+                <th>Ruedo de saco</th>
+                <th>Ruedo de pantalon</th>
               </tr>
             </thead>
             <tbody>
@@ -117,26 +117,22 @@
                     </div>
                   </td>
                   <td>
-                    <div class="ab-cell-stack">
-                      {% for ruedo in a.ruedos_tabla.saco %}
-                        <div class="ab-cell-block">
-                          <strong>{{ ruedo.persona }}</strong>
-                          <span class="ab-small">{{ ruedo.ruedo }}</span>
+                    <div class="ab-inline-persona-grid">
+                      {% for prenda in a.prendas_tabla %}
+                        <div class="ab-inline-ruedo-row">
+                          <span class="ab-small">Ruedo de saco</span>
+                          <strong>{{ prenda.ruedo_saco }}</strong>
                         </div>
-                      {% empty %}
-                        <span class="ab-small">Sin ruedo</span>
                       {% endfor %}
                     </div>
                   </td>
                   <td>
-                    <div class="ab-cell-stack">
-                      {% for ruedo in a.ruedos_tabla.pantalon %}
-                        <div class="ab-cell-block">
-                          <strong>{{ ruedo.persona }}</strong>
-                          <span class="ab-small">{{ ruedo.ruedo }}</span>
+                    <div class="ab-inline-persona-grid">
+                      {% for prenda in a.prendas_tabla %}
+                        <div class="ab-inline-ruedo-row">
+                          <span class="ab-small">Ruedo de pantalon</span>
+                          <strong>{{ prenda.ruedo_pantalon }}</strong>
                         </div>
-                      {% empty %}
-                        <span class="ab-small">Sin ruedo</span>
                       {% endfor %}
                     </div>
                   </td>
@@ -298,17 +294,10 @@
                     <div>Sin prendas</div>
                   {% endfor %}
                 {% endfor %}
-                <div><strong>Ruedo saco</strong></div>
-                {% for ruedo in a.ruedos_tabla.saco %}
-                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
-                {% empty %}
-                  <div>Sin ruedo</div>
-                {% endfor %}
-                <div><strong>Ruedo pantalon</strong></div>
-                {% for ruedo in a.ruedos_tabla.pantalon %}
-                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
-                {% empty %}
-                  <div>Sin ruedo</div>
+                <div><strong>Ruedos</strong></div>
+                {% for prenda in a.prendas_tabla %}
+                  <div>{{ prenda.persona }} - Ruedo de saco: {{ prenda.ruedo_saco }}</div>
+                  <div>{{ prenda.persona }} - Ruedo de pantalon: {{ prenda.ruedo_pantalon }}</div>
                 {% endfor %}
               </div>
 
