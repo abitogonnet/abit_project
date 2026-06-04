@@ -206,12 +206,12 @@ def _adjuntar_detalle_alquiler(alquileres):
 
                 if item["categoria_key"] == Prenda.C_SACO:
                     alquiler.ruedos_tabla["saco"].append({
-                        "persona": persona["nombre"],
+                        "categoria": item["categoria"],
                         "ruedo": item["ruedo"],
                     })
                 if item["categoria_key"] == Prenda.C_PANTALON:
                     alquiler.ruedos_tabla["pantalon"].append({
-                        "persona": persona["nombre"],
+                        "categoria": item["categoria"],
                         "ruedo": item["ruedo"],
                     })
 

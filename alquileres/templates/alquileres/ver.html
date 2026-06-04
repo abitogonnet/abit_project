@@ -132,7 +132,7 @@
                     <div class="ab-cell-stack">
                       {% for ruedo in a.ruedos_tabla.saco %}
                         <div class="ab-cell-block">
-                          <strong>{{ ruedo.persona }}</strong>
+                          <strong>{{ ruedo.categoria }}</strong>
                           <span class="ab-small">{{ ruedo.ruedo }}</span>
                         </div>
                       {% empty %}
@@ -144,7 +144,7 @@
                     <div class="ab-cell-stack">
                       {% for ruedo in a.ruedos_tabla.pantalon %}
                         <div class="ab-cell-block">
-                          <strong>{{ ruedo.persona }}</strong>
+                          <strong>{{ ruedo.categoria }}</strong>
                           <span class="ab-small">{{ ruedo.ruedo }}</span>
                         </div>
                       {% empty %}
@@ -316,13 +316,13 @@
                 {% endfor %}
                 <div><strong>Ruedo de saco</strong></div>
                 {% for ruedo in a.ruedos_tabla.saco %}
-                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
+                  <div>{{ ruedo.categoria }}: {{ ruedo.ruedo }}</div>
                 {% empty %}
                   <div>Sin ruedo</div>
                 {% endfor %}
                 <div><strong>Ruedo de pantalon</strong></div>
                 {% for ruedo in a.ruedos_tabla.pantalon %}
-                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
+                  <div>{{ ruedo.categoria }}: {{ ruedo.ruedo }}</div>
                 {% empty %}
                   <div>Sin ruedo</div>
                 {% endfor %}
