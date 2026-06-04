@@ -487,6 +487,17 @@ function filterCodeSelect(input) {
     input.value = typed;
   }
 
+  if (!typed) {
+    if (select.dataset.filtered === "1") {
+      select.innerHTML = "";
+      select._allOptions.forEach(function (optionData) {
+        select.appendChild(cloneOption(optionData));
+      });
+      select.dataset.filtered = "";
+    }
+    return;
+  }
+
   const previousValue = select.value;
   const matchingOptions = select._allOptions.filter(function (option) {
     return !option.value || matchesCodeNumber(option.value, prefix, typed);
@@ -501,13 +512,13 @@ function filterCodeSelect(input) {
     return optionData.value === previousValue;
   });
   select.value = stillExists ? previousValue : "";
+  select.dataset.filtered = "1";
 }
 
 document.querySelectorAll(".js-code-filter").forEach(function (input) {
   input.addEventListener("input", function () {
     filterCodeSelect(input);
   });
-  filterCodeSelect(input);
 });
 
 ["id_total_bruto", "id_descuento_pct", "id_sena"].forEach(function (id) {

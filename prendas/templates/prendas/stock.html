@@ -258,6 +258,7 @@
     const tableRows = Array.from(document.querySelectorAll("#stockTable tbody tr[data-category]"));
     const cards = Array.from(document.querySelectorAll("#stockCards [data-category]"));
     const count = document.getElementById("stockCount");
+    let resizeScheduled = false;
 
     function updatePendingCount(visible) {
       if (!pendingCount) return;
@@ -341,7 +342,14 @@
       });
     }
 
-    window.addEventListener("resize", applyFilters);
+    window.addEventListener("resize", function () {
+      if (resizeScheduled) return;
+      resizeScheduled = true;
+      window.requestAnimationFrame(function () {
+        resizeScheduled = false;
+        applyFilters();
+      });
+    });
     applyPendingFilter();
     applyFilters();
   })();

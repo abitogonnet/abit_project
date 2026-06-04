@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db import transaction
+from django.http import Http404
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -240,6 +241,55 @@ def _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=
         )
 
 
+def _hidden_field_pairs(data, keys):
+    return [
+        (key, value)
+        for key in keys
+        if (value := (data.get(key) or "").strip())
+    ]
+
+
+def _querystring_from_hidden_fields(hidden_fields):
+    params = {key: value for key, value in hidden_fields if value}
+    return urlencode(params)
+
+
+def _panel_url(alquiler_id, panel_name, hidden_fields=None):
+    url = reverse("alquileres:panel", args=[alquiler_id, panel_name])
+    querystring = _querystring_from_hidden_fields(hidden_fields or [])
+    if querystring:
+        return f"{url}?{querystring}"
+    return url
+
+
+def _preparar_formulario_edicion(alquiler, disponibles, hidden_fields=None, edit_form=None):
+    alquiler.edit_hidden_fields = list(hidden_fields or [])
+    alquiler.edit_querystring = _querystring_from_hidden_fields(alquiler.edit_hidden_fields)
+    alquiler.edit_panel_url = _panel_url(alquiler.id, "edit", alquiler.edit_hidden_fields)
+    alquiler.edit_form = edit_form or AlquilerEdicionForm(
+        instance=alquiler,
+        prefix=f"alq-edit-{alquiler.id}",
+        disponibles=disponibles,
+    )
+
+
+def _label_opcion_prenda(prenda: Prenda) -> str:
+    return f"{prenda.codigo} - {prenda.color} {prenda.marca} talle {prenda.talle}".strip()
+
+
+def _disponibles_payload(disponibles):
+    payload = {}
+    for short, prendas in disponibles.items():
+        payload[short] = [
+            {
+                "value": prenda.codigo,
+                "label": _label_opcion_prenda(prenda),
+            }
+            for prenda in prendas
+        ]
+    return payload
+
+
 def _armar_mensaje_cliente(alq: Alquiler) -> str:
     partes = []
     partes.append("Hola, te mando el detallado de lo que alquilaste:")
@@ -407,16 +457,17 @@ def _sync_items_alquiler(alquiler: Alquiler, selected_prendas):
 
 
 def _disponibles_por_categoria():
-    return {
-        "saco": list(Prenda.objects.filter(categoria=Prenda.C_SACO).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-        "pantalon": list(Prenda.objects.filter(categoria=Prenda.C_PANTALON).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-        "camisa": list(Prenda.objects.filter(categoria=Prenda.C_CAMISA).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-        "chaleco": list(Prenda.objects.filter(categoria=Prenda.C_CHALECO).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-        "mono": list(Prenda.objects.filter(categoria=Prenda.C_MONO).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-        "corbata": list(Prenda.objects.filter(categoria=Prenda.C_CORBATA).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-        "zapatos": list(Prenda.objects.filter(categoria=Prenda.C_ZAPATOS).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-        "cinturon": list(Prenda.objects.filter(categoria=Prenda.C_CINTURON).exclude(estado=Prenda.E_DAN).order_by("-creado_en", "-codigo")),
-    }
+    grouped = {short: [] for short in SHORT_POR_CATEGORIA.values()}
+    prendas = (
+        Prenda.objects
+        .exclude(estado=Prenda.E_DAN)
+        .order_by("categoria", "-creado_en", "-codigo")
+    )
+    for prenda in prendas:
+        short = SHORT_POR_CATEGORIA.get(prenda.categoria)
+        if short:
+            grouped[short].append(prenda)
+    return grouped
 
 
 def crear(request):
@@ -488,6 +539,7 @@ def _redirect_entregas_con_filtro(request):
 
 def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=None):
     disponibles = _disponibles_por_categoria()
+    form_por_alquiler_id = form_por_alquiler_id or {}
     filtros_form = VerAlquileresFiltroForm(data or None)
     alquileres = (
         Alquiler.objects
@@ -508,24 +560,32 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
             alquileres = alquileres.filter(fecha_entrega__lte=fecha_hasta)
             filtros_activos = True
 
-    resumen = [
-        {"label": "Activos", "valor": alquileres.exclude(estado_alquiler=Alquiler.EST_CERRADO).count()},
-        {"label": "Reservados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_RESERVADO).count()},
-        {"label": "Entregados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_ENTREGADO).count()},
-        {"label": "Cerrados", "valor": alquileres.filter(estado_alquiler=Alquiler.EST_CERRADO).count()},
-    ]
-
     alquileres = list(alquileres)
+    resumen = [
+        {"label": "Activos", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler != Alquiler.EST_CERRADO)},
+        {"label": "Reservados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler == Alquiler.EST_RESERVADO)},
+        {"label": "Entregados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler == Alquiler.EST_ENTREGADO)},
+        {"label": "Cerrados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler == Alquiler.EST_CERRADO)},
+    ]
     _adjuntar_detalle_alquiler(alquileres)
-    _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=form_por_alquiler_id)
 
-    fecha_desde_valor = filtros_form["fecha_desde"].value() or ""
-    fecha_hasta_valor = filtros_form["fecha_hasta"].value() or ""
+    hidden_fields = _hidden_field_pairs({
+        "fecha_desde": filtros_form["fecha_desde"].value() or "",
+        "fecha_hasta": filtros_form["fecha_hasta"].value() or "",
+    }, ["fecha_desde", "fecha_hasta"])
+
+    alquileres_por_id = {}
     for alquiler in alquileres:
-        alquiler.edit_hidden_fields = [
-            ("fecha_desde", fecha_desde_valor),
-            ("fecha_hasta", fecha_hasta_valor),
-        ]
+        alquiler.edit_panel_url = _panel_url(alquiler.id, "edit", hidden_fields)
+        alquileres_por_id[alquiler.id] = alquiler
+
+    if edit_open_id in alquileres_por_id:
+        _preparar_formulario_edicion(
+            alquileres_por_id[edit_open_id],
+            disponibles,
+            hidden_fields=hidden_fields,
+            edit_form=form_por_alquiler_id.get(edit_open_id),
+        )
 
     return {
         "alquileres": alquileres,
@@ -536,11 +596,13 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         "filtros_form": filtros_form,
         "filtros_activos": filtros_activos,
         "edit_open_id": edit_open_id,
+        "disponibles_json": _disponibles_payload(disponibles),
     }
 
 
 def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
     disponibles = _disponibles_por_categoria()
+    form_por_alquiler_id = form_por_alquiler_id or {}
     hoy = timezone.localdate()
     hasta_str = ""
     if data is not None:
@@ -565,18 +627,55 @@ def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
     )
     alquileres = list(alquileres)
     _adjuntar_detalle_alquiler(alquileres)
-    _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=form_por_alquiler_id)
 
-    hasta_valor = hasta.strftime("%Y-%m-%d")
+    hidden_fields = _hidden_field_pairs({
+        "hasta": hasta.strftime("%Y-%m-%d"),
+    }, ["hasta"])
+
+    alquileres_por_id = {}
     for alquiler in alquileres:
-        alquiler.edit_hidden_fields = [("hasta", hasta_valor)]
+        alquiler.edit_panel_url = _panel_url(alquiler.id, "edit", hidden_fields)
+        alquiler.detail_panel_url = _panel_url(alquiler.id, "detalle")
+        alquileres_por_id[alquiler.id] = alquiler
+
+    if edit_open_id in alquileres_por_id:
+        _preparar_formulario_edicion(
+            alquileres_por_id[edit_open_id],
+            disponibles,
+            hidden_fields=hidden_fields,
+            edit_form=form_por_alquiler_id.get(edit_open_id),
+        )
 
     return {
         "hoy": hoy,
         "hasta": hasta,
         "alquileres": alquileres,
         "edit_open_id": edit_open_id,
+        "disponibles_json": _disponibles_payload(disponibles),
     }
+
+
+def panel(request, alquiler_id, panel_name):
+    alquiler = get_object_or_404(
+        Alquiler.objects.prefetch_related("items__prenda"),
+        id=alquiler_id,
+    )
+
+    if panel_name == "edit":
+        disponibles = _disponibles_por_categoria()
+        hidden_fields = _hidden_field_pairs(request.GET, ["fecha_desde", "fecha_hasta", "hasta"])
+        _preparar_formulario_edicion(alquiler, disponibles, hidden_fields=hidden_fields)
+        return render(request, "alquileres/_editar_alquiler.html", {
+            "alquiler": alquiler,
+        })
+
+    if panel_name == "detalle":
+        _adjuntar_detalle_alquiler([alquiler])
+        return render(request, "alquileres/_detalle_personas.html", {
+            "alquiler": alquiler,
+        })
+
+    raise Http404("Panel inexistente")
 
 
 def ver(request):

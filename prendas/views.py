@@ -322,14 +322,14 @@ def stock(request):
 
         return redirect("prendas:stock")
 
-    prendas = Prenda.objects.all().order_by("categoria", "-creado_en", "-codigo")
+    prendas = list(Prenda.objects.all().order_by("categoria", "-creado_en", "-codigo"))
     prendas_sin_origen = list(_prendas_sin_origen())
     resumen = [
-        {"label": "Total", "valor": prendas.count()},
-        {"label": "Disponibles", "valor": prendas.filter(estado=Prenda.E_DISP).count()},
-        {"label": "Reservadas", "valor": prendas.filter(estado=Prenda.E_RES).count()},
-        {"label": "Entregadas", "valor": prendas.filter(estado=Prenda.E_ENT).count()},
-        {"label": "Danadas", "valor": prendas.filter(estado=Prenda.E_DAN).count()},
+        {"label": "Total", "valor": len(prendas)},
+        {"label": "Disponibles", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_DISP)},
+        {"label": "Reservadas", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_RES)},
+        {"label": "Entregadas", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_ENT)},
+        {"label": "Danadas", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_DAN)},
         {"label": "Sin origen", "valor": len(prendas_sin_origen)},
     ]
 

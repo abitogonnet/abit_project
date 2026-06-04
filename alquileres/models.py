@@ -103,6 +103,16 @@ class Alquiler(models.Model):
     def __str__(self):
         return f"Alquiler #{self.id} - {self.cliente_nombre}"
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["fecha_reserva"]),
+            models.Index(fields=["fecha_entrega"]),
+            models.Index(fields=["fecha_devolucion"]),
+            models.Index(fields=["estado_alquiler", "fecha_entrega"]),
+            models.Index(fields=["estado_alquiler", "fecha_devolucion"]),
+            models.Index(fields=["estado_saldo", "saldo_pagado_en"]),
+        ]
+
 
 class AlquilerItem(models.Model):
     RUEDO_CM = "CM"

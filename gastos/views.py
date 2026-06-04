@@ -3,7 +3,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -90,50 +90,70 @@ def _require_gastos_access(request):
     })
 
 
-def _resumen_cuenta(*, start=None, end=None):
-    total_senas_cuenta = Alquiler.objects.aggregate(total=Sum("sena"))["total"] or Decimal("0")
-    total_saldos_pagados_cuenta = (
-        Alquiler.objects
-        .filter(estado_saldo=Alquiler.SAL_PAG)
-        .aggregate(total=Sum("saldo"))["total"]
-        or Decimal("0")
+def _decimal_or_zero(value):
+    return value or Decimal("0")
+
+
+def _aggregate_period_totals(model, field_name, *, start=None, end=None):
+    period_filter = Q()
+    if start and end:
+        period_filter = Q(fecha__gte=start, fecha__lt=end)
+
+    totals = model.objects.aggregate(
+        total_cuenta=Sum(field_name),
+        total_periodo=Sum(field_name, filter=period_filter) if start and end else Sum(field_name),
     )
-    total_ingresos_cuenta = total_senas_cuenta + total_saldos_pagados_cuenta
-    total_gastos_cuenta = Gasto.objects.aggregate(total=Sum("monto"))["total"] or Decimal("0")
-    total_dividido_cuenta = DivisionBienes.objects.aggregate(total=Sum("monto_total"))["total"] or Decimal("0")
-    saldo_actual_cuenta = total_ingresos_cuenta - total_gastos_cuenta - total_dividido_cuenta
+    return {
+        "total_cuenta": _decimal_or_zero(totals["total_cuenta"]),
+        "total_periodo": _decimal_or_zero(totals["total_periodo"]),
+    }
+
+
+def _aggregate_alquiler_totals(*, start=None, end=None):
+    saldo_pagado_filter = Q(estado_saldo=Alquiler.SAL_PAG)
+    reserva_periodo_filter = Q()
+    saldo_periodo_filter = saldo_pagado_filter
 
     if start and end:
-        total_senas_periodo = (
-            Alquiler.objects
-            .filter(fecha_reserva__gte=start, fecha_reserva__lt=end)
-            .aggregate(total=Sum("sena"))["total"]
-            or Decimal("0")
+        reserva_periodo_filter = Q(fecha_reserva__gte=start, fecha_reserva__lt=end)
+        saldo_periodo_filter = Q(
+            estado_saldo=Alquiler.SAL_PAG,
+            saldo_pagado_en__isnull=False,
+            saldo_pagado_en__gte=start,
+            saldo_pagado_en__lt=end,
         )
-        total_saldos_pagados_periodo = (
-            Alquiler.objects
-            .filter(estado_saldo=Alquiler.SAL_PAG, saldo_pagado_en__isnull=False)
-            .filter(saldo_pagado_en__gte=start, saldo_pagado_en__lt=end)
-            .aggregate(total=Sum("saldo"))["total"]
-            or Decimal("0")
-        )
-        total_gastos_periodo = (
-            Gasto.objects
-            .filter(fecha__gte=start, fecha__lt=end)
-            .aggregate(total=Sum("monto"))["total"]
-            or Decimal("0")
-        )
-        total_dividido_periodo = (
-            DivisionBienes.objects
-            .filter(fecha__gte=start, fecha__lt=end)
-            .aggregate(total=Sum("monto_total"))["total"]
-            or Decimal("0")
-        )
-    else:
-        total_senas_periodo = total_senas_cuenta
-        total_saldos_pagados_periodo = total_saldos_pagados_cuenta
-        total_gastos_periodo = total_gastos_cuenta
-        total_dividido_periodo = total_dividido_cuenta
+
+    totals = Alquiler.objects.aggregate(
+        total_senas_cuenta=Sum("sena"),
+        total_saldos_pagados_cuenta=Sum("saldo", filter=saldo_pagado_filter),
+        total_senas_periodo=Sum("sena", filter=reserva_periodo_filter) if start and end else Sum("sena"),
+        total_saldos_pagados_periodo=Sum("saldo", filter=saldo_periodo_filter),
+    )
+
+    return {
+        "total_senas_cuenta": _decimal_or_zero(totals["total_senas_cuenta"]),
+        "total_saldos_pagados_cuenta": _decimal_or_zero(totals["total_saldos_pagados_cuenta"]),
+        "total_senas_periodo": _decimal_or_zero(totals["total_senas_periodo"]),
+        "total_saldos_pagados_periodo": _decimal_or_zero(totals["total_saldos_pagados_periodo"]),
+    }
+
+
+def _resumen_cuenta(*, start=None, end=None):
+    alquiler_totals = _aggregate_alquiler_totals(start=start, end=end)
+    gasto_totals = _aggregate_period_totals(Gasto, "monto", start=start, end=end)
+    division_totals = _aggregate_period_totals(DivisionBienes, "monto_total", start=start, end=end)
+
+    total_senas_cuenta = alquiler_totals["total_senas_cuenta"]
+    total_saldos_pagados_cuenta = alquiler_totals["total_saldos_pagados_cuenta"]
+    total_ingresos_cuenta = total_senas_cuenta + total_saldos_pagados_cuenta
+    total_gastos_cuenta = gasto_totals["total_cuenta"]
+    total_dividido_cuenta = division_totals["total_cuenta"]
+    saldo_actual_cuenta = total_ingresos_cuenta - total_gastos_cuenta - total_dividido_cuenta
+
+    total_senas_periodo = alquiler_totals["total_senas_periodo"]
+    total_saldos_pagados_periodo = alquiler_totals["total_saldos_pagados_periodo"]
+    total_gastos_periodo = gasto_totals["total_periodo"]
+    total_dividido_periodo = division_totals["total_periodo"]
 
     total_ingresos_periodo = total_senas_periodo + total_saldos_pagados_periodo
     saldo_neto_periodo = total_ingresos_periodo - total_gastos_periodo - total_dividido_periodo
@@ -176,16 +196,18 @@ def home(request):
         .order_by("-fecha", "-creado_en")
     )
 
+    resumen_cuenta = _resumen_cuenta(start=month_ctx["start"], end=month_ctx["end"])
+
     return render(request, "gastos/home.html", {
         "gastos": gastos,
         "divisiones": divisiones,
-        "total_gastos_general": Gasto.objects.aggregate(s=Sum("monto"))["s"] or Decimal("0"),
-        "total_gastos_mes": gastos.aggregate(s=Sum("monto"))["s"] or Decimal("0"),
-        "total_div_general": DivisionBienes.objects.aggregate(s=Sum("monto_total"))["s"] or Decimal("0"),
-        "total_div_mes": divisiones.aggregate(s=Sum("monto_total"))["s"] or Decimal("0"),
+        "total_gastos_general": resumen_cuenta["total_gastos_cuenta"],
+        "total_gastos_mes": resumen_cuenta["total_gastos_periodo"],
+        "total_div_general": resumen_cuenta["total_dividido_cuenta"],
+        "total_div_mes": resumen_cuenta["total_dividido_periodo"],
         "ym_value": month_ctx["ym_value"],
         "month_label": month_ctx["month_label"],
-        **_resumen_cuenta(start=month_ctx["start"], end=month_ctx["end"]),
+        **resumen_cuenta,
     })
 
 

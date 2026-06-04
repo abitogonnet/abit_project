@@ -61,3 +61,12 @@ class Prenda(models.Model):
     def __str__(self):
         extra = f" - {self.get_origen_display()}" if self.origen else ""
         return f"{self.codigo} - {self.get_categoria_display()} - {self.color} - {self.talle}{extra}".strip()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["categoria", "estado"]),
+            models.Index(fields=["origen"]),
+            models.Index(fields=["marca"]),
+            models.Index(fields=["color"]),
+            models.Index(fields=["talle"]),
+        ]

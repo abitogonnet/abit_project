@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
+{{ disponibles_json|json_script:"ab-available-prendas" }}
 <section class="ab-card">
   <div class="ab-head">
     <div>
@@ -78,8 +80,8 @@
                 <th rowspan="2">Acciones</th>
               </tr>
               <tr>
-                <th>Ruedo de saco</th>
-                <th>Ruedo de pantalon</th>
+                <th>Saco</th>
+                <th>Pantalon</th>
               </tr>
             </thead>
             <tbody>
@@ -117,22 +119,26 @@
                     </div>
                   </td>
                   <td>
-                    <div class="ab-inline-persona-grid">
-                      {% for prenda in a.prendas_tabla %}
-                        <div class="ab-inline-ruedo-row">
-                          <span class="ab-small">Ruedo de saco</span>
-                          <strong>{{ prenda.ruedo_saco }}</strong>
+                    <div class="ab-cell-stack">
+                      {% for ruedo in a.ruedos_tabla.saco %}
+                        <div class="ab-cell-block">
+                          <strong>{{ ruedo.persona }}</strong>
+                          <span class="ab-small">{{ ruedo.ruedo }}</span>
                         </div>
+                      {% empty %}
+                        <span class="ab-small">Sin ruedo</span>
                       {% endfor %}
                     </div>
                   </td>
                   <td>
-                    <div class="ab-inline-persona-grid">
-                      {% for prenda in a.prendas_tabla %}
-                        <div class="ab-inline-ruedo-row">
-                          <span class="ab-small">Ruedo de pantalon</span>
-                          <strong>{{ prenda.ruedo_pantalon }}</strong>
+                    <div class="ab-cell-stack">
+                      {% for ruedo in a.ruedos_tabla.pantalon %}
+                        <div class="ab-cell-block">
+                          <strong>{{ ruedo.persona }}</strong>
+                          <span class="ab-small">{{ ruedo.ruedo }}</span>
                         </div>
+                      {% empty %}
+                        <span class="ab-small">Sin ruedo</span>
                       {% endfor %}
                     </div>
                   </td>
@@ -231,7 +237,11 @@
                         <span class="ab-small">Nombres, fechas, pagos y prendas</span>
                       </summary>
                       <div class="ab-detail-panel">
-                        {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                        {% if edit_open_id == a.id and a.edit_form %}
+                          {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                        {% else %}
+                          <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
+                        {% endif %}
                       </div>
                     </details>
                   </td>
@@ -294,10 +304,17 @@
                     <div>Sin prendas</div>
                   {% endfor %}
                 {% endfor %}
-                <div><strong>Ruedos</strong></div>
-                {% for prenda in a.prendas_tabla %}
-                  <div>{{ prenda.persona }} - Ruedo de saco: {{ prenda.ruedo_saco }}</div>
-                  <div>{{ prenda.persona }} - Ruedo de pantalon: {{ prenda.ruedo_pantalon }}</div>
+                <div><strong>Ruedo saco</strong></div>
+                {% for ruedo in a.ruedos_tabla.saco %}
+                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
+                {% empty %}
+                  <div>Sin ruedo</div>
+                {% endfor %}
+                <div><strong>Ruedo pantalon</strong></div>
+                {% for ruedo in a.ruedos_tabla.pantalon %}
+                  <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
+                {% empty %}
+                  <div>Sin ruedo</div>
                 {% endfor %}
               </div>
 
@@ -307,7 +324,11 @@
                   <span class="ab-small">Nombres, fechas, pagos y prendas</span>
                 </summary>
                 <div class="ab-detail-panel">
-                  {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                  {% if edit_open_id == a.id and a.edit_form %}
+                    {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                  {% else %}
+                    <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
+                  {% endif %}
                 </div>
               </details>
 
@@ -369,110 +390,5 @@
   </div>
 </section>
 
-<script>
-function abNum(value) {
-  const text = (value || "").toString().replace(",", ".").trim();
-  const parsed = parseFloat(text);
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function abOnlyDigits(value) {
-  return (value || "").toString().replace(/\D/g, "");
-}
-
-function abNormalizedDigits(value) {
-  const digits = abOnlyDigits(value);
-  if (!digits) return "";
-  return digits.replace(/^0+/, "") || "0";
-}
-
-function abMatchesCodeNumber(code, prefix, typed) {
-  if (!typed) return true;
-  const rawCode = (code || "").toUpperCase();
-  const fullPrefix = `${(prefix || "").toUpperCase()}-`;
-  const suffix = rawCode.startsWith(fullPrefix) ? rawCode.slice(fullPrefix.length) : rawCode;
-  const codeDigits = abOnlyDigits(suffix);
-  const cleanTyped = abOnlyDigits(typed);
-  const normalizedTyped = abNormalizedDigits(cleanTyped);
-  const normalizedCode = abNormalizedDigits(codeDigits);
-  return codeDigits.startsWith(cleanTyped) || normalizedCode.startsWith(normalizedTyped);
-}
-
-function abCloneOption(optionData) {
-  const option = document.createElement("option");
-  option.value = optionData.value;
-  option.textContent = optionData.label;
-  return option;
-}
-
-function abFilterCodeSelect(input) {
-  const selectId = input.dataset.targetSelect;
-  const select = document.getElementById(selectId);
-  if (!select) return;
-
-  if (!select._allOptions) {
-    select._allOptions = Array.from(select.options).map(function (option) {
-      return { value: option.value, label: option.textContent };
-    });
-  }
-
-  const prefix = input.dataset.prefix || "";
-  const typed = abOnlyDigits(input.value);
-  if (input.value !== typed) {
-    input.value = typed;
-  }
-
-  const previousValue = select.value;
-  const matchingOptions = select._allOptions.filter(function (option) {
-    return !option.value || abMatchesCodeNumber(option.value, prefix, typed);
-  });
-
-  select.innerHTML = "";
-  matchingOptions.forEach(function (optionData) {
-    select.appendChild(abCloneOption(optionData));
-  });
-
-  const stillExists = matchingOptions.some(function (optionData) {
-    return optionData.value === previousValue;
-  });
-  select.value = stillExists ? previousValue : "";
-}
-
-function recalcEditForm(form) {
-  const totalInput = form.querySelector('[name$="-total_bruto"]');
-  const discountInput = form.querySelector('[name$="-descuento_pct"]');
-  const senaInput = form.querySelector('[name$="-sena"]');
-  const totalFinalOutput = form.querySelector(".js-edit-total-final");
-  const saldoOutput = form.querySelector(".js-edit-saldo");
-  if (!totalInput || !discountInput || !senaInput || !totalFinalOutput || !saldoOutput) return;
-
-  const total = abNum(totalInput.value);
-  const descuento = Math.min(Math.max(abNum(discountInput.value), 0), 100);
-  const sena = Math.max(abNum(senaInput.value), 0);
-  const totalFinal = Math.max(total - (total * descuento / 100), 0);
-  const saldo = Math.max(totalFinal - sena, 0);
-
-  totalFinalOutput.value = totalFinal.toFixed(2);
-  saldoOutput.value = saldo.toFixed(2);
-}
-
-document.querySelectorAll(".js-alq-edit-form").forEach(function (form) {
-  form.querySelectorAll(".js-code-filter").forEach(function (input) {
-    input.addEventListener("input", function () {
-      abFilterCodeSelect(input);
-    });
-    abFilterCodeSelect(input);
-  });
-
-  ["[name$='-total_bruto']", "[name$='-descuento_pct']", "[name$='-sena']"].forEach(function (selector) {
-    const input = form.querySelector(selector);
-    if (input) {
-      input.addEventListener("input", function () {
-        recalcEditForm(form);
-      });
-    }
-  });
-  recalcEditForm(form);
-});
-</script>
+<script src="{% static 'js/alquiler-edit.js' %}"></script>
 {% endblock %}

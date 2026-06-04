@@ -45,31 +45,12 @@ CODIGO_PREFIJOS = {
 def _prenda_choices(prendas):
     choices = [("", "Sin seleccionar")]
     for prenda in prendas:
-        desc = f"{prenda.codigo} - {prenda.color} {prenda.marca} talle {prenda.talle}".strip()
-        choices.append((prenda.codigo, desc))
+        choices.append((prenda.codigo, _prenda_label(prenda)))
     return choices
 
 
-def _buscar_conflicto(prenda: Prenda, fecha_entrega, fecha_devolucion, exclude_alquiler_id=None):
-    if not prenda or not fecha_entrega or not fecha_devolucion:
-        return None
-
-    conflictos = (
-        AlquilerItem.objects
-        .select_related("alquiler")
-        .filter(
-            prenda=prenda,
-            alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
-            alquiler__fecha_entrega__lte=fecha_devolucion,
-            alquiler__fecha_devolucion__gte=fecha_entrega,
-        )
-        .order_by("alquiler__fecha_entrega", "alquiler__id")
-    )
-
-    if exclude_alquiler_id:
-        conflictos = conflictos.exclude(alquiler_id=exclude_alquiler_id)
-
-    return conflictos.first()
+def _prenda_label(prenda: Prenda) -> str:
+    return f"{prenda.codigo} - {prenda.color} {prenda.marca} talle {prenda.talle}".strip()
 
 
 def _numero_codigo(codigo: str, prefijo: str) -> str:
@@ -87,7 +68,12 @@ def _items_por_slot(instance: Alquiler):
         return {}
 
     items = {}
-    for item in instance.items.select_related("prenda"):
+    prefetched = getattr(instance, "_prefetched_objects_cache", {})
+    source = prefetched.get("items")
+    if source is None:
+        source = instance.items.select_related("prenda")
+
+    for item in source:
         short = SHORT_POR_CATEGORIA.get(item.prenda.categoria)
         persona = f"p{item.persona_num}"
         if not short or (persona, short) in items:
@@ -96,8 +82,39 @@ def _items_por_slot(instance: Alquiler):
     return items
 
 
-def _configurar_campos_prenda(form, disponibles, initial_items=None):
+def _bound_field_value(form, field_name: str) -> str:
+    if not form.is_bound:
+        return ""
+    return (form.data.get(form.add_prefix(field_name)) or "").strip()
+
+
+def _prenda_lookup(disponibles):
+    lookup = {}
+    for prendas in disponibles.values():
+        for prenda in prendas:
+            lookup[prenda.codigo] = prenda
+    return lookup
+
+
+def _compact_prenda_choices(field_value, current_item, prenda_lookup):
+    choices = [("", "Sin seleccionar")]
+    seen = {""}
+
+    if current_item and current_item.prenda.codigo not in seen:
+        choices.append((current_item.prenda.codigo, _prenda_label(current_item.prenda)))
+        seen.add(current_item.prenda.codigo)
+
+    if field_value and field_value not in seen:
+        prenda = prenda_lookup.get(field_value)
+        label = _prenda_label(prenda) if prenda else field_value
+        choices.append((field_value, label))
+
+    return choices
+
+
+def _configurar_campos_prenda(form, disponibles, initial_items=None, *, compact_choices=False):
     initial_items = initial_items or {}
+    prenda_lookup = _prenda_lookup(disponibles) if compact_choices else {}
 
     for who in PERSONAS_FORM:
         for short, categoria in CATS:
@@ -125,13 +142,18 @@ def _configurar_campos_prenda(form, disponibles, initial_items=None):
 
             prendas_categoria = list(disponibles.get(short, []))
             current_item = initial_items.get((who, short))
-            if current_item and all(prenda.id != current_item.prenda_id for prenda in prendas_categoria):
+            if not compact_choices and current_item and all(prenda.id != current_item.prenda_id for prenda in prendas_categoria):
                 prendas_categoria = [current_item.prenda] + prendas_categoria
 
-            form.fields[field_name].choices = _prenda_choices(prendas_categoria)
+            field_value = _bound_field_value(form, field_name)
+            if compact_choices:
+                form.fields[field_name].choices = _compact_prenda_choices(field_value, current_item, prenda_lookup)
+            else:
+                form.fields[field_name].choices = _prenda_choices(prendas_categoria)
             form.fields[field_name].widget.attrs.update({
                 "class": "ab-sel js-code-select",
                 "data-prefix": prefijo,
+                "data-category-key": short,
             })
 
             if current_item:
@@ -195,15 +217,46 @@ def _validar_prendas(
     usados = set()
     selected = {"p1": {}, "p2": {}}
     allow_prenda_ids = set(allow_prenda_ids or [])
+    requested_codes = []
+
+    for who in PERSONAS_FORM:
+        for short, _categoria in CATS:
+            field_name = f"{who}_{short}"
+            codigo = (cleaned.get(field_name) or "").strip()
+            if codigo:
+                requested_codes.append(codigo)
+
+    prendas_by_codigo = {
+        prenda.codigo: prenda
+        for prenda in Prenda.objects.filter(codigo__in=requested_codes)
+    }
+
+    conflictos_by_prenda_id = {}
+    if fecha_entrega and fecha_devolucion and prendas_by_codigo:
+        conflictos = (
+            AlquilerItem.objects
+            .select_related("alquiler", "prenda")
+            .filter(
+                prenda_id__in=[prenda.id for prenda in prendas_by_codigo.values()],
+                alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
+                alquiler__fecha_entrega__lte=fecha_devolucion,
+                alquiler__fecha_devolucion__gte=fecha_entrega,
+            )
+            .order_by("alquiler__fecha_entrega", "alquiler__id")
+        )
+        if exclude_alquiler_id:
+            conflictos = conflictos.exclude(alquiler_id=exclude_alquiler_id)
+
+        for conflicto in conflictos:
+            conflictos_by_prenda_id.setdefault(conflicto.prenda_id, conflicto)
 
     def validar_code(code: str, categoria: str, fieldname: str):
         codigo = (code or "").strip()
         if not codigo:
             return None
 
-        try:
-            prenda = Prenda.objects.get(codigo=codigo)
-        except Prenda.DoesNotExist:
+        prenda = prendas_by_codigo.get(codigo)
+        if not prenda:
             form.add_error(fieldname, "Codigo inexistente.")
             return None
 
@@ -215,12 +268,7 @@ def _validar_prendas(
             form.add_error(fieldname, "Esa prenda esta marcada como danada.")
             return None
 
-        conflicto = _buscar_conflicto(
-            prenda,
-            fecha_entrega,
-            fecha_devolucion,
-            exclude_alquiler_id=exclude_alquiler_id,
-        )
+        conflicto = conflictos_by_prenda_id.get(prenda.id)
         if conflicto:
             form.add_error(
                 fieldname,
@@ -384,7 +432,12 @@ class AlquilerEdicionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
-        _configurar_campos_prenda(self, disponibles, initial_items=_items_por_slot(self.instance))
+        _configurar_campos_prenda(
+            self,
+            disponibles,
+            initial_items=_items_por_slot(self.instance),
+            compact_choices=True,
+        )
         self.persona1_prenda_rows = _rows_prendas(self, "p1")
         self.persona2_prenda_rows = _rows_prendas(self, "p2")
 
