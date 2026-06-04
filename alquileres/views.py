@@ -52,15 +52,18 @@ def _numero_codigo(codigo: str) -> str:
 
 def _descripcion_prenda_tabla(item: dict) -> str:
     partes = [item["categoria"]]
-    for key in ("color", "marca", "origen"):
+    for key in ("color", "marca"):
         valor = (item.get(key) or "").strip()
         if valor and valor != "-":
             partes.append(valor)
 
-    if len(partes) == 1:
-        talle = (item.get("talle") or "").strip()
-        if talle and talle != "-":
-            partes.append(f"talle {talle}")
+    talle = (item.get("talle") or "").strip()
+    if talle and talle != "-":
+        partes.append(f"talle {talle}")
+
+    origen = (item.get("origen") or "").strip()
+    if origen and origen != "-":
+        partes.append(origen)
 
     return " ".join(partes)
 

@@ -482,16 +482,24 @@ textarea.ab-inp:focus {
 }
 
 .ab-table-compact {
-  min-width: 1380px;
+  min-width: 1560px;
 }
 
-.ab-table-compact thead th[rowspan] {
-  vertical-align: middle;
+.ab-table-compact col.ab-table-col-prendas {
+  width: 360px;
 }
 
-.ab-table-compact thead tr:nth-child(2) th {
-  background: rgba(255, 255, 255, 0.7);
-  font-size: 0.72rem;
+.ab-table-compact col.ab-table-col-ruedo {
+  width: 180px;
+}
+
+.ab-table-compact col.ab-table-col-acciones {
+  width: 220px;
+}
+
+.ab-table-compact th,
+.ab-table-compact td {
+  overflow-wrap: anywhere;
 }
 
 .ab-cell-stack {
@@ -511,25 +519,32 @@ textarea.ab-inp:focus {
 
 .ab-inline-persona-row {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 6px;
   align-items: start;
+  min-width: 0;
 }
 
 .ab-inline-persona-name {
   font-weight: 800;
-  padding-top: 2px;
+  padding-top: 0;
 }
 
 .ab-inline-persona-items {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .ab-inline-ruedo-row {
   display: grid;
   gap: 4px;
   padding: 2px 0;
+}
+
+.ab-table-cell-prendas,
+.ab-table-cell-ruedo {
+  min-width: 0;
 }
 
 .ab-table tbody tr:hover td {

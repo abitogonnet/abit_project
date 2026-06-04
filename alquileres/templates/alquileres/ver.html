@@ -66,22 +66,32 @@
 
         <div class="ab-table-wrap ab-desktop-only">
           <table class="ab-table ab-table-compact">
+            <colgroup>
+              <col>
+              <col>
+              <col class="ab-table-col-prendas">
+              <col class="ab-table-col-ruedo">
+              <col class="ab-table-col-ruedo">
+              <col>
+              <col>
+              <col>
+              <col>
+              <col>
+              <col class="ab-table-col-acciones">
+            </colgroup>
             <thead>
               <tr>
-                <th rowspan="2">Cliente</th>
-                <th rowspan="2">Cita</th>
-                <th rowspan="2">Prendas</th>
-                <th colspan="2">Ruedos</th>
-                <th rowspan="2">Abono actual</th>
-                <th rowspan="2">Entrega</th>
-                <th rowspan="2">Devolucion</th>
-                <th rowspan="2">Estado</th>
-                <th rowspan="2">Telefono</th>
-                <th rowspan="2">Acciones</th>
-              </tr>
-              <tr>
-                <th>Saco</th>
-                <th>Pantalon</th>
+                <th>Cliente</th>
+                <th>Cita</th>
+                <th>Prendas</th>
+                <th>Ruedo de saco</th>
+                <th>Ruedo de pantalon</th>
+                <th>Abono actual</th>
+                <th>Entrega</th>
+                <th>Devolucion</th>
+                <th>Estado</th>
+                <th>Telefono</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -99,7 +109,7 @@
                       <span class="ab-small">Reserva</span>
                     </div>
                   </td>
-                  <td>
+                  <td class="ab-table-cell-prendas">
                     <div class="ab-inline-persona-grid">
                       {% for prenda in a.prendas_tabla %}
                         <div class="ab-inline-persona-row">
@@ -118,7 +128,7 @@
                       {% endfor %}
                     </div>
                   </td>
-                  <td>
+                  <td class="ab-table-cell-ruedo">
                     <div class="ab-cell-stack">
                       {% for ruedo in a.ruedos_tabla.saco %}
                         <div class="ab-cell-block">
@@ -130,7 +140,7 @@
                       {% endfor %}
                     </div>
                   </td>
-                  <td>
+                  <td class="ab-table-cell-ruedo">
                     <div class="ab-cell-stack">
                       {% for ruedo in a.ruedos_tabla.pantalon %}
                         <div class="ab-cell-block">
@@ -304,13 +314,13 @@
                     <div>Sin prendas</div>
                   {% endfor %}
                 {% endfor %}
-                <div><strong>Ruedo saco</strong></div>
+                <div><strong>Ruedo de saco</strong></div>
                 {% for ruedo in a.ruedos_tabla.saco %}
                   <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
                 {% empty %}
                   <div>Sin ruedo</div>
                 {% endfor %}
-                <div><strong>Ruedo pantalon</strong></div>
+                <div><strong>Ruedo de pantalon</strong></div>
                 {% for ruedo in a.ruedos_tabla.pantalon %}
                   <div>{{ ruedo.persona }}: {{ ruedo.ruedo }}</div>
                 {% empty %}
