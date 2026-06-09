@@ -485,24 +485,54 @@ textarea.ab-inp:focus {
 }
 
 .ab-table-compact {
-  min-width: 1560px;
+  min-width: 2120px;
+  table-layout: fixed;
+}
+
+.ab-table-compact col.ab-table-col-cliente {
+  width: 140px;
+}
+
+.ab-table-compact col.ab-table-col-cita {
+  width: 110px;
 }
 
 .ab-table-compact col.ab-table-col-prendas {
-  width: 360px;
+  width: 430px;
 }
 
 .ab-table-compact col.ab-table-col-ruedo {
-  width: 180px;
+  width: 200px;
+}
+
+.ab-table-compact col.ab-table-col-abono {
+  width: 200px;
+}
+
+.ab-table-compact col.ab-table-col-fecha {
+  width: 120px;
+}
+
+.ab-table-compact col.ab-table-col-estado {
+  width: 200px;
+}
+
+.ab-table-compact col.ab-table-col-telefono {
+  width: 130px;
 }
 
 .ab-table-compact col.ab-table-col-acciones {
   width: 220px;
 }
 
-.ab-table-compact th,
+.ab-table-compact th {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
 .ab-table-compact td {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .ab-cell-stack {
@@ -1071,44 +1101,38 @@ textarea.ab-inp:focus {
 }
 
 @media (min-width: 761px) {
-  .ab-shell {
-    overflow-x: auto;
-    scrollbar-gutter: stable both-edges;
-  }
-
   .ab-table-wrap,
   .ab-edit-table-wrap {
     padding-bottom: 6px;
   }
 
-  .ab-shell,
+  .ab-table-wrap {
+    overflow-x: scroll;
+  }
+
   .ab-table-wrap,
   .ab-edit-table-wrap {
     scrollbar-width: thin;
     scrollbar-color: rgba(109, 91, 76, 0.55) rgba(255, 255, 255, 0.4);
   }
 
-  .ab-shell::-webkit-scrollbar,
   .ab-table-wrap::-webkit-scrollbar,
   .ab-edit-table-wrap::-webkit-scrollbar {
     height: 12px;
   }
 
-  .ab-shell::-webkit-scrollbar-track,
   .ab-table-wrap::-webkit-scrollbar-track,
   .ab-edit-table-wrap::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.42);
     border-radius: 999px;
   }
 
-  .ab-shell::-webkit-scrollbar-thumb,
   .ab-table-wrap::-webkit-scrollbar-thumb,
   .ab-edit-table-wrap::-webkit-scrollbar-thumb {
     background: rgba(109, 91, 76, 0.52);
     border-radius: 999px;
   }
 
-  .ab-shell::-webkit-scrollbar-thumb:hover,
   .ab-table-wrap::-webkit-scrollbar-thumb:hover,
   .ab-edit-table-wrap::-webkit-scrollbar-thumb:hover {
     background: rgba(109, 91, 76, 0.72);
