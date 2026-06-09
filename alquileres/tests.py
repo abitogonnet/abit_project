@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -173,21 +174,30 @@ class AlquileresViewsTests(TestCase):
         saco.refresh_from_db()
         self.assertEqual(saco.estado, Prenda.E_DISP)
 
-    def test_ver_alquileres_muestra_primero_el_alquiler_mas_reciente(self):
-        viejo = self._create_alquiler("Viejo")
-        nuevo = self._create_alquiler("Nuevo")
-        viejo.fecha_entrega = date(2026, 5, 20)
-        viejo.fecha_devolucion = date(2026, 5, 25)
-        viejo.save()
-        nuevo.fecha_entrega = date(2026, 4, 20)
-        nuevo.fecha_devolucion = date(2026, 4, 25)
-        nuevo.save()
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 4, 24))
+    def test_ver_alquileres_prioriza_entrega_mas_cercana_y_deja_cerrados_al_final(self, _mock_localdate):
+        cercano = self._create_alquiler("Cercano")
+        cercano.fecha_entrega = date(2026, 4, 25)
+        cercano.fecha_devolucion = date(2026, 4, 30)
+        cercano.save()
+
+        lejano = self._create_alquiler("Lejano")
+        lejano.fecha_entrega = date(2026, 5, 20)
+        lejano.fecha_devolucion = date(2026, 5, 25)
+        lejano.save()
+
+        cerrado = self._create_alquiler("Cerrado")
+        cerrado.fecha_entrega = date(2026, 4, 24)
+        cerrado.fecha_devolucion = date(2026, 4, 29)
+        cerrado.estado_alquiler = Alquiler.EST_CERRADO
+        cerrado.save()
 
         response = self.client.get(reverse("alquileres:ver"))
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertLess(content.index(f"#{nuevo.id}"), content.index(f"#{viejo.id}"))
+        self.assertLess(content.index(f"#{cercano.id}"), content.index(f"#{lejano.id}"))
+        self.assertLess(content.index(f"#{lejano.id}"), content.index(f"#{cerrado.id}"))
 
     def test_ver_alquileres_filtra_por_fecha_entrega_incluyendo_extremos(self):
         inicio = self._create_alquiler("Inicio")
@@ -368,6 +378,55 @@ class AlquileresViewsTests(TestCase):
         self.assertContains(response, "PA-040")
         self.assertContains(response, "Boiler")
         self.assertContains(response, "Oxford")
+
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 6, 8))
+    def test_entregas_prioriza_entrega_mas_cercana_y_deja_cerrados_al_final(self, _mock_localdate):
+        manana = Alquiler.objects.create(
+            fecha_visita=date(2026, 6, 8),
+            fecha_reserva=date(2026, 6, 8),
+            fecha_entrega=date(2026, 6, 9),
+            fecha_devolucion=date(2026, 6, 11),
+            cliente_nombre="Cliente Manana",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        lejano = Alquiler.objects.create(
+            fecha_visita=date(2026, 6, 8),
+            fecha_reserva=date(2026, 6, 8),
+            fecha_entrega=date(2026, 6, 12),
+            fecha_devolucion=date(2026, 6, 14),
+            cliente_nombre="Cliente Lejano",
+            cliente_telefono="2222",
+            persona1_nombre="Pedro",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        cerrado = Alquiler.objects.create(
+            fecha_visita=date(2026, 6, 8),
+            fecha_reserva=date(2026, 6, 8),
+            fecha_entrega=date(2026, 6, 8),
+            fecha_devolucion=date(2026, 6, 10),
+            cliente_nombre="Cliente Cerrado",
+            cliente_telefono="3333",
+            persona1_nombre="Luis",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_alquiler=Alquiler.EST_CERRADO,
+        )
+
+        response = self.client.get(reverse("alquileres:entregas"), {
+            "hasta": "2026-06-14",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertLess(content.index(f"#{manana.id}"), content.index(f"#{lejano.id}"))
+        self.assertLess(content.index(f"#{lejano.id}"), content.index(f"#{cerrado.id}"))
 
     def test_entregas_permite_editar_alquiler_desde_lista_filtrada(self):
         hoy = timezone.localdate()

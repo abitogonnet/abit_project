@@ -45,7 +45,8 @@
               </td>
               <td class="ab-muted">
                 Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
-                Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}
+                Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}<br>
+                Saldo restante: ${{ a.saldo_restante_actual }}
               </td>
               <td class="ab-muted">
                 {% for persona in a.detalle_personas %}
@@ -62,7 +63,9 @@
                 {% endfor %}
               </td>
               <td>
-                {% if a.fecha_entrega == hoy %}
+                {% if a.estado_alquiler == "CERRADO" %}
+                  <span class="ab-badge secondary">{{ a.get_estado_alquiler_display }}</span>
+                {% elif a.fecha_entrega == hoy %}
                   <span class="ab-badge warn">HOY</span>
                 {% else %}
                   <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
@@ -112,7 +115,9 @@
         <article class="ab-list-card">
           <div class="ab-row" style="justify-content: space-between;">
             <h3>#{{ a.id }} - {{ a.cliente_nombre }}</h3>
-            {% if a.fecha_entrega == hoy %}
+            {% if a.estado_alquiler == "CERRADO" %}
+              <span class="ab-badge secondary">{{ a.get_estado_alquiler_display }}</span>
+            {% elif a.fecha_entrega == hoy %}
               <span class="ab-badge warn">HOY</span>
             {% else %}
               <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
@@ -124,6 +129,7 @@
             <div>Personas: {{ a.personas_resumen }}</div>
             <div>Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}</div>
             <div>Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}</div>
+            <div>Saldo restante: ${{ a.saldo_restante_actual }}</div>
           </div>
 
           <details class="ab-detail-toggle" style="margin-top: 14px;">

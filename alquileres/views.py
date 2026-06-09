@@ -99,6 +99,24 @@ def _badge_estado_prenda(value: str) -> str:
     return "secondary"
 
 
+def _orden_entrega_key(alquiler: Alquiler, hoy):
+    delta_dias = (alquiler.fecha_entrega - hoy).days
+    return (
+        alquiler.estado_alquiler == Alquiler.EST_CERRADO,
+        abs(delta_dias),
+        delta_dias < 0,
+        alquiler.fecha_entrega,
+        alquiler.fecha_devolucion,
+        alquiler.id,
+    )
+
+
+def _ordenar_alquileres_por_entrega(alquileres, hoy):
+    # Se ordena despues del filtrado para evitar SQL especifico de cada motor
+    # y mantener la lista rapida y consistente en todas las pantallas.
+    return sorted(alquileres, key=lambda alquiler: _orden_entrega_key(alquiler, hoy))
+
+
 def _saldo_restante_actual(alquiler: Alquiler) -> Decimal:
     if alquiler.saldo <= 0 or alquiler.estado_saldo == Alquiler.SAL_PAG:
         return Decimal("0.00")
@@ -544,10 +562,10 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
     disponibles = _disponibles_por_categoria()
     form_por_alquiler_id = form_por_alquiler_id or {}
     filtros_form = VerAlquileresFiltroForm(data or None)
+    hoy = timezone.localdate()
     alquileres = (
         Alquiler.objects
         .all()
-        .order_by("-creado_en", "-id")
         .prefetch_related("items__prenda")
     )
 
@@ -563,7 +581,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
             alquileres = alquileres.filter(fecha_entrega__lte=fecha_hasta)
             filtros_activos = True
 
-    alquileres = list(alquileres)
+    alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
     resumen = [
         {"label": "Activos", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler != Alquiler.EST_CERRADO)},
         {"label": "Reservados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler == Alquiler.EST_RESERVADO)},
@@ -625,10 +643,9 @@ def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
     alquileres = (
         Alquiler.objects
         .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
-        .order_by("fecha_entrega", "fecha_devolucion", "id")
         .prefetch_related("items__prenda")
     )
-    alquileres = list(alquileres)
+    alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
     _adjuntar_detalle_alquiler(alquileres)
 
     hidden_fields = _hidden_field_pairs({

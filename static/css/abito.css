@@ -457,6 +457,9 @@ textarea.ab-inp:focus {
 .ab-table-wrap {
   width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior-x: contain;
 }
 
 .ab-table {
@@ -827,6 +830,9 @@ textarea.ab-inp:focus {
   overflow: hidden;
   background: rgba(255, 255, 255, 0.84);
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior-x: contain;
 }
 
 .ab-edit-table {
@@ -1061,6 +1067,51 @@ textarea.ab-inp:focus {
   .col-6,
   .col-8 {
     grid-column: span 12;
+  }
+}
+
+@media (min-width: 761px) {
+  .ab-shell {
+    overflow-x: auto;
+    scrollbar-gutter: stable both-edges;
+  }
+
+  .ab-table-wrap,
+  .ab-edit-table-wrap {
+    padding-bottom: 6px;
+  }
+
+  .ab-shell,
+  .ab-table-wrap,
+  .ab-edit-table-wrap {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(109, 91, 76, 0.55) rgba(255, 255, 255, 0.4);
+  }
+
+  .ab-shell::-webkit-scrollbar,
+  .ab-table-wrap::-webkit-scrollbar,
+  .ab-edit-table-wrap::-webkit-scrollbar {
+    height: 12px;
+  }
+
+  .ab-shell::-webkit-scrollbar-track,
+  .ab-table-wrap::-webkit-scrollbar-track,
+  .ab-edit-table-wrap::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.42);
+    border-radius: 999px;
+  }
+
+  .ab-shell::-webkit-scrollbar-thumb,
+  .ab-table-wrap::-webkit-scrollbar-thumb,
+  .ab-edit-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(109, 91, 76, 0.52);
+    border-radius: 999px;
+  }
+
+  .ab-shell::-webkit-scrollbar-thumb:hover,
+  .ab-table-wrap::-webkit-scrollbar-thumb:hover,
+  .ab-edit-table-wrap::-webkit-scrollbar-thumb:hover {
+    background: rgba(109, 91, 76, 0.72);
   }
 }
 
