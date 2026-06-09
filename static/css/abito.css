@@ -462,6 +462,18 @@ textarea.ab-inp:focus {
   overscroll-behavior-x: contain;
 }
 
+.ab-table-rental-list {
+  display: grid;
+  gap: 16px;
+}
+
+.ab-table-rental-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.38);
+  overflow: hidden;
+}
+
 .ab-table {
   width: 100%;
   border-collapse: collapse;

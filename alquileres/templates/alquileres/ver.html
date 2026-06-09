@@ -64,211 +64,213 @@
           <span class="ab-pill">{{ alquileres|length }} alquiler{{ alquileres|length|pluralize }}</span>
         </div>
 
-        <div class="ab-table-wrap ab-desktop-only">
-          <table class="ab-table ab-table-compact">
-            <colgroup>
-              <col>
-              <col>
-              <col class="ab-table-col-prendas">
-              <col class="ab-table-col-ruedo">
-              <col class="ab-table-col-ruedo">
-              <col>
-              <col>
-              <col>
-              <col>
-              <col>
-              <col class="ab-table-col-acciones">
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Cita</th>
-                <th>Prendas</th>
-                <th>Ruedo de saco</th>
-                <th>Ruedo de pantalon</th>
-                <th>Abono actual</th>
-                <th>Entrega</th>
-                <th>Devolucion</th>
-                <th>Estado</th>
-                <th>Telefono</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for a in alquileres %}
-                <tr>
-                  <td>
-                    <div class="ab-cell-stack">
-                      <div style="font-weight: 800;">{{ a.cliente_nombre }}</div>
-                      <span class="ab-pill">#{{ a.id }}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="ab-cell-stack">
-                      <strong>{{ a.fecha_reserva|date:"d/m/Y" }}</strong>
-                      <span class="ab-small">Reserva</span>
-                    </div>
-                  </td>
-                  <td class="ab-table-cell-prendas">
-                    <div class="ab-inline-persona-grid">
-                      {% for prenda in a.prendas_tabla %}
-                        <div class="ab-inline-persona-row">
-                          <div class="ab-inline-persona-name">{{ prenda.persona }}</div>
-                          <div class="ab-inline-persona-items">
-                            {% for item in prenda.items %}
-                              <div class="ab-cell-block">
-                                <strong>{{ item.titulo }}</strong>
-                                <span class="ab-small">{{ item.descripcion }}</span>
+        <div class="ab-desktop-only ab-table-rental-list">
+          {% for a in alquileres %}
+            <div class="ab-table-rental-card">
+              <div class="ab-table-wrap">
+                <table class="ab-table ab-table-compact">
+                  <colgroup>
+                    <col class="ab-table-col-cliente">
+                    <col class="ab-table-col-cita">
+                    <col class="ab-table-col-prendas">
+                    <col class="ab-table-col-ruedo">
+                    <col class="ab-table-col-ruedo">
+                    <col class="ab-table-col-abono">
+                    <col class="ab-table-col-fecha">
+                    <col class="ab-table-col-fecha">
+                    <col class="ab-table-col-estado">
+                    <col class="ab-table-col-telefono">
+                    <col class="ab-table-col-acciones">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Cita</th>
+                      <th>Prendas</th>
+                      <th>Ruedo de saco</th>
+                      <th>Ruedo de pantalon</th>
+                      <th>Abono actual</th>
+                      <th>Entrega</th>
+                      <th>Devolucion</th>
+                      <th>Estado</th>
+                      <th>Telefono</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <div class="ab-cell-stack">
+                          <div style="font-weight: 800;">{{ a.cliente_nombre }}</div>
+                          <span class="ab-pill">#{{ a.id }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="ab-cell-stack">
+                          <strong>{{ a.fecha_reserva|date:"d/m/Y" }}</strong>
+                          <span class="ab-small">Reserva</span>
+                        </div>
+                      </td>
+                      <td class="ab-table-cell-prendas">
+                        <div class="ab-inline-persona-grid">
+                          {% for prenda in a.prendas_tabla %}
+                            <div class="ab-inline-persona-row">
+                              <div class="ab-inline-persona-name">{{ prenda.persona }}</div>
+                              <div class="ab-inline-persona-items">
+                                {% for item in prenda.items %}
+                                  <div class="ab-cell-block">
+                                    <strong>{{ item.titulo }}</strong>
+                                    <span class="ab-small">{{ item.descripcion }}</span>
+                                  </div>
+                                {% empty %}
+                                  <span class="ab-small">Sin prendas</span>
+                                {% endfor %}
                               </div>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </td>
+                      <td class="ab-table-cell-ruedo">
+                        <div class="ab-cell-stack">
+                          {% for ruedo in a.ruedos_tabla.saco %}
+                            <div class="ab-cell-block">
+                              <strong>{{ ruedo.categoria }}</strong>
+                              <span class="ab-small">{{ ruedo.ruedo }}</span>
+                            </div>
+                          {% empty %}
+                            <span class="ab-small">Sin ruedo</span>
+                          {% endfor %}
+                        </div>
+                      </td>
+                      <td class="ab-table-cell-ruedo">
+                        <div class="ab-cell-stack">
+                          {% for ruedo in a.ruedos_tabla.pantalon %}
+                            <div class="ab-cell-block">
+                              <strong>{{ ruedo.categoria }}</strong>
+                              <span class="ab-small">{{ ruedo.ruedo }}</span>
+                            </div>
+                          {% empty %}
+                            <span class="ab-small">Sin ruedo</span>
+                          {% endfor %}
+                        </div>
+                      </td>
+                      <td>
+                        <div class="ab-cell-stack">
+                          <div class="ab-cell-block">
+                            <strong>Abonado: ${{ a.abono_actual }}</strong>
+                            <span class="ab-small">Resta: ${{ a.saldo_restante_actual }}</span>
+                          </div>
+                          <div class="ab-cell-block">
+                            <strong>Total: ${{ a.total_final }}</strong>
+                            {% for metodo in a.metodos_pago_actuales %}
+                              <span class="ab-small">{{ metodo }}</span>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="ab-cell-stack">
+                          <strong>{{ a.fecha_entrega|date:"d/m/Y" }}</strong>
+                          <span class="ab-small">Retiro / entrega</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="ab-cell-stack">
+                          <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
+                          <span class="ab-small">Devolucion</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="ab-cell-stack">
+                          <span class="ab-badge {{ a.estado_alquiler_badge }}">{{ a.get_estado_alquiler_display }}</span>
+                          <span class="ab-badge {{ a.estado_saldo_badge }}">Saldo {{ a.estado_saldo_actual_label }}</span>
+                          <div class="ab-chip-row">
+                            {% for estado in a.estado_prendas %}
+                              <span class="ab-badge {{ estado.badge_class }}">{{ estado.label }} x{{ estado.count }}</span>
                             {% empty %}
                               <span class="ab-small">Sin prendas</span>
                             {% endfor %}
                           </div>
                         </div>
-                      {% endfor %}
-                    </div>
-                  </td>
-                  <td class="ab-table-cell-ruedo">
-                    <div class="ab-cell-stack">
-                      {% for ruedo in a.ruedos_tabla.saco %}
-                        <div class="ab-cell-block">
-                          <strong>{{ ruedo.categoria }}</strong>
-                          <span class="ab-small">{{ ruedo.ruedo }}</span>
-                        </div>
-                      {% empty %}
-                        <span class="ab-small">Sin ruedo</span>
-                      {% endfor %}
-                    </div>
-                  </td>
-                  <td class="ab-table-cell-ruedo">
-                    <div class="ab-cell-stack">
-                      {% for ruedo in a.ruedos_tabla.pantalon %}
-                        <div class="ab-cell-block">
-                          <strong>{{ ruedo.categoria }}</strong>
-                          <span class="ab-small">{{ ruedo.ruedo }}</span>
-                        </div>
-                      {% empty %}
-                        <span class="ab-small">Sin ruedo</span>
-                      {% endfor %}
-                    </div>
-                  </td>
-                  <td>
-                    <div class="ab-cell-stack">
-                      <div class="ab-cell-block">
-                        <strong>Abonado: ${{ a.abono_actual }}</strong>
-                        <span class="ab-small">Resta: ${{ a.saldo_restante_actual }}</span>
-                      </div>
-                      <div class="ab-cell-block">
-                        <strong>Total: ${{ a.total_final }}</strong>
-                        {% for metodo in a.metodos_pago_actuales %}
-                          <span class="ab-small">{{ metodo }}</span>
-                        {% endfor %}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="ab-cell-stack">
-                      <strong>{{ a.fecha_entrega|date:"d/m/Y" }}</strong>
-                      <span class="ab-small">Retiro / entrega</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="ab-cell-stack">
-                      <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
-                      <span class="ab-small">Devolucion</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="ab-cell-stack">
-                      <span class="ab-badge {{ a.estado_alquiler_badge }}">{{ a.get_estado_alquiler_display }}</span>
-                      <span class="ab-badge {{ a.estado_saldo_badge }}">Saldo {{ a.estado_saldo_actual_label }}</span>
-                      <div class="ab-chip-row">
-                        {% for estado in a.estado_prendas %}
-                          <span class="ab-badge {{ estado.badge_class }}">{{ estado.label }} x{{ estado.count }}</span>
-                        {% empty %}
-                          <span class="ab-small">Sin prendas</span>
-                        {% endfor %}
-                      </div>
-                    </div>
-                  </td>
-                  <td class="ab-muted">
-                    {{ a.cliente_telefono|default:"-" }}
-                  </td>
-                  <td>
-                    <form method="post" id="alq-form-{{ a.id }}" class="ab-stack">
-                      {% csrf_token %}
-                      <input type="hidden" name="alq_id" value="{{ a.id }}">
-                      <input type="hidden" name="fecha_desde" value="{{ filtros_form.fecha_desde.value|default:'' }}">
-                      <input type="hidden" name="fecha_hasta" value="{{ filtros_form.fecha_hasta.value|default:'' }}">
+                      </td>
+                      <td class="ab-muted">
+                        {{ a.cliente_telefono|default:"-" }}
+                      </td>
+                      <td>
+                        <form method="post" id="alq-form-{{ a.id }}" class="ab-stack">
+                          {% csrf_token %}
+                          <input type="hidden" name="alq_id" value="{{ a.id }}">
+                          <input type="hidden" name="fecha_desde" value="{{ filtros_form.fecha_desde.value|default:'' }}">
+                          <input type="hidden" name="fecha_hasta" value="{{ filtros_form.fecha_hasta.value|default:'' }}">
 
-                      <div class="ab-field">
-                        <label class="ab-lab">Saldo</label>
-                        <select class="ab-sel" name="estado_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
-                          {% for value, label in estados_saldo %}
-                            <option value="{{ value }}" {% if a.estado_saldo_actual == value %}selected{% endif %}>{{ label }}</option>
-                          {% endfor %}
-                        </select>
-                        {% if not a.saldo_editable %}
-                          <span class="ab-small">Quedo pago completo desde el alta.</span>
-                        {% endif %}
-                      </div>
+                          <div class="ab-field">
+                            <label class="ab-lab">Saldo</label>
+                            <select class="ab-sel" name="estado_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
+                              {% for value, label in estados_saldo %}
+                                <option value="{{ value }}" {% if a.estado_saldo_actual == value %}selected{% endif %}>{{ label }}</option>
+                              {% endfor %}
+                            </select>
+                            {% if not a.saldo_editable %}
+                              <span class="ab-small">Quedo pago completo desde el alta.</span>
+                            {% endif %}
+                          </div>
 
-                      <div class="ab-field">
-                        <label class="ab-lab">Metodo saldo</label>
-                        <select class="ab-sel" name="metodo_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
-                          <option value="">Elegir si esta pagado</option>
-                          {% for value, label in metodos_pago %}
-                            <option value="{{ value }}" {% if a.metodo_saldo == value %}selected{% endif %}>{{ label }}</option>
-                          {% endfor %}
-                        </select>
-                      </div>
+                          <div class="ab-field">
+                            <label class="ab-lab">Metodo saldo</label>
+                            <select class="ab-sel" name="metodo_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
+                              <option value="">Elegir si esta pagado</option>
+                              {% for value, label in metodos_pago %}
+                                <option value="{{ value }}" {% if a.metodo_saldo == value %}selected{% endif %}>{{ label }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
 
-                      <div class="ab-field">
-                        <label class="ab-lab">Estado alquiler</label>
-                        <select class="ab-sel" name="estado_alquiler">
-                          {% for value, label in estados_alquiler %}
-                            <option value="{{ value }}" {% if a.estado_alquiler == value %}selected{% endif %}>{{ label }}</option>
-                          {% endfor %}
-                        </select>
-                      </div>
+                          <div class="ab-field">
+                            <label class="ab-lab">Estado alquiler</label>
+                            <select class="ab-sel" name="estado_alquiler">
+                              {% for value, label in estados_alquiler %}
+                                <option value="{{ value }}" {% if a.estado_alquiler == value %}selected{% endif %}>{{ label }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
 
-                      <div class="ab-actions-column">
-                        <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar</button>
-                        <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ a.id }}. Continuar?');">Eliminar</button>
-                      </div>
-                    </form>
-                  </td>
-                </tr>
-                <tr class="ab-table-detail-row">
-                  <td colspan="11">
-                    <details class="ab-detail-toggle" {% if edit_open_id == a.id %}open{% endif %}>
-                      <summary class="ab-detail-summary">
-                        <span>Editar</span>
-                        <span class="ab-small">Nombres, fechas, pagos y prendas</span>
-                      </summary>
-                      <div class="ab-detail-panel">
-                        {% if edit_open_id == a.id and a.edit_form %}
-                          {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
-                        {% else %}
-                          <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
-                        {% endif %}
-                      </div>
-                    </details>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="11" class="ab-muted">
-                    {% if filtros_activos %}
-                      No hay alquileres dentro de ese rango de fechas.
-                    {% else %}
-                      No hay alquileres cargados.
-                    {% endif %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                          <div class="ab-actions-column">
+                            <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar</button>
+                            <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ a.id }}. Continuar?');">Eliminar</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                    <tr class="ab-table-detail-row">
+                      <td colspan="11">
+                        <details class="ab-detail-toggle" {% if edit_open_id == a.id %}open{% endif %}>
+                          <summary class="ab-detail-summary">
+                            <span>Editar</span>
+                            <span class="ab-small">Nombres, fechas, pagos y prendas</span>
+                          </summary>
+                          <div class="ab-detail-panel">
+                            {% if edit_open_id == a.id and a.edit_form %}
+                              {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                            {% else %}
+                              <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
+                            {% endif %}
+                          </div>
+                        </details>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% empty %}
+            <div class="ab-empty">
+              {% if filtros_activos %}
+                No hay alquileres dentro de ese rango de fechas.
+              {% else %}
+                No hay alquileres cargados.
+              {% endif %}
+            </div>
+          {% endfor %}
         </div>
 
         <div class="ab-mobile-list">
