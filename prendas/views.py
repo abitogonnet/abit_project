@@ -9,6 +9,7 @@ from .forms import (
     BuscarPrendaForm,
     COLORES_CHALECO,
     COLORES_GENERALES,
+    COLORES_RESTRINGIDOS_POR_CATEGORIA,
     COLORES_TRAJE,
     COLORES_ZAPATOS,
     GENERIC_NUM,
@@ -19,6 +20,7 @@ from .forms import (
     TAM_NINO_ADULTO,
     color_options_for,
     requiere_origen,
+    restricted_color_options_for,
     talle_options_for,
 )
 from .models import Prenda
@@ -82,6 +84,12 @@ def _prenda_lookups():
         "colorsByCategory": {
             cat: color_options_for(cat)
             for cat, _label in Prenda.CATEGORIAS
+        },
+        "restrictedColorCategories": list(COLORES_RESTRINGIDOS_POR_CATEGORIA.keys()),
+        "restrictedColorsByCategory": {
+            cat: restricted_color_options_for(cat)
+            for cat, _label in Prenda.CATEGORIAS
+            if restricted_color_options_for(cat)
         },
         "tallesByCategory": {
             cat: {

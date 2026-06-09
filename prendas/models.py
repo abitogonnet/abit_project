@@ -1,4 +1,7 @@
+import unicodedata
+
 from django.db import models
+
 
 class Prenda(models.Model):
     # Categorías (2 letras para el código)
@@ -57,6 +60,52 @@ class Prenda(models.Model):
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
+
+    @staticmethod
+    def _simplify_color(value: str) -> str:
+        color = " ".join((value or "").split()).casefold()
+        if not color:
+            return ""
+        return "".join(
+            char
+            for char in unicodedata.normalize("NFKD", color)
+            if not unicodedata.combining(char)
+        )
+
+    @staticmethod
+    def normalize_color_value(value: str) -> str:
+        color = " ".join((value or "").split())
+        if not color:
+            return ""
+
+        color_cf = Prenda._simplify_color(color)
+        alias_map = {
+            "azul oscuro": "Azul Oscuro",
+            "azul osc": "Azul Oscuro",
+            "azul ocs": "Azul Oscuro",
+            "osc": "Azul Oscuro",
+            "azul francia": "Azul Francia",
+            "gris perla": "Gris Perla",
+            "gris oscuro": "Gris Oscuro",
+            "gris topo": "Gris Topo",
+            "celeste": "Celeste",
+            "rosa": "Rosa",
+            "verde pistacho": "Verde Pistacho",
+            "pistacho": "Verde Pistacho",
+            "verde oscuro": "Verde Oscuro",
+            "verde osuro": "Verde Oscuro",
+            "petroleo": "Petroleo",
+            "bordo": "Bordo",
+            "violeta": "Violeta",
+            "beige": "Beige",
+            "marron": "Marron",
+            "negro": "Negro",
+        }
+        return alias_map.get(color_cf, color)
+
+    def save(self, *args, **kwargs):
+        self.color = self.normalize_color_value(self.color)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         extra = f" - {self.get_origen_display()}" if self.origen else ""

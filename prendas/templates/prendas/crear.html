@@ -33,7 +33,7 @@
           </div>
           <p class="ab-note" style="max-width: 440px;">
             El formulario se acomoda segun la categoria y la marca. En sacos y pantalones debes indicar si la
-            prenda es nacional o importada, y el color se escribe libremente en todas las prendas.
+            prenda es nacional o importada, y el color se elige desde un desplegable obligatorio para que quede unificado.
           </p>
         </div>
       </div>
@@ -76,7 +76,14 @@
 
         <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.color.id_for_label }}">Color</label>
-          {{ form.color }}
+          <div id="colorTextField">
+            {{ form.color }}
+          </div>
+          <div id="colorSelectField" style="display: none;">
+            <select class="ab-sel" id="id_color_select">
+              <option value="">Elegir color</option>
+            </select>
+          </div>
           {% if form.color.errors %}<div class="ab-field-errors">{{ form.color.errors }}</div>{% endif %}
         </div>
 
@@ -122,8 +129,12 @@
     const talle = document.getElementById("id_talle");
     const origen = document.getElementById("id_origen");
     const origenField = document.getElementById("origenField");
+    const colorInput = document.getElementById("id_color");
+    const colorTextField = document.getElementById("colorTextField");
+    const colorSelectField = document.getElementById("colorSelectField");
+    const colorSelect = document.getElementById("id_color_select");
 
-    function populate(select, options, placeholder, selectedValue) {
+    function populate(select, options, placeholder, selectedValue, allowCustomOption) {
       if (!select) return;
       const wanted = selectedValue || select.value || "";
       select.innerHTML = "";
@@ -149,7 +160,7 @@
         select.appendChild(option);
       });
 
-      if (wanted && !seen.has(wanted)) {
+      if (allowCustomOption !== false && wanted && !seen.has(wanted)) {
         const option = document.createElement("option");
         option.value = wanted;
         option.textContent = wanted;
@@ -176,6 +187,14 @@
       return !!lookups.requiresOrigen[cat];
     }
 
+    function usesRestrictedColor(cat) {
+      return (lookups.restrictedColorCategories || []).includes(cat);
+    }
+
+    function restrictedColorOptions(cat) {
+      return lookups.restrictedColorsByCategory[cat] || [];
+    }
+
     function syncForm() {
       const cat = currentCategory();
       const brandKey = currentBrandKey();
@@ -191,6 +210,17 @@
         populate(origen, [], "No aplica", "");
         origen.disabled = true;
         origen.value = "";
+      }
+
+      if (usesRestrictedColor(cat)) {
+        const selectedColor = colorInput.value || colorSelect.value || "";
+        colorTextField.style.display = "none";
+        colorSelectField.style.display = "";
+        populate(colorSelect, restrictedColorOptions(cat), "Elegir color", selectedColor, false);
+        colorInput.value = colorSelect.value;
+      } else {
+        colorTextField.style.display = "";
+        colorSelectField.style.display = "none";
       }
 
       talle.dataset.current = "";
@@ -210,6 +240,12 @@
       talle.dataset.current = "";
       syncForm();
     });
+
+    if (colorSelect) {
+      colorSelect.addEventListener("change", function () {
+        colorInput.value = colorSelect.value;
+      });
+    }
 
     syncForm();
   })();

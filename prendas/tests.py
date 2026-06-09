@@ -45,7 +45,38 @@ class PrendaFormTests(TestCase):
             "notas": "",
         })
 
+        self.assertFalse(form.is_valid())
+        self.assertIn("color", form.errors)
+
+    def test_form_normaliza_azul_oscuro_al_guardar(self):
+        form = PrendaForm(data={
+            "categoria": Prenda.C_SACO,
+            "marca": "Boiler",
+            "color": "azul osc",
+            "talle": "4",
+            "origen": Prenda.O_NAC,
+            "notas": "",
+        })
+
         self.assertTrue(form.is_valid())
+        prenda = form.save(commit=False)
+        prenda.codigo = "SA-777"
+        prenda.save()
+
+        self.assertEqual(prenda.color, "Azul Oscuro")
+
+    def test_saco_exige_color_del_desplegable(self):
+        form = PrendaForm(data={
+            "categoria": Prenda.C_SACO,
+            "marca": "Boiler",
+            "color": "",
+            "talle": "4",
+            "origen": Prenda.O_NAC,
+            "notas": "",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("color", form.errors)
 
 
 class PrendaViewsTests(TestCase):
@@ -71,7 +102,7 @@ class PrendaViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         prenda.refresh_from_db()
         self.assertEqual(prenda.marca, "Boiler")
-        self.assertEqual(prenda.color, "Azul oscuro")
+        self.assertEqual(prenda.color, "Azul Oscuro")
         self.assertEqual(prenda.talle, "4")
         self.assertEqual(prenda.origen, Prenda.O_IMP)
 

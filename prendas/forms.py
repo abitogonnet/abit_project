@@ -20,28 +20,34 @@ BRANDS = [
 ]
 
 COLORES_TRAJE = [
-    "Beige",
-    "Negro",
-    "Azul oscuro",
-    "Azul francia",
-    "Gris perla",
-    "Gris oscuro",
+    "Azul Oscuro",
+    "Azul Francia",
+    "Gris Perla",
+    "Gris Oscuro",
+    "Gris Topo",
     "Celeste",
-    "Verde oscuro",
-    "Pistacho",
     "Rosa",
-    "Violeta",
+    "Verde Pistacho",
+    "Verde Oscuro",
+    "Petroleo",
     "Bordo",
+    "Violeta",
+    "Beige",
     "Marron",
-    "Blanco",
+    "Negro",
 ]
 
 COLORES_ZAPATOS = ["Negro", "Marron"]
-COLORES_CHALECO = ["Gris", "Negro", "Azul oscuro", "Azul francia"]
+COLORES_CHALECO = ["Gris", "Negro", "Azul Oscuro", "Azul Francia"]
 COLORES_GENERALES = []
 for _color in COLORES_TRAJE + COLORES_ZAPATOS + COLORES_CHALECO:
     if _color not in COLORES_GENERALES:
         COLORES_GENERALES.append(_color)
+
+COLORES_RESTRINGIDOS_POR_CATEGORIA = {
+    Prenda.C_SACO: COLORES_TRAJE,
+    Prenda.C_PANTALON: COLORES_TRAJE,
+}
 
 TAM_NINO_ADULTO = ["Niño", "Adulto"]
 
@@ -87,15 +93,21 @@ GENERIC_TALLES = GENERIC_NUM + LETRAS_XS_5XL
 
 
 def color_options_for(categoria: str):
+    if categoria in COLORES_RESTRINGIDOS_POR_CATEGORIA:
+        return COLORES_RESTRINGIDOS_POR_CATEGORIA[categoria]
     if categoria in {Prenda.C_ZAPATOS, Prenda.C_CINTURON}:
         return COLORES_ZAPATOS
     if categoria == Prenda.C_CHALECO:
         return COLORES_CHALECO
-    if categoria in {Prenda.C_SACO, Prenda.C_PANTALON, Prenda.C_CAMISA}:
+    if categoria == Prenda.C_CAMISA:
         return COLORES_TRAJE
     if categoria in {Prenda.C_MONO, Prenda.C_CORBATA}:
         return COLORES_GENERALES
     return []
+
+
+def restricted_color_options_for(categoria: str):
+    return COLORES_RESTRINGIDOS_POR_CATEGORIA.get(categoria, [])
 
 
 def talle_options_for(categoria: str, marca: str):
@@ -194,12 +206,24 @@ class PrendaForm(forms.ModelForm):
             return "Calvin Klein"
         return marca
 
+    def clean_color(self):
+        return Prenda.normalize_color_value(_norm(self.cleaned_data.get("color", "")))
+
     def clean(self):
         cleaned = super().clean()
         cat = cleaned.get("categoria")
         marca = cleaned.get("marca", "")
+        color = Prenda.normalize_color_value(_norm(cleaned.get("color", "")))
         talle = _norm(cleaned.get("talle", ""))
         origen = _norm(cleaned.get("origen", ""))
+        cleaned["color"] = color
+
+        if cat in COLORES_RESTRINGIDOS_POR_CATEGORIA:
+            colores_validos = set(restricted_color_options_for(cat))
+            if not color:
+                self.add_error("color", "Para saco y pantalon, elige un color del desplegable.")
+            elif color not in colores_validos:
+                self.add_error("color", "Para saco y pantalon, elige un color valido del desplegable.")
 
         if cat == Prenda.C_MONO:
             if talle not in TAM_NINO_ADULTO:
@@ -280,3 +304,6 @@ class BuscarPrendaForm(forms.Form):
 
     def _bound(self, name: str) -> str:
         return _norm(self.data.get(name, "")) if self.is_bound else ""
+
+    def clean_color(self):
+        return Prenda.normalize_color_value(_norm(self.cleaned_data.get("color", "")))
