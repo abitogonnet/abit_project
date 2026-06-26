@@ -7,6 +7,8 @@ from prendas.models import Prenda
 
 from .models import Alquiler, AlquilerItem
 
+HTML_DATE_FORMAT = "%Y-%m-%d"
+
 
 CATS = [
     ("saco", Prenda.C_SACO),
@@ -40,6 +42,13 @@ CODIGO_PREFIJOS = {
     Prenda.C_ZAPATOS: "ZA",
     Prenda.C_CINTURON: "CI",
 }
+
+
+def _html_date_widget():
+    return forms.DateInput(
+        format=HTML_DATE_FORMAT,
+        attrs={"class": "ab-inp", "type": "date"},
+    )
 
 
 def _prenda_choices(prendas):
@@ -356,9 +365,9 @@ class AlquilerForm(forms.ModelForm):
             "metodo_sena",
         ]
         widgets = {
-            "fecha_reserva": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-            "fecha_entrega": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-            "fecha_devolucion": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+            "fecha_reserva": _html_date_widget(),
+            "fecha_entrega": _html_date_widget(),
+            "fecha_devolucion": _html_date_widget(),
             "cliente_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
             "cliente_telefono": forms.TextInput(attrs={"class": "ab-inp"}),
             "persona1_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
@@ -410,11 +419,11 @@ class AlquilerForm(forms.ModelForm):
 class VerAlquileresFiltroForm(forms.Form):
     fecha_desde = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+        widget=_html_date_widget(),
     )
     fecha_hasta = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+        widget=_html_date_widget(),
     )
 
     def clean(self):
@@ -432,6 +441,8 @@ class AlquilerEdicionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
+        for field_name in ("fecha_reserva", "fecha_entrega", "fecha_devolucion"):
+            self.fields[field_name].required = False
         _configurar_campos_prenda(
             self,
             disponibles,
@@ -457,9 +468,9 @@ class AlquilerEdicionForm(forms.ModelForm):
             "metodo_sena",
         ]
         widgets = {
-            "fecha_reserva": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-            "fecha_entrega": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-            "fecha_devolucion": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+            "fecha_reserva": _html_date_widget(),
+            "fecha_entrega": _html_date_widget(),
+            "fecha_devolucion": _html_date_widget(),
             "cliente_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
             "cliente_telefono": forms.TextInput(attrs={"class": "ab-inp"}),
             "persona1_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
@@ -472,6 +483,10 @@ class AlquilerEdicionForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        for field_name in ("fecha_reserva", "fecha_entrega", "fecha_devolucion"):
+            if not cleaned.get(field_name):
+                cleaned[field_name] = getattr(self.instance, field_name, None)
+
         fecha_reserva = cleaned.get("fecha_reserva")
         fecha_entrega = cleaned.get("fecha_entrega")
         fecha_devolucion = cleaned.get("fecha_devolucion")

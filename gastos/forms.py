@@ -3,6 +3,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import Gasto, DivisionBienes
 
+HTML_DATE_FORMAT = "%Y-%m-%d"
+
 
 CATEGORIAS = [
     "Lavandería",
@@ -21,6 +23,13 @@ METODOS = [
     "MercadoPago",
     "Otro",
 ]
+
+
+def _html_date_widget():
+    return forms.DateInput(
+        format=HTML_DATE_FORMAT,
+        attrs={"class": "ab-inp", "type": "date"},
+    )
 
 
 def _norm(s: str) -> str:
@@ -47,7 +56,7 @@ class GastoForm(forms.ModelForm):
         model = Gasto
         fields = ["fecha", "categoria", "metodo", "descripcion", "notas", "monto"]
         widgets = {
-            "fecha": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+            "fecha": _html_date_widget(),
             "descripcion": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Ej: tela, limpieza, publicidad"}),
             "notas": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Opcional"}),
             "monto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
@@ -81,7 +90,7 @@ class DivisionBienesForm(forms.ModelForm):
         model = DivisionBienes
         fields = ["fecha", "monto_total", "para_tade", "para_bauti", "notas"]
         widgets = {
-            "fecha": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
+            "fecha": _html_date_widget(),
             "monto_total": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
             "para_tade": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
             "para_bauti": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),

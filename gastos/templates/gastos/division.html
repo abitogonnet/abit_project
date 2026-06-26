@@ -33,27 +33,27 @@
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
         <span class="ab-small">Saldo actual en cuenta</span>
-        <strong>${{ saldo_actual_cuenta|miles0 }}</strong>
+        <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Señas de {{ month_label }}</span>
-        <strong>${{ total_senas_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_senas_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Saldos cobrados en {{ month_label }}</span>
-        <strong>${{ total_saldos_pagados_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_saldos_pagados_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Ingresos por alquileres del mes</span>
-        <strong>${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Gastos de {{ month_label }}</span>
-        <strong>${{ total_gastos_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_gastos_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Dinero ya dividido en {{ month_label }}</span>
-        <strong>${{ total_dividido_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_dividido_periodo|miles0 }}</strong>
       </div>
     </div>
 

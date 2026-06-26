@@ -228,6 +228,12 @@ main {
   color: var(--muted);
 }
 
+.ab-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  white-space: nowrap;
+}
+
 .ab-note {
   margin: 0;
   color: var(--muted);
@@ -494,6 +500,16 @@ textarea.ab-inp:focus {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.ab-money-cell {
+  text-align: right;
+  font-weight: 900;
+}
+
+.ab-money-stack {
+  display: grid;
+  gap: 4px;
 }
 
 .ab-table-compact {

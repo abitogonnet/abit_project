@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
@@ -225,3 +226,15 @@ class GastosViewsTests(TestCase):
         self.assertContains(response, "Abril 2026")
         self.assertContains(response, "Abril")
         self.assertNotContains(response, "Mayo")
+
+    def test_home_aplica_clases_numericas_a_los_montos(self):
+        template_path = settings.BASE_DIR / "gastos" / "templates" / "gastos" / "home.html"
+        css_path = settings.BASE_DIR / "static" / "css" / "abito.css"
+
+        template = template_path.read_text(encoding="utf-8", errors="ignore")
+        css = css_path.read_text(encoding="utf-8", errors="ignore")
+
+        self.assertIn('class="ab-money-cell ab-num"', template)
+        self.assertIn('class="ab-pill ab-num"', template)
+        self.assertIn(".ab-num", css)
+        self.assertIn(".ab-money-cell", css)

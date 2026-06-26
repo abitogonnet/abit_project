@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import AlquilerForm, SHORT_POR_CATEGORIA
+from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA
 from prendas.models import Prenda
 
 from .models import Alquiler, AlquilerItem
@@ -529,6 +529,72 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(alquiler.metodo_sena, Alquiler.MP_TRANS)
         self.assertEqual(alquiler.total_final, 1800)
         self.assertEqual(alquiler.saldo, 1300)
+
+    def test_ver_alquileres_editar_conserva_fechas_si_no_se_reenvian(self):
+        saco = Prenda.objects.create(
+            codigo="SA-141",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+        )
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Cliente Original",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco)
+
+        prefix = f"alq-edit-{alquiler.id}"
+        response = self.client.post(reverse("alquileres:ver"), self._edit_payload(
+            alquiler,
+            **{
+                "fecha_desde": "",
+                "fecha_hasta": "",
+                f"{prefix}-fecha_reserva": "",
+                f"{prefix}-fecha_entrega": "",
+                f"{prefix}-fecha_devolucion": "",
+                f"{prefix}-cliente_nombre": "Cliente Sin Reescribir Fechas",
+            },
+        ))
+
+        self.assertEqual(response.status_code, 302)
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.cliente_nombre, "Cliente Sin Reescribir Fechas")
+        self.assertEqual(alquiler.fecha_reserva, date(2026, 4, 16))
+        self.assertEqual(alquiler.fecha_entrega, date(2026, 4, 20))
+        self.assertEqual(alquiler.fecha_devolucion, date(2026, 4, 25))
+
+    def test_formulario_edicion_renderiza_fechas_en_formato_html5(self):
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Cliente Formato",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+
+        form = AlquilerEdicionForm(
+            instance=alquiler,
+            prefix=f"alq-edit-{alquiler.id}",
+            disponibles={short: [] for short in SHORT_POR_CATEGORIA.values()},
+        )
+
+        self.assertIn('value="2026-04-16"', str(form["fecha_reserva"]))
+        self.assertIn('value="2026-04-20"', str(form["fecha_entrega"]))
+        self.assertIn('value="2026-04-25"', str(form["fecha_devolucion"]))
 
     def test_ver_alquileres_no_deja_editar_fechas_si_pisa_otra_reserva(self):
         saco = Prenda.objects.create(

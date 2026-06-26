@@ -38,31 +38,31 @@
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
         <span class="ab-small">Saldo actual en cuenta</span>
-        <strong>${{ saldo_actual_cuenta|miles0 }}</strong>
+        <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Señas de {{ month_label }}</span>
-        <strong>${{ total_senas_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_senas_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Saldos cobrados en {{ month_label }}</span>
-        <strong>${{ total_saldos_pagados_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_saldos_pagados_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Ingresos por alquileres del mes</span>
-        <strong>${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Gastos de {{ month_label }}</span>
-        <strong>${{ total_gastos_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_gastos_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Divisiones de {{ month_label }}</span>
-        <strong>${{ total_dividido_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ total_dividido_periodo|miles0 }}</strong>
       </div>
       <div class="ab-summary-card">
         <span class="ab-small">Resultado neto del mes</span>
-        <strong>${{ saldo_neto_periodo|miles0 }}</strong>
+        <strong class="ab-num">${{ saldo_neto_periodo|miles0 }}</strong>
       </div>
     </div>
 
@@ -93,7 +93,7 @@
               {% for g in gastos %}
                 <tr>
                   <td class="ab-muted">{{ g.fecha|date:"d/m/Y" }}</td>
-                  <td style="font-weight: 900;">${{ g.monto|miles0 }}</td>
+                  <td class="ab-money-cell ab-num">${{ g.monto|miles0 }}</td>
                   <td>{{ g.categoria }}</td>
                   <td>
                     <details class="ab-detail-toggle">
@@ -132,7 +132,7 @@
             <article class="ab-list-card">
               <div class="ab-row" style="justify-content: space-between;">
                 <h3>{{ g.fecha|date:"d/m/Y" }}</h3>
-                <span class="ab-pill">${{ g.monto|miles0 }}</span>
+                <span class="ab-pill ab-num">${{ g.monto|miles0 }}</span>
               </div>
               <div class="ab-meta" style="margin-top: 10px;">
                 <div>Categoria: {{ g.categoria }}</div>
@@ -185,8 +185,11 @@
               {% for d in divisiones %}
                 <tr>
                   <td class="ab-muted">{{ d.fecha|date:"d/m/Y" }}</td>
-                  <td style="font-weight: 900;">${{ d.monto_total|miles0 }}</td>
-                  <td class="ab-muted">Tade: ${{ d.para_tade|miles0 }}<br>Bauti: ${{ d.para_bauti|miles0 }}</td>
+                  <td class="ab-money-cell ab-num">${{ d.monto_total|miles0 }}</td>
+                  <td class="ab-muted ab-money-stack">
+                    <div>Tade: <span class="ab-num">${{ d.para_tade|miles0 }}</span></div>
+                    <div>Bauti: <span class="ab-num">${{ d.para_bauti|miles0 }}</span></div>
+                  </td>
                   <td>
                     <details class="ab-detail-toggle">
                       <summary class="ab-detail-summary">
@@ -201,13 +204,13 @@
                           </div>
                           <div class="ab-detail-summary-card">
                             <span class="ab-spec-label">Cuanto</span>
-                            <strong>${{ d.monto_total|miles0 }}</strong>
+                            <strong class="ab-num">${{ d.monto_total|miles0 }}</strong>
                           </div>
                           <div class="ab-detail-summary-card">
                             <span class="ab-spec-label">Reparto</span>
                             <div class="ab-detail-date-list">
-                              <div>Tade: ${{ d.para_tade|miles0 }}</div>
-                              <div>Bauti: ${{ d.para_bauti|miles0 }}</div>
+                              <div>Tade: <span class="ab-num">${{ d.para_tade|miles0 }}</span></div>
+                              <div>Bauti: <span class="ab-num">${{ d.para_bauti|miles0 }}</span></div>
                             </div>
                           </div>
                           <div class="ab-detail-summary-card">
@@ -231,11 +234,11 @@
             <article class="ab-list-card">
               <div class="ab-row" style="justify-content: space-between;">
                 <h3>{{ d.fecha|date:"d/m/Y" }}</h3>
-                <span class="ab-pill">${{ d.monto_total|miles0 }}</span>
+                <span class="ab-pill ab-num">${{ d.monto_total|miles0 }}</span>
               </div>
               <div class="ab-meta" style="margin-top: 10px;">
-                <div>Tade: ${{ d.para_tade|miles0 }}</div>
-                <div>Bauti: ${{ d.para_bauti|miles0 }}</div>
+                <div>Tade: <span class="ab-num">${{ d.para_tade|miles0 }}</span></div>
+                <div>Bauti: <span class="ab-num">${{ d.para_bauti|miles0 }}</span></div>
               </div>
               <details class="ab-detail-toggle" style="margin-top: 14px;">
                 <summary class="ab-detail-summary">
