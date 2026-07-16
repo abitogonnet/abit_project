@@ -46,7 +46,7 @@
 
 <form method="post" id="alqForm" class="ab-create-layout" data-draft-clear="{% if mensaje_cliente %}1{% else %}0{% endif %}">
   {% csrf_token %}
-  {{ form.tiene_persona2 }}
+  {{ form.personas_visibles }}
 
   <div class="ab-create-main">
     {% if form.non_field_errors %}
@@ -104,108 +104,67 @@
         </div>
         <div class="ab-actions">
           <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}" target="_blank" rel="noopener">Buscar prenda</a>
-          <button class="ab-btn2" type="button" data-toggle-persona2>
-            <span data-persona2-label>Agregar 2da persona</span>
+          <button class="ab-btn2" type="button" data-add-persona>
+            <span data-add-persona-label>Agregar persona</span>
           </button>
         </div>
       </div>
 
       <div class="ab-person-grid-modern">
-        <section class="ab-person-section">
-          <div class="ab-person-section-head">
-            <h3>Persona 1</h3>
-            <span class="ab-chip">Principal</span>
-          </div>
+        {% for section in form.persona_sections %}
+          <section
+            class="ab-person-section"
+            data-persona-section
+            data-persona-number="{{ section.number }}"
+            {% if not section.visible %}hidden{% endif %}
+          >
+            <div class="ab-person-section-head">
+              <h3>Persona {{ section.number }}</h3>
+              <span class="ab-chip">{{ section.badge }}</span>
+            </div>
 
-          <div class="ab-field">
-            <label class="ab-lab" for="{{ form.persona1_nombre.id_for_label }}">Nombre persona 1</label>
-            {{ form.persona1_nombre }}
-            {% if form.persona1_nombre.errors %}<div class="ab-field-errors">{{ form.persona1_nombre.errors }}</div>{% endif %}
-          </div>
+            <div class="ab-field">
+              <label class="ab-lab" for="{{ section.name_field.id_for_label }}">Nombre persona {{ section.number }}</label>
+              {{ section.name_field }}
+              {% if section.name_field.errors %}<div class="ab-field-errors">{{ section.name_field.errors }}</div>{% endif %}
+            </div>
 
-          <div class="ab-prenda-grid">
-            {% for row in form.persona1_prenda_rows %}
-              <article class="ab-prenda-card">
-                <div class="ab-prenda-card-head">
-                  <strong>{{ row.label }}</strong>
-                  <span class="ab-pill">{{ row.prefix }}-</span>
-                </div>
-                <div class="ab-field">
-                  <label class="ab-lab" for="{{ row.numero.id_for_label }}">Codigo</label>
-                  {{ row.numero }}
-                  {% if row.numero.errors %}<div class="ab-field-errors">{{ row.numero.errors }}</div>{% endif %}
-                </div>
-                <div class="ab-field">
-                  <label class="ab-lab" for="{{ row.select.id_for_label }}">Prenda exacta</label>
-                  {{ row.select }}
-                  {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
-                </div>
-                {% if row.ruedo_valor %}
-                  <div class="ab-grid">
-                    <div class="col-6 ab-field">
-                      <label class="ab-lab" for="{{ row.ruedo_valor.id_for_label }}">Ruedo</label>
-                      {{ row.ruedo_valor }}
-                      {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-6 ab-field">
-                      <label class="ab-lab" for="{{ row.ruedo_tipo.id_for_label }}">Tipo</label>
-                      {{ row.ruedo_tipo }}
-                      {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
-                    </div>
+            <div class="ab-prenda-grid">
+              {% for row in section.prenda_rows %}
+                <article class="ab-prenda-card">
+                  <div class="ab-prenda-card-head">
+                    <strong>{{ row.label }}</strong>
+                    <span class="ab-pill">{{ row.prefix }}-</span>
                   </div>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        </section>
-
-        <section class="ab-person-section" id="p2Box" data-persona2-box hidden>
-          <div class="ab-person-section-head">
-            <h3>Persona 2</h3>
-            <span class="ab-chip">Opcional</span>
-          </div>
-
-          <div class="ab-field">
-            <label class="ab-lab" for="{{ form.persona2_nombre.id_for_label }}">Nombre persona 2</label>
-            {{ form.persona2_nombre }}
-            {% if form.persona2_nombre.errors %}<div class="ab-field-errors">{{ form.persona2_nombre.errors }}</div>{% endif %}
-          </div>
-
-          <div class="ab-prenda-grid">
-            {% for row in form.persona2_prenda_rows %}
-              <article class="ab-prenda-card">
-                <div class="ab-prenda-card-head">
-                  <strong>{{ row.label }}</strong>
-                  <span class="ab-pill">{{ row.prefix }}-</span>
-                </div>
-                <div class="ab-field">
-                  <label class="ab-lab" for="{{ row.numero.id_for_label }}">Codigo</label>
-                  {{ row.numero }}
-                  {% if row.numero.errors %}<div class="ab-field-errors">{{ row.numero.errors }}</div>{% endif %}
-                </div>
-                <div class="ab-field">
-                  <label class="ab-lab" for="{{ row.select.id_for_label }}">Prenda exacta</label>
-                  {{ row.select }}
-                  {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
-                </div>
-                {% if row.ruedo_valor %}
-                  <div class="ab-grid">
-                    <div class="col-6 ab-field">
-                      <label class="ab-lab" for="{{ row.ruedo_valor.id_for_label }}">Ruedo</label>
-                      {{ row.ruedo_valor }}
-                      {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-6 ab-field">
-                      <label class="ab-lab" for="{{ row.ruedo_tipo.id_for_label }}">Tipo</label>
-                      {{ row.ruedo_tipo }}
-                      {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
-                    </div>
+                  <div class="ab-field">
+                    <label class="ab-lab" for="{{ row.numero.id_for_label }}">Codigo</label>
+                    {{ row.numero }}
+                    {% if row.numero.errors %}<div class="ab-field-errors">{{ row.numero.errors }}</div>{% endif %}
                   </div>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        </section>
+                  <div class="ab-field">
+                    <label class="ab-lab" for="{{ row.select.id_for_label }}">Prenda exacta</label>
+                    {{ row.select }}
+                    {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
+                  </div>
+                  {% if row.ruedo_valor %}
+                    <div class="ab-grid">
+                      <div class="col-6 ab-field">
+                        <label class="ab-lab" for="{{ row.ruedo_valor.id_for_label }}">Ruedo</label>
+                        {{ row.ruedo_valor }}
+                        {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
+                      </div>
+                      <div class="col-6 ab-field">
+                        <label class="ab-lab" for="{{ row.ruedo_tipo.id_for_label }}">Tipo</label>
+                        {{ row.ruedo_tipo }}
+                        {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
+                      </div>
+                    </div>
+                  {% endif %}
+                </article>
+              {% endfor %}
+            </div>
+          </section>
+        {% endfor %}
       </div>
     </section>
 
@@ -286,12 +245,12 @@
           <strong data-summary-return>Sin fecha</strong>
         </div>
         <div>
-          <span>Prendas persona 1</span>
-          <strong data-summary-p1>0 seleccionadas</strong>
+          <span>Personas activas</span>
+          <strong data-summary-personas>1 activa</strong>
         </div>
         <div>
-          <span>Prendas persona 2</span>
-          <strong data-summary-p2>0 seleccionadas</strong>
+          <span>Prendas cargadas</span>
+          <strong data-summary-prendas>0 seleccionadas</strong>
         </div>
         <div>
           <span>Total final</span>
@@ -321,14 +280,15 @@
     if (!form) return;
 
     const draftKey = "abito:alquiler:create-draft";
-    const hiddenPersona2 = document.getElementById("id_tiene_persona2");
-    const persona2Box = document.querySelector("[data-persona2-box]");
-    const persona2Toggle = document.querySelector("[data-toggle-persona2]");
-    const persona2Label = document.querySelector("[data-persona2-label]");
+    const visiblePeopleField = document.getElementById("id_personas_visibles");
+    const personaSections = Array.from(form.querySelectorAll("[data-persona-section]"));
+    const addPersonaButton = document.querySelector("[data-add-persona]");
+    const addPersonaLabel = document.querySelector("[data-add-persona-label]");
     const copyButton = document.querySelector("[data-copy-message]");
     const messageBox = document.getElementById("msgBox");
     const stepButtons = Array.from(document.querySelectorAll("[data-step-target]"));
     const stepCards = Array.from(document.querySelectorAll("[data-step-card]"));
+    const maxPersonas = personaSections.length || 1;
 
     function restoreDraft() {
       if (form.dataset.draftClear === "1") {
@@ -459,16 +419,54 @@
       updateSummary();
     }
 
-    function setPersona2(open) {
-      if (!persona2Box || !hiddenPersona2) return;
-      persona2Box.hidden = !open;
-      hiddenPersona2.value = open ? "1" : "";
-      if (persona2Label) {
-        persona2Label.textContent = open ? "Ocultar 2da persona" : "Agregar 2da persona";
+    function visiblePersonaCount() {
+      return personaSections.filter(function (section) {
+        return !section.hidden;
+      }).length || 1;
+    }
+
+    function personaHasData(section) {
+      const nameInput = section.querySelector("input[name$='_nombre']");
+      const hasName = !!((nameInput || {}).value || "").trim();
+      const hasSelection = Array.from(section.querySelectorAll(".js-code-select"))
+        .some(function (select) {
+          return !!select.value;
+        });
+      return hasName || hasSelection;
+    }
+
+    function inferVisiblePersonas() {
+      let highestVisible = 1;
+      personaSections.forEach(function (section) {
+        const number = Number(section.dataset.personaNumber || "1");
+        if (personaHasData(section)) {
+          highestVisible = Math.max(highestVisible, number);
+        }
+      });
+
+      const requested = Number((visiblePeopleField || {}).value || 1);
+      return Math.max(1, Math.min(Math.max(requested, highestVisible), maxPersonas));
+    }
+
+    function syncPersonaSections(count) {
+      const visibleCount = Math.max(1, Math.min(count, maxPersonas));
+      personaSections.forEach(function (section) {
+        const sectionNumber = Number(section.dataset.personaNumber || "1");
+        section.hidden = sectionNumber > visibleCount;
+      });
+
+      if (visiblePeopleField) {
+        visiblePeopleField.value = visibleCount;
       }
-      if (persona2Toggle) {
-        persona2Toggle.setAttribute("aria-expanded", open ? "true" : "false");
+
+      if (addPersonaLabel) {
+        addPersonaLabel.textContent = visibleCount >= maxPersonas ? "Maximo alcanzado" : "Agregar persona";
       }
+
+      if (addPersonaButton) {
+        addPersonaButton.disabled = visibleCount >= maxPersonas;
+      }
+
       updateSummary();
     }
 
@@ -476,10 +474,10 @@
       return `$${value.toFixed(2)}`;
     }
 
-    function countSelected(prefix) {
-      return Array.from(form.querySelectorAll(`[name^='${prefix}_']`))
+    function countSelectedInSection(section) {
+      return Array.from(section.querySelectorAll(".js-code-select"))
         .filter(function (node) {
-          return node.tagName === "SELECT" && node.value;
+          return !!node.value;
         }).length;
     }
 
@@ -498,8 +496,14 @@
       const sena = Math.max(num((document.getElementById("id_sena") || {}).value), 0);
       const totalFinal = Math.max(total - (total * pct / 100), 0);
       const saldo = Math.max(totalFinal - sena, 0);
-      const p1 = countSelected("p1");
-      const p2 = persona2Box && !persona2Box.hidden ? countSelected("p2") : 0;
+      const personasActivas = visiblePersonaCount();
+      const prendasTotales = personaSections
+        .filter(function (section) {
+          return !section.hidden;
+        })
+        .reduce(function (totalSeleccionadas, section) {
+          return totalSeleccionadas + countSelectedInSection(section);
+        }, 0);
 
       const totalField = document.getElementById("total_final_ui");
       const saldoField = document.getElementById("saldo_ui");
@@ -509,8 +513,8 @@
       textValue("[data-summary-client]", client || "Sin completar");
       textValue("[data-summary-delivery]", delivery || "Sin fecha");
       textValue("[data-summary-return]", ret || "Sin fecha");
-      textValue("[data-summary-p1]", `${p1} seleccionadas`);
-      textValue("[data-summary-p2]", `${p2} seleccionadas`);
+      textValue("[data-summary-personas]", `${personasActivas} activa${personasActivas === 1 ? "" : "s"}`);
+      textValue("[data-summary-prendas]", `${prendasTotales} seleccionadas`);
       textValue("[data-summary-total]", formatMoney(totalFinal));
       textValue("[data-summary-saldo]", formatMoney(saldo));
     }
@@ -558,10 +562,11 @@
       field.addEventListener("change", updateSummary);
     });
 
-    if (persona2Toggle) {
-      persona2Toggle.addEventListener("click", function () {
-        const open = persona2Box ? persona2Box.hidden : false;
-        setPersona2(open);
+    if (addPersonaButton) {
+      addPersonaButton.addEventListener("click", function () {
+        const nextCount = visiblePersonaCount() + 1;
+        syncPersonaSections(nextCount);
+        saveDraft();
       });
     }
 
@@ -575,12 +580,7 @@
     document.querySelectorAll(".js-code-filter").forEach(function (input) {
       filterCodeSelect(input);
     });
-    const persona2Nombre = (document.getElementById("id_persona2_nombre") || {}).value || "";
-    const hasPersona2Selection = Array.from(form.querySelectorAll("[name^='p2_']"))
-      .some(function (node) {
-        return node.tagName === "SELECT" && !!node.value;
-      });
-    setPersona2(hiddenPersona2 && hiddenPersona2.value === "1" || !!persona2Nombre || hasPersona2Selection);
+    syncPersonaSections(inferVisiblePersonas());
     updateSummary();
 
     form.addEventListener("input", saveDraft);

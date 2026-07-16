@@ -22,7 +22,8 @@ CATS = [
 ]
 
 
-PERSONAS_FORM = ["p1", "p2"]
+PERSONA_INDICES = tuple(range(1, Alquiler.MAX_PERSONAS + 1))
+PERSONAS_FORM = [f"p{numero}" for numero in PERSONA_INDICES]
 CATEGORIA_POR_SHORT = dict(CATS)
 SHORT_POR_CATEGORIA = {categoria: short for short, categoria in CATS}
 CATEGORIA_LABELS = dict(Prenda.CATEGORIAS)
@@ -42,6 +43,44 @@ CODIGO_PREFIJOS = {
     Prenda.C_ZAPATOS: "ZA",
     Prenda.C_CINTURON: "CI",
 }
+
+
+def _persona_name_field(persona_num: int) -> str:
+    return f"persona{persona_num}_nombre"
+
+
+def _alquiler_form_fields():
+    return [
+        "fecha_reserva",
+        "fecha_entrega",
+        "fecha_devolucion",
+        "cliente_nombre",
+        "cliente_telefono",
+        *[_persona_name_field(persona_num) for persona_num in PERSONA_INDICES],
+        "total_bruto",
+        "descuento_pct",
+        "sena",
+        "metodo_sena",
+    ]
+
+
+def _alquiler_form_widgets():
+    widgets = {
+        "fecha_reserva": _html_date_widget(),
+        "fecha_entrega": _html_date_widget(),
+        "fecha_devolucion": _html_date_widget(),
+        "cliente_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
+        "cliente_telefono": forms.TextInput(attrs={"class": "ab-inp"}),
+        "total_bruto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
+        "descuento_pct": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0", "max": "100"}),
+        "sena": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
+        "metodo_sena": forms.Select(attrs={"class": "ab-sel"}),
+    }
+    widgets.update({
+        _persona_name_field(persona_num): forms.TextInput(attrs={"class": "ab-inp"})
+        for persona_num in PERSONA_INDICES
+    })
+    return widgets
 
 
 def _html_date_widget():
@@ -214,6 +253,61 @@ def _rows_prendas(form, who: str):
     return rows
 
 
+def _persona_has_content(name_field, prenda_rows):
+    if (name_field.value() or "").strip():
+        return True
+
+    for row in prenda_rows:
+        if (row["select"].value() or "").strip():
+            return True
+        if row["ruedo_valor"] and (row["ruedo_valor"].value() or "").strip():
+            return True
+        if row["ruedo_tipo"] and (row["ruedo_tipo"].value() or "").strip():
+            return True
+    return False
+
+
+def _personas_visibles_solicitadas(form) -> int:
+    if not form.is_bound:
+        return 1
+
+    raw_value = (form.data.get(form.add_prefix("personas_visibles")) or "").strip()
+    if not raw_value.isdigit():
+        return 1
+
+    return max(1, min(int(raw_value), Alquiler.MAX_PERSONAS))
+
+
+def _build_persona_sections(form):
+    sections = []
+    requested_visible = _personas_visibles_solicitadas(form)
+    highest_visible = 1
+
+    for persona_num in PERSONA_INDICES:
+        who = f"p{persona_num}"
+        name_field = form[_persona_name_field(persona_num)]
+        prenda_rows = _rows_prendas(form, who)
+        has_content = _persona_has_content(name_field, prenda_rows)
+        if has_content:
+            highest_visible = persona_num
+
+        sections.append({
+            "number": persona_num,
+            "who": who,
+            "name_field": name_field,
+            "prenda_rows": prenda_rows,
+            "badge": "Principal" if persona_num == 1 else "Opcional",
+            "has_content": has_content,
+        })
+
+    visible_count = max(requested_visible, highest_visible)
+    for section in sections:
+        section["visible"] = section["number"] <= visible_count
+
+    form.personas_visibles_inicial = visible_count
+    return sections
+
+
 def _validar_prendas(
     form,
     cleaned,
@@ -224,7 +318,7 @@ def _validar_prendas(
     allow_prenda_ids=None,
 ):
     usados = set()
-    selected = {"p1": {}, "p2": {}}
+    selected = {who: {} for who in PERSONAS_FORM}
     allow_prenda_ids = set(allow_prenda_ids or [])
     requested_codes = []
 
@@ -319,90 +413,42 @@ def _validar_prendas(
 
 
 class AlquilerForm(forms.ModelForm):
-    tiene_persona2 = forms.CharField(required=False, widget=forms.HiddenInput())
-
-    p1_saco = forms.ChoiceField(required=False)
-    p1_pantalon = forms.ChoiceField(required=False)
-    p1_camisa = forms.ChoiceField(required=False)
-    p1_chaleco = forms.ChoiceField(required=False)
-    p1_mono = forms.ChoiceField(required=False)
-    p1_corbata = forms.ChoiceField(required=False)
-    p1_zapatos = forms.ChoiceField(required=False)
-    p1_cinturon = forms.ChoiceField(required=False)
-
-    p1_ruedo_pantalon_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p1_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
-    p1_ruedo_saco_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p1_ruedo_saco_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
-
-    p2_saco = forms.ChoiceField(required=False)
-    p2_pantalon = forms.ChoiceField(required=False)
-    p2_camisa = forms.ChoiceField(required=False)
-    p2_chaleco = forms.ChoiceField(required=False)
-    p2_mono = forms.ChoiceField(required=False)
-    p2_corbata = forms.ChoiceField(required=False)
-    p2_zapatos = forms.ChoiceField(required=False)
-    p2_cinturon = forms.ChoiceField(required=False)
-
-    p2_ruedo_pantalon_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p2_ruedo_pantalon_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
-    p2_ruedo_saco_valor = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
-    p2_ruedo_saco_tipo = forms.ChoiceField(required=False, choices=[("", "No aplica")] + AlquilerItem.RUEDO_TIPOS)
+    personas_visibles = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=Alquiler.MAX_PERSONAS,
+        widget=forms.HiddenInput(),
+    )
 
     class Meta:
         model = Alquiler
-        fields = [
-            "fecha_reserva",
-            "fecha_entrega",
-            "fecha_devolucion",
-            "cliente_nombre",
-            "cliente_telefono",
-            "persona1_nombre",
-            "persona2_nombre",
-            "total_bruto",
-            "descuento_pct",
-            "sena",
-            "metodo_sena",
-        ]
-        widgets = {
-            "fecha_reserva": _html_date_widget(),
-            "fecha_entrega": _html_date_widget(),
-            "fecha_devolucion": _html_date_widget(),
-            "cliente_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
-            "cliente_telefono": forms.TextInput(attrs={"class": "ab-inp"}),
-            "persona1_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
-            "persona2_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
-            "total_bruto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
-            "descuento_pct": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0", "max": "100"}),
-            "sena": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
-            "metodo_sena": forms.Select(attrs={"class": "ab-sel"}),
-        }
+        fields = _alquiler_form_fields()
+        widgets = _alquiler_form_widgets()
 
     def __init__(self, *args, **kwargs):
         disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
         _configurar_campos_prenda(self, disponibles)
-        self.persona1_prenda_rows = _rows_prendas(self, "p1")
-        self.persona2_prenda_rows = _rows_prendas(self, "p2")
+        self.persona_sections = _build_persona_sections(self)
+        self.fields["personas_visibles"].initial = getattr(self, "personas_visibles_inicial", 1)
 
     def clean(self):
         cleaned = super().clean()
         fecha_entrega = cleaned.get("fecha_entrega")
         fecha_devolucion = cleaned.get("fecha_devolucion")
 
-        tiene_p2 = (cleaned.get("tiene_persona2") or "").strip() == "1"
-        any_p2 = any((cleaned.get(f"p2_{short}") or "").strip() for short, _ in CATS)
-        if (tiene_p2 or any_p2) and not (cleaned.get("persona2_nombre") or "").strip():
-            self.add_error("persona2_nombre", "Si agregas 2da persona, completa el nombre.")
-
-        any_p1 = any((cleaned.get(f"p1_{short}") or "").strip() for short, _ in CATS)
-        if not any_p1 and not any_p2:
-            raise ValidationError("Tienes que elegir al menos una prenda.")
-
         selected = _validar_prendas(self, cleaned, fecha_entrega, fecha_devolucion)
-
-        if not selected["p1"] and not selected["p2"]:
+        if not any(selected[who] for who in PERSONAS_FORM):
             raise ValidationError("Tienes que elegir al menos una prenda.")
+
+        for persona_num in PERSONA_INDICES[1:]:
+            who = f"p{persona_num}"
+            any_persona = any((cleaned.get(f"{who}_{short}") or "").strip() for short, _ in CATS) or bool(selected[who])
+            if any_persona and not (cleaned.get(_persona_name_field(persona_num)) or "").strip():
+                self.add_error(
+                    _persona_name_field(persona_num),
+                    f"Si agregas la persona {persona_num}, completa el nombre.",
+                )
 
         total = Decimal(cleaned.get("total_bruto") or 0)
         sena = Decimal(cleaned.get("sena") or 0)
@@ -440,6 +486,13 @@ class VerAlquileresFiltroForm(forms.Form):
 
 
 class AlquilerEdicionForm(forms.ModelForm):
+    personas_visibles = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=Alquiler.MAX_PERSONAS,
+        widget=forms.HiddenInput(),
+    )
+
     def __init__(self, *args, **kwargs):
         disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
@@ -451,37 +504,13 @@ class AlquilerEdicionForm(forms.ModelForm):
             initial_items=_items_por_slot(self.instance),
             compact_choices=True,
         )
-        self.persona1_prenda_rows = _rows_prendas(self, "p1")
-        self.persona2_prenda_rows = _rows_prendas(self, "p2")
+        self.persona_sections = _build_persona_sections(self)
+        self.fields["personas_visibles"].initial = getattr(self, "personas_visibles_inicial", 1)
 
     class Meta:
         model = Alquiler
-        fields = [
-            "fecha_reserva",
-            "fecha_entrega",
-            "fecha_devolucion",
-            "cliente_nombre",
-            "cliente_telefono",
-            "persona1_nombre",
-            "persona2_nombre",
-            "total_bruto",
-            "descuento_pct",
-            "sena",
-            "metodo_sena",
-        ]
-        widgets = {
-            "fecha_reserva": _html_date_widget(),
-            "fecha_entrega": _html_date_widget(),
-            "fecha_devolucion": _html_date_widget(),
-            "cliente_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
-            "cliente_telefono": forms.TextInput(attrs={"class": "ab-inp"}),
-            "persona1_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
-            "persona2_nombre": forms.TextInput(attrs={"class": "ab-inp"}),
-            "total_bruto": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
-            "descuento_pct": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0", "max": "100"}),
-            "sena": forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01", "min": "0"}),
-            "metodo_sena": forms.Select(attrs={"class": "ab-sel"}),
-        }
+        fields = _alquiler_form_fields()
+        widgets = _alquiler_form_widgets()
 
     def clean(self):
         cleaned = super().clean()
@@ -518,11 +547,16 @@ class AlquilerEdicionForm(forms.ModelForm):
             exclude_alquiler_id=self.instance.id,
             allow_prenda_ids=self.instance.items.values_list("prenda_id", flat=True),
         )
-        if not selected["p1"] and not selected["p2"]:
+        if not any(selected[who] for who in PERSONAS_FORM):
             raise ValidationError("Tienes que elegir al menos una prenda.")
 
-        any_p2 = any((cleaned.get(f"p2_{short}") or "").strip() for short, _ in CATS) or bool(selected["p2"])
-        if any_p2 and not (cleaned.get("persona2_nombre") or "").strip():
-            self.add_error("persona2_nombre", "Completa el nombre de la persona 2.")
+        for persona_num in PERSONA_INDICES[1:]:
+            who = f"p{persona_num}"
+            any_persona = any((cleaned.get(f"{who}_{short}") or "").strip() for short, _ in CATS) or bool(selected[who])
+            if any_persona and not (cleaned.get(_persona_name_field(persona_num)) or "").strip():
+                self.add_error(
+                    _persona_name_field(persona_num),
+                    f"Completa el nombre de la persona {persona_num}.",
+                )
 
         return cleaned

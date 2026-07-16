@@ -181,8 +181,10 @@ def home(request):
     proximos_movimientos = list(
         alquileres_activos
         .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=proximos_siete)
+        .prefetch_related("items__prenda")
         .order_by("fecha_entrega", "id")[:6]
     )
+    _adjuntar_detalle_alquiler(proximos_movimientos)
 
     return render(request, "alquileres/home.html", {
         "hoy": hoy,
@@ -409,15 +411,17 @@ def _metodos_pago_actuales(alquiler: Alquiler) -> list[str]:
     return detalles
 
 
+def _persona_nombre_alquiler(alquiler: Alquiler, persona_num: int) -> str:
+    return alquiler.persona_nombre(persona_num).strip()
+
+
 def _adjuntar_detalle_alquiler(alquileres):
     for alquiler in alquileres:
         items = list(alquiler.items.all())
         personas = []
 
-        for persona_num, persona_nombre in (
-            (1, alquiler.persona1_nombre),
-            (2, alquiler.persona2_nombre),
-        ):
+        for persona_num in range(1, Alquiler.MAX_PERSONAS + 1):
+            persona_nombre = _persona_nombre_alquiler(alquiler, persona_num)
             items_persona = []
             for item in items:
                 if item.persona_num != persona_num:
@@ -585,22 +589,14 @@ def _armar_mensaje_cliente(alq: Alquiler) -> str:
     partes.append(f"- Devolucion: {_fmt_date(alq.fecha_devolucion)}")
     partes.append("")
 
-    partes.append(f"{alq.persona1_nombre}")
-    for item in alq.items.filter(persona_num=1).select_related("prenda"):
-        prenda = item.prenda
-        detalle_prenda = _descripcion_prenda(prenda)
-        extra_ruedo = ""
-        if item.ruedo_valor and item.ruedo_tipo:
-            extra_ruedo = f" (Ruedo: {item.ruedo_valor} {item.get_ruedo_tipo_display()})"
-        if detalle_prenda:
-            partes.append(f"- {prenda.get_categoria_display()}: {detalle_prenda}{extra_ruedo}")
-        else:
-            partes.append(f"- {prenda.get_categoria_display()}{extra_ruedo}")
-    partes.append("")
+    for persona_num in range(1, Alquiler.MAX_PERSONAS + 1):
+        items_persona = list(alq.items.filter(persona_num=persona_num).select_related("prenda"))
+        persona_nombre = _persona_nombre_alquiler(alq, persona_num)
+        if not (persona_nombre or items_persona):
+            continue
 
-    if (alq.persona2_nombre or "").strip():
-        partes.append(f"{alq.persona2_nombre}")
-        for item in alq.items.filter(persona_num=2).select_related("prenda"):
+        partes.append(persona_nombre or f"Persona {persona_num}")
+        for item in items_persona:
             prenda = item.prenda
             detalle_prenda = _descripcion_prenda(prenda)
             extra_ruedo = ""
@@ -667,7 +663,7 @@ def _refresh_prendas_estado_por_ids(prenda_ids):
 def _crear_items_desde_seleccion(alquiler: Alquiler, selected_prendas):
     touched_prendas = []
     for who, prendas in (selected_prendas or {}).items():
-        persona_num = 1 if who == "p1" else 2
+        persona_num = int(str(who).replace("p", "") or 1)
         for data in prendas.values():
             prenda = data["prenda"]
             AlquilerItem.objects.create(
@@ -697,7 +693,7 @@ def _sync_items_alquiler(alquiler: Alquiler, selected_prendas):
 
     touched_ids = set()
     for who, prendas in (selected_prendas or {}).items():
-        persona_num = 1 if who == "p1" else 2
+        persona_num = int(str(who).replace("p", "") or 1)
         for short, data in prendas.items():
             key = (persona_num, short)
             prenda = data["prenda"]
@@ -762,7 +758,10 @@ def crear(request):
     if request.method == "POST":
         form = AlquilerForm(request.POST, disponibles=disponibles)
         if form.is_valid():
-            selected = form.cleaned_data.get("_selected_prendas", {"p1": {}, "p2": {}})
+            selected = form.cleaned_data.get(
+                "_selected_prendas",
+                {f"p{persona_num}": {} for persona_num in range(1, Alquiler.MAX_PERSONAS + 1)},
+            )
             touched_prendas = []
 
             with transaction.atomic():
@@ -970,7 +969,7 @@ def ruedos(request):
     for item in items:
         alquiler = item.alquiler
         prenda = item.prenda
-        persona_nombre = (alquiler.persona1_nombre if item.persona_num == 1 else alquiler.persona2_nombre).strip()
+        persona_nombre = _persona_nombre_alquiler(alquiler, item.persona_num)
         fecha_a_hacer = alquiler.fecha_entrega - timedelta(days=1)
         mensaje_linea = f"{_detalle_prenda_ruedo_mensaje(prenda)}, {_texto_ruedo_mensaje(item)}".strip()
 

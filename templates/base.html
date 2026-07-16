@@ -227,6 +227,74 @@
         update();
       }
 
+      function editVisiblePersonaCount(form) {
+        return Array.from(form.querySelectorAll("[data-persona-section]")).filter(function (section) {
+          return !section.hidden;
+        }).length || 1;
+      }
+
+      function editPersonaHasData(section) {
+        const nameInput = section.querySelector("input[name$='_nombre']");
+        const hasName = !!((nameInput || {}).value || "").trim();
+        const hasSelection = Array.from(section.querySelectorAll(".js-code-select")).some(function (select) {
+          return !!select.value;
+        });
+        return hasName || hasSelection;
+      }
+
+      function syncEditPersonaSections(form, requestedCount) {
+        const sections = Array.from(form.querySelectorAll("[data-persona-section]"));
+        if (!sections.length) return;
+
+        const hiddenField = form.querySelector("[name$='-personas_visibles']");
+        const addButton = form.querySelector("[data-add-persona]");
+        const addLabel = form.querySelector("[data-add-persona-label]");
+        const safeCount = Math.max(1, Math.min(requestedCount, sections.length));
+
+        sections.forEach(function (section) {
+          const sectionNumber = Number(section.dataset.personaNumber || "1");
+          section.hidden = sectionNumber > safeCount;
+        });
+
+        if (hiddenField) {
+          hiddenField.value = safeCount;
+        }
+        if (addLabel) {
+          addLabel.textContent = safeCount >= sections.length ? "Maximo alcanzado" : "Agregar persona";
+        }
+        if (addButton) {
+          addButton.disabled = safeCount >= sections.length;
+        }
+      }
+
+      function bindEditPersonas(form) {
+        const sections = Array.from(form.querySelectorAll("[data-persona-section]"));
+        if (!sections.length) return;
+
+        const hiddenField = form.querySelector("[name$='-personas_visibles']");
+        let requestedCount = Number((hiddenField || {}).value || 1);
+        if (!Number.isFinite(requestedCount)) {
+          requestedCount = 1;
+        }
+
+        let highestVisible = 1;
+        sections.forEach(function (section) {
+          const sectionNumber = Number(section.dataset.personaNumber || "1");
+          if (editPersonaHasData(section)) {
+            highestVisible = Math.max(highestVisible, sectionNumber);
+          }
+        });
+        syncEditPersonaSections(form, Math.max(requestedCount, highestVisible));
+
+        const addButton = form.querySelector("[data-add-persona]");
+        if (!addButton || addButton.dataset.bound === "1") return;
+
+        addButton.dataset.bound = "1";
+        addButton.addEventListener("click", function () {
+          syncEditPersonaSections(form, editVisiblePersonaCount(form) + 1);
+        });
+      }
+
       function bindEditCodeFilters(form) {
         const inputs = Array.from(form.querySelectorAll(".js-code-filter"));
         const selects = Array.from(form.querySelectorAll(".js-code-select"));
@@ -256,6 +324,7 @@
         form.dataset.enhanced = "1";
         bindEditCodeFilters(form);
         bindEditTotals(form);
+        bindEditPersonas(form);
       }
 
       function enhanceEditForms(root) {

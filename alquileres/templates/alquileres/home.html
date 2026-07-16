@@ -165,7 +165,7 @@
             <div class="ab-timeline-day">{{ alquiler.fecha_entrega|date:"d/m" }}</div>
             <div class="ab-home-movement-content">
               <strong>{{ alquiler.cliente_nombre }}</strong>
-              <span>{{ alquiler.persona1_nombre }}{% if alquiler.persona2_nombre %} + {{ alquiler.persona2_nombre }}{% endif %}</span>
+              <span>{{ alquiler.personas_resumen|default:alquiler.persona1_nombre }}</span>
             </div>
             <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Entrega</a>
           </article>

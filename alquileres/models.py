@@ -10,6 +10,8 @@ def _q2(x: Decimal) -> Decimal:
 
 
 class Alquiler(models.Model):
+    MAX_PERSONAS = 6
+
     # Estados del alquiler
     EST_RESERVADO = "RESERVADO"
     EST_ENTREGADO = "ENTREGADO"
@@ -48,9 +50,13 @@ class Alquiler(models.Model):
     fecha_entrega = models.DateField()
     fecha_devolucion = models.DateField()
 
-    # Persona 1/2
+    # Personas del alquiler
     persona1_nombre = models.CharField(max_length=80)
     persona2_nombre = models.CharField(max_length=80, blank=True, default="")
+    persona3_nombre = models.CharField(max_length=80, blank=True, default="")
+    persona4_nombre = models.CharField(max_length=80, blank=True, default="")
+    persona5_nombre = models.CharField(max_length=80, blank=True, default="")
+    persona6_nombre = models.CharField(max_length=80, blank=True, default="")
 
     # Pagos
     total_bruto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -103,6 +109,15 @@ class Alquiler(models.Model):
     def __str__(self):
         return f"Alquiler #{self.id} - {self.cliente_nombre}"
 
+    def persona_nombre(self, persona_num: int) -> str:
+        return getattr(self, f"persona{persona_num}_nombre", "") or ""
+
+    def personas_cargadas(self):
+        return [
+            (persona_num, self.persona_nombre(persona_num).strip())
+            for persona_num in range(1, self.MAX_PERSONAS + 1)
+        ]
+
     class Meta:
         indexes = [
             models.Index(fields=["fecha_reserva"]),
@@ -123,7 +138,7 @@ class AlquilerItem(models.Model):
     ]
 
     alquiler = models.ForeignKey(Alquiler, on_delete=models.CASCADE, related_name="items")
-    persona_num = models.PositiveSmallIntegerField(default=1)  # 1 o 2
+    persona_num = models.PositiveSmallIntegerField(default=1)  # 1 a 6
     prenda = models.ForeignKey(Prenda, on_delete=models.PROTECT)
 
     ruedo_valor = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)

@@ -1,6 +1,7 @@
 <form method="post" class="ab-edit-shell js-alq-edit-form">
   {% csrf_token %}
   <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
+  {{ alquiler.edit_form.personas_visibles }}
   {% for field_name, field_value in alquiler.edit_hidden_fields %}
     <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
   {% endfor %}
@@ -40,16 +41,6 @@
             {{ alquiler.edit_form.cliente_telefono }}
             {% if alquiler.edit_form.cliente_telefono.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_telefono.errors }}</div>{% endif %}
           </div>
-          <div class="col-6 ab-field">
-            <label class="ab-lab">Persona 1</label>
-            {{ alquiler.edit_form.persona1_nombre }}
-            {% if alquiler.edit_form.persona1_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona1_nombre.errors }}</div>{% endif %}
-          </div>
-          <div class="col-6 ab-field">
-            <label class="ab-lab">Persona 2</label>
-            {{ alquiler.edit_form.persona2_nombre }}
-            {% if alquiler.edit_form.persona2_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona2_nombre.errors }}</div>{% endif %}
-          </div>
         </div>
       </section>
 
@@ -85,94 +76,69 @@
             <p class="ab-kicker">Prendas</p>
             <h4 class="ab-mini-title">Seleccion y ruedos</h4>
           </div>
+          <div class="ab-actions">
+            <button class="ab-btn2" type="button" data-add-persona>
+              <span data-add-persona-label>Agregar persona</span>
+            </button>
+          </div>
         </div>
 
         <div class="ab-person-grid-modern">
-          <section class="ab-person-section">
-            <div class="ab-person-section-head">
-              <div>
-                <strong>Persona 1</strong>
-                <span class="ab-small">{{ alquiler.edit_form.persona1_nombre.value|default:"Sin nombre" }}</span>
+          {% for section in alquiler.edit_form.persona_sections %}
+            <section
+              class="ab-person-section"
+              data-persona-section
+              data-persona-number="{{ section.number }}"
+              {% if not section.visible %}hidden{% endif %}
+            >
+              <div class="ab-person-section-head">
+                <div>
+                  <strong>Persona {{ section.number }}</strong>
+                  <span class="ab-small">{{ section.name_field.value|default:"Opcional" }}</span>
+                </div>
               </div>
-            </div>
 
-            <div class="ab-prenda-grid ab-prenda-grid-edit">
-              {% for row in alquiler.edit_form.persona1_prenda_rows %}
-                <article class="ab-prenda-card">
-                  <div class="ab-prenda-card-head">
-                    <strong>{{ row.label }}</strong>
-                    <span class="ab-pill">{{ row.prefix }}-</span>
-                  </div>
-                  <div class="ab-grid">
-                    <div class="col-4 ab-field">
-                      <label class="ab-lab">Codigo</label>
-                      {{ row.numero }}
-                    </div>
-                    <div class="col-8 ab-field">
-                      <label class="ab-lab">Seleccion</label>
-                      {{ row.select }}
-                      {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
-                    </div>
-                    {% if row.ruedo_valor %}
-                      <div class="col-6 ab-field">
-                        <label class="ab-lab">Ruedo</label>
-                        {{ row.ruedo_valor }}
-                        {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
-                      </div>
-                      <div class="col-6 ab-field">
-                        <label class="ab-lab">Tipo</label>
-                        {{ row.ruedo_tipo }}
-                        {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
-                      </div>
-                    {% endif %}
-                  </div>
-                </article>
-              {% endfor %}
-            </div>
-          </section>
-
-          <section class="ab-person-section">
-            <div class="ab-person-section-head">
-              <div>
-                <strong>Persona 2</strong>
-                <span class="ab-small">{{ alquiler.edit_form.persona2_nombre.value|default:"Opcional" }}</span>
+              <div class="ab-field">
+                <label class="ab-lab" for="{{ section.name_field.id_for_label }}">Nombre persona {{ section.number }}</label>
+                {{ section.name_field }}
+                {% if section.name_field.errors %}<div class="ab-field-errors">{{ section.name_field.errors }}</div>{% endif %}
               </div>
-            </div>
 
-            <div class="ab-prenda-grid ab-prenda-grid-edit">
-              {% for row in alquiler.edit_form.persona2_prenda_rows %}
-                <article class="ab-prenda-card">
-                  <div class="ab-prenda-card-head">
-                    <strong>{{ row.label }}</strong>
-                    <span class="ab-pill">{{ row.prefix }}-</span>
-                  </div>
-                  <div class="ab-grid">
-                    <div class="col-4 ab-field">
-                      <label class="ab-lab">Codigo</label>
-                      {{ row.numero }}
+              <div class="ab-prenda-grid ab-prenda-grid-edit">
+                {% for row in section.prenda_rows %}
+                  <article class="ab-prenda-card">
+                    <div class="ab-prenda-card-head">
+                      <strong>{{ row.label }}</strong>
+                      <span class="ab-pill">{{ row.prefix }}-</span>
                     </div>
-                    <div class="col-8 ab-field">
-                      <label class="ab-lab">Seleccion</label>
-                      {{ row.select }}
-                      {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
+                    <div class="ab-grid">
+                      <div class="col-4 ab-field">
+                        <label class="ab-lab">Codigo</label>
+                        {{ row.numero }}
+                      </div>
+                      <div class="col-8 ab-field">
+                        <label class="ab-lab">Seleccion</label>
+                        {{ row.select }}
+                        {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
+                      </div>
+                      {% if row.ruedo_valor %}
+                        <div class="col-6 ab-field">
+                          <label class="ab-lab">Ruedo</label>
+                          {{ row.ruedo_valor }}
+                          {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-6 ab-field">
+                          <label class="ab-lab">Tipo</label>
+                          {{ row.ruedo_tipo }}
+                          {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
+                        </div>
+                      {% endif %}
                     </div>
-                    {% if row.ruedo_valor %}
-                      <div class="col-6 ab-field">
-                        <label class="ab-lab">Ruedo</label>
-                        {{ row.ruedo_valor }}
-                        {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
-                      </div>
-                      <div class="col-6 ab-field">
-                        <label class="ab-lab">Tipo</label>
-                        {{ row.ruedo_tipo }}
-                        {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
-                      </div>
-                    {% endif %}
-                  </div>
-                </article>
-              {% endfor %}
-            </div>
-          </section>
+                  </article>
+                {% endfor %}
+              </div>
+            </section>
+          {% endfor %}
         </div>
       </section>
 

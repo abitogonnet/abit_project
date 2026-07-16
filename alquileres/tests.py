@@ -915,6 +915,50 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(form.fields["p1_saco_numero"].widget.attrs["data-prefix"], "SA")
         self.assertEqual(form.fields["p1_saco"].widget.attrs["data-prefix"], "SA")
         self.assertEqual(form.fields["p2_cinturon_numero"].widget.attrs["data-prefix"], "CI")
+        self.assertEqual(form.fields["p6_camisa_numero"].widget.attrs["data-prefix"], "CA")
+
+    def test_crear_alquiler_permite_cargar_hasta_tercera_persona(self):
+        saco = Prenda.objects.create(
+            codigo="SA-301",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+        )
+        pantalon = Prenda.objects.create(
+            codigo="PA-302",
+            categoria=Prenda.C_PANTALON,
+            marca="Aires",
+            color="Azul",
+            talle="42",
+        )
+        camisa = Prenda.objects.create(
+            codigo="CA-303",
+            categoria=Prenda.C_CAMISA,
+            marca="Abito",
+            color="Blanco",
+            talle="L",
+        )
+
+        payload = self._base_payload()
+        payload.update({
+            "personas_visibles": "3",
+            "persona2_nombre": "Pedro",
+            "persona3_nombre": "Lucas",
+            "p1_saco": saco.codigo,
+            "p2_pantalon": pantalon.codigo,
+            "p3_camisa": camisa.codigo,
+            "p3_camisa_numero": "303",
+        })
+
+        response = self.client.post(reverse("alquileres:crear"), payload, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        alquiler = Alquiler.objects.get()
+        self.assertEqual(alquiler.persona3_nombre, "Lucas")
+        self.assertTrue(AlquilerItem.objects.filter(alquiler=alquiler, persona_num=1, prenda=saco).exists())
+        self.assertTrue(AlquilerItem.objects.filter(alquiler=alquiler, persona_num=2, prenda=pantalon).exists())
+        self.assertTrue(AlquilerItem.objects.filter(alquiler=alquiler, persona_num=3, prenda=camisa).exists())
 
     def test_mensaje_ruedos_agrupa_por_fecha_y_solo_copia_detalle(self):
         mensaje = _armar_mensaje_ruedos([
