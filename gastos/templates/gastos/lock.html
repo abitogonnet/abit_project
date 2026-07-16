@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ab-card" style="max-width: 520px; margin: 0 auto;">
-  <div class="ab-head">
-    <div>
-      <h1 class="ab-title">Gastos protegidos</h1>
-      <p class="ab-sub">Ingresa la contrasena para abrir gastos y division de dinero.</p>
+<div class="ab-lock-shell">
+  <section class="ab-section-card" style="max-width: 520px; margin: 0 auto;">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Acceso protegido</p>
+        <h1 class="ab-title">Gastos protegidos</h1>
+        <p class="ab-sub">Ingresa la contrasena para abrir gastos y division de dinero.</p>
+      </div>
     </div>
-  </div>
 
-  <div class="ab-body">
     <form method="post" class="ab-stack" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="access_action" value="unlock">
@@ -26,6 +27,6 @@
         <button class="ab-btn" type="submit">Entrar</button>
       </div>
     </form>
-  </div>
+  </section>
 </div>
 {% endblock %}

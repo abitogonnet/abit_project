@@ -1,260 +1,241 @@
-<form method="post" class="ab-edit-layout js-alq-edit-form">
+<form method="post" class="ab-edit-shell js-alq-edit-form">
   {% csrf_token %}
   <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
   {% for field_name, field_value in alquiler.edit_hidden_fields %}
     <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
   {% endfor %}
 
-  <div class="ab-edit-topbar">
+  <div class="ab-edit-banner">
+    <div>
+      <p class="ab-kicker">Edicion del alquiler</p>
+      <h3 class="ab-mini-title">#{{ alquiler.id }} · {{ alquiler.cliente_nombre }}</h3>
+      <p class="ab-sub">Corrige nombres, fechas, prendas y pago sin salir de la lista.</p>
+    </div>
     <div class="ab-actions">
       <button class="ab-btn" type="submit" name="accion" value="editar">Guardar cambios</button>
       <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ alquiler.id }}. Continuar?');">Eliminar</button>
     </div>
-    <div class="ab-edit-side-note">
-      Estado alquiler: {{ alquiler.get_estado_alquiler_display }}<br>
-      Estado saldo: {{ alquiler.get_estado_saldo_display }}
-    </div>
   </div>
 
-  <div class="ab-edit-main">
-    {% if alquiler.edit_form.non_field_errors %}
-      <div class="ab-msg err">{{ alquiler.edit_form.non_field_errors }}</div>
-    {% endif %}
+  {% if alquiler.edit_form.non_field_errors %}
+    <div class="ab-msg err">{{ alquiler.edit_form.non_field_errors }}</div>
+  {% endif %}
 
-    <div class="ab-edit-block">
-      <div class="ab-edit-block-title">Datos principales</div>
-      <div class="ab-edit-table-wrap">
-        <table class="ab-edit-table">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Telefono</th>
-              <th>Persona 1</th>
-              <th>Persona 2</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                {{ alquiler.edit_form.cliente_nombre }}
-                {% if alquiler.edit_form.cliente_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_nombre.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.cliente_telefono }}
-                {% if alquiler.edit_form.cliente_telefono.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_telefono.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.persona1_nombre }}
-                {% if alquiler.edit_form.persona1_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona1_nombre.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.persona2_nombre }}
-                {% if alquiler.edit_form.persona2_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona2_nombre.errors }}</div>{% endif %}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="ab-edit-block">
-      <div class="ab-edit-block-title">Fechas</div>
-      <div class="ab-edit-table-wrap">
-        <table class="ab-edit-table">
-          <thead>
-            <tr>
-              <th>Reserva</th>
-              <th>Retiro / entrega</th>
-              <th>Devolucion</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                {{ alquiler.edit_form.fecha_reserva }}
-                {% if alquiler.edit_form.fecha_reserva.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_reserva.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.fecha_entrega }}
-                {% if alquiler.edit_form.fecha_entrega.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_entrega.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.fecha_devolucion }}
-                {% if alquiler.edit_form.fecha_devolucion.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_devolucion.errors }}</div>{% endif %}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="ab-edit-block">
-      <div class="ab-edit-block-title">Prendas y ruedos</div>
-      <div class="ab-form-note ab-edit-form-note">
-        Puedes cambiar cada prenda escribiendo el numero del codigo y luego eligiendo la opcion final. Los ruedos se guardan junto con el alquiler.
-      </div>
-
-      <div class="ab-edit-person-grid">
-        <section class="ab-edit-person-card">
-          <div class="ab-row" style="justify-content: space-between;">
-            <strong>Persona 1</strong>
-            <span class="ab-small">{{ alquiler.edit_form.persona1_nombre.value|default:"Sin nombre" }}</span>
+  <div class="ab-edit-grid-modern">
+    <div class="ab-stack">
+      <section class="ab-section-card">
+        <div class="ab-section-head">
+          <div>
+            <p class="ab-kicker">Datos principales</p>
+            <h4 class="ab-mini-title">Cliente y personas</h4>
           </div>
-          <div class="ab-edit-table-wrap">
-            <table class="ab-edit-table ab-edit-garment-table">
-              <thead>
-                <tr>
-                  <th>Prenda</th>
-                  <th>Codigo</th>
-                  <th>Seleccion</th>
-                  <th>Ruedo</th>
-                  <th>Tipo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in alquiler.edit_form.persona1_prenda_rows %}
-                  <tr>
-                    <td><strong>{{ row.label }}</strong></td>
-                    <td>
-                      <div class="ab-edit-code-cell">
-                        <span class="ab-pill ab-edit-prefix">{{ row.prefix }}-</span>
-                        {{ row.numero }}
-                      </div>
-                    </td>
-                    <td>
+        </div>
+        <div class="ab-grid">
+          <div class="col-6 ab-field">
+            <label class="ab-lab">Cliente</label>
+            {{ alquiler.edit_form.cliente_nombre }}
+            {% if alquiler.edit_form.cliente_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_nombre.errors }}</div>{% endif %}
+          </div>
+          <div class="col-6 ab-field">
+            <label class="ab-lab">Telefono</label>
+            {{ alquiler.edit_form.cliente_telefono }}
+            {% if alquiler.edit_form.cliente_telefono.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_telefono.errors }}</div>{% endif %}
+          </div>
+          <div class="col-6 ab-field">
+            <label class="ab-lab">Persona 1</label>
+            {{ alquiler.edit_form.persona1_nombre }}
+            {% if alquiler.edit_form.persona1_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona1_nombre.errors }}</div>{% endif %}
+          </div>
+          <div class="col-6 ab-field">
+            <label class="ab-lab">Persona 2</label>
+            {{ alquiler.edit_form.persona2_nombre }}
+            {% if alquiler.edit_form.persona2_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.persona2_nombre.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </section>
+
+      <section class="ab-section-card">
+        <div class="ab-section-head">
+          <div>
+            <p class="ab-kicker">Fechas</p>
+            <h4 class="ab-mini-title">Reserva, entrega y devolucion</h4>
+          </div>
+        </div>
+        <div class="ab-grid">
+          <div class="col-4 ab-field">
+            <label class="ab-lab">Reserva</label>
+            {{ alquiler.edit_form.fecha_reserva }}
+            {% if alquiler.edit_form.fecha_reserva.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_reserva.errors }}</div>{% endif %}
+          </div>
+          <div class="col-4 ab-field">
+            <label class="ab-lab">Retiro / entrega</label>
+            {{ alquiler.edit_form.fecha_entrega }}
+            {% if alquiler.edit_form.fecha_entrega.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_entrega.errors }}</div>{% endif %}
+          </div>
+          <div class="col-4 ab-field">
+            <label class="ab-lab">Devolucion</label>
+            {{ alquiler.edit_form.fecha_devolucion }}
+            {% if alquiler.edit_form.fecha_devolucion.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_devolucion.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </section>
+
+      <section class="ab-section-card">
+        <div class="ab-section-head">
+          <div>
+            <p class="ab-kicker">Prendas</p>
+            <h4 class="ab-mini-title">Seleccion y ruedos</h4>
+            <p class="ab-sub">Puedes cambiar el numero del codigo y luego elegir la opcion final del desplegable.</p>
+          </div>
+        </div>
+
+        <div class="ab-person-grid-modern">
+          <section class="ab-person-section">
+            <div class="ab-person-section-head">
+              <div>
+                <strong>Persona 1</strong>
+                <p class="ab-sub">{{ alquiler.edit_form.persona1_nombre.value|default:"Sin nombre" }}</p>
+              </div>
+            </div>
+
+            <div class="ab-prenda-grid ab-prenda-grid-edit">
+              {% for row in alquiler.edit_form.persona1_prenda_rows %}
+                <article class="ab-prenda-card">
+                  <div class="ab-prenda-card-head">
+                    <strong>{{ row.label }}</strong>
+                    <span class="ab-pill">{{ row.prefix }}-</span>
+                  </div>
+                  <div class="ab-grid">
+                    <div class="col-4 ab-field">
+                      <label class="ab-lab">Codigo</label>
+                      {{ row.numero }}
+                    </div>
+                    <div class="col-8 ab-field">
+                      <label class="ab-lab">Seleccion</label>
                       {{ row.select }}
                       {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
-                    </td>
-                    <td>
-                      {% if row.ruedo_valor %}
+                    </div>
+                    {% if row.ruedo_valor %}
+                      <div class="col-6 ab-field">
+                        <label class="ab-lab">Ruedo</label>
                         {{ row.ruedo_valor }}
                         {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
-                      {% else %}
-                        <span class="ab-muted">-</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      {% if row.ruedo_tipo %}
+                      </div>
+                      <div class="col-6 ab-field">
+                        <label class="ab-lab">Tipo</label>
                         {{ row.ruedo_tipo }}
                         {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
-                      {% else %}
-                        <span class="ab-muted">-</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="ab-edit-person-card">
-          <div class="ab-row" style="justify-content: space-between;">
-            <strong>Persona 2</strong>
-            <span class="ab-small">{{ alquiler.edit_form.persona2_nombre.value|default:"Opcional" }}</span>
-          </div>
-          <div class="ab-edit-table-wrap">
-            <table class="ab-edit-table ab-edit-garment-table">
-              <thead>
-                <tr>
-                  <th>Prenda</th>
-                  <th>Codigo</th>
-                  <th>Seleccion</th>
-                  <th>Ruedo</th>
-                  <th>Tipo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in alquiler.edit_form.persona2_prenda_rows %}
-                  <tr>
-                    <td><strong>{{ row.label }}</strong></td>
-                    <td>
-                      <div class="ab-edit-code-cell">
-                        <span class="ab-pill ab-edit-prefix">{{ row.prefix }}-</span>
-                        {{ row.numero }}
                       </div>
-                    </td>
-                    <td>
+                    {% endif %}
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="ab-person-section">
+            <div class="ab-person-section-head">
+              <div>
+                <strong>Persona 2</strong>
+                <p class="ab-sub">{{ alquiler.edit_form.persona2_nombre.value|default:"Opcional" }}</p>
+              </div>
+            </div>
+
+            <div class="ab-prenda-grid ab-prenda-grid-edit">
+              {% for row in alquiler.edit_form.persona2_prenda_rows %}
+                <article class="ab-prenda-card">
+                  <div class="ab-prenda-card-head">
+                    <strong>{{ row.label }}</strong>
+                    <span class="ab-pill">{{ row.prefix }}-</span>
+                  </div>
+                  <div class="ab-grid">
+                    <div class="col-4 ab-field">
+                      <label class="ab-lab">Codigo</label>
+                      {{ row.numero }}
+                    </div>
+                    <div class="col-8 ab-field">
+                      <label class="ab-lab">Seleccion</label>
                       {{ row.select }}
                       {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
-                    </td>
-                    <td>
-                      {% if row.ruedo_valor %}
+                    </div>
+                    {% if row.ruedo_valor %}
+                      <div class="col-6 ab-field">
+                        <label class="ab-lab">Ruedo</label>
                         {{ row.ruedo_valor }}
                         {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
-                      {% else %}
-                        <span class="ab-muted">-</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      {% if row.ruedo_tipo %}
+                      </div>
+                      <div class="col-6 ab-field">
+                        <label class="ab-lab">Tipo</label>
                         {{ row.ruedo_tipo }}
                         {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
-                      {% else %}
-                        <span class="ab-muted">-</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+                      </div>
+                    {% endif %}
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="ab-section-card">
+        <div class="ab-section-head">
+          <div>
+            <p class="ab-kicker">Pago</p>
+            <h4 class="ab-mini-title">Totales y sena</h4>
           </div>
-        </section>
-      </div>
+        </div>
+        <div class="ab-grid">
+          <div class="col-4 ab-field">
+            <label class="ab-lab">Total bruto</label>
+            {{ alquiler.edit_form.total_bruto }}
+            {% if alquiler.edit_form.total_bruto.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.total_bruto.errors }}</div>{% endif %}
+          </div>
+          <div class="col-4 ab-field">
+            <label class="ab-lab">Descuento %</label>
+            {{ alquiler.edit_form.descuento_pct }}
+            {% if alquiler.edit_form.descuento_pct.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.descuento_pct.errors }}</div>{% endif %}
+          </div>
+          <div class="col-4 ab-field">
+            <label class="ab-lab">Sena</label>
+            {{ alquiler.edit_form.sena }}
+            {% if alquiler.edit_form.sena.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.sena.errors }}</div>{% endif %}
+          </div>
+          <div class="col-6 ab-field">
+            <label class="ab-lab">Metodo sena</label>
+            {{ alquiler.edit_form.metodo_sena }}
+            {% if alquiler.edit_form.metodo_sena.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.metodo_sena.errors }}</div>{% endif %}
+          </div>
+          <div class="col-3 ab-field">
+            <label class="ab-lab">Total final</label>
+            <input class="ab-inp js-edit-total-final" type="text" value="{{ alquiler.total_final }}" readonly>
+          </div>
+          <div class="col-3 ab-field">
+            <label class="ab-lab">Saldo restante</label>
+            <input class="ab-inp js-edit-saldo" type="text" value="{{ alquiler.saldo }}" readonly>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <div class="ab-edit-block">
-      <div class="ab-edit-block-title">Pago</div>
-      <div class="ab-edit-table-wrap">
-        <table class="ab-edit-table">
-          <thead>
-            <tr>
-              <th>Total bruto</th>
-              <th>Descuento %</th>
-              <th>Sena</th>
-              <th>Metodo sena</th>
-              <th>Total final</th>
-              <th>Saldo restante</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                {{ alquiler.edit_form.total_bruto }}
-                {% if alquiler.edit_form.total_bruto.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.total_bruto.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.descuento_pct }}
-                {% if alquiler.edit_form.descuento_pct.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.descuento_pct.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.sena }}
-                {% if alquiler.edit_form.sena.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.sena.errors }}</div>{% endif %}
-              </td>
-              <td>
-                {{ alquiler.edit_form.metodo_sena }}
-                {% if alquiler.edit_form.metodo_sena.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.metodo_sena.errors }}</div>{% endif %}
-              </td>
-              <td>
-                <input class="ab-inp js-edit-total-final" type="text" value="{{ alquiler.total_final }}" readonly>
-              </td>
-              <td>
-                <input class="ab-inp js-edit-saldo" type="text" value="{{ alquiler.saldo }}" readonly>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <aside class="ab-edit-sidebar">
+      <section class="ab-summary-panel">
+        <span class="ab-spec-label">Resumen actual</span>
+        <div class="ab-summary-list">
+          <div>
+            <span>Estado alquiler</span>
+            <strong>{{ alquiler.get_estado_alquiler_display }}</strong>
+          </div>
+          <div>
+            <span>Estado saldo</span>
+            <strong>{{ alquiler.get_estado_saldo_display }}</strong>
+          </div>
+          <div>
+            <span>Personas</span>
+            <strong>{{ alquiler.personas_resumen|default:"Sin resumen" }}</strong>
+          </div>
+        </div>
+      </section>
+    </aside>
   </div>
-
-  <aside class="ab-edit-side">
-    <div class="ab-edit-side-card">
-      <span class="ab-spec-label">Resumen</span>
-      <div class="ab-edit-side-note">
-        Estado alquiler: {{ alquiler.get_estado_alquiler_display }}<br>
-        Estado saldo: {{ alquiler.get_estado_saldo_display }}
-      </div>
-    </div>
-  </aside>
 </form>

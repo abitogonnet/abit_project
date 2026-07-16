@@ -2,51 +2,61 @@
 {% block content %}
 {{ prenda_lookups|json_script:"prenda-lookups" }}
 
-<section class="ab-card">
-  <div class="ab-head">
-    <div>
-      <p class="ab-kicker">Stock</p>
-      <h1 class="ab-title">{{ titulo }}</h1>
-      <p class="ab-sub">{{ subtitulo }}</p>
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Inventario</p>
+    <h1 class="ab-title">{{ titulo }}</h1>
+    <p class="ab-sub">{{ subtitulo }}</p>
+    <div class="ab-chip-row">
+      <span class="ab-chip">Codigo guiado</span>
+      <span class="ab-chip">Campos consistentes</span>
+      <span class="ab-chip">Carga rapida</span>
+    </div>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Codigo visible</span>
+    <div class="ab-summary-list">
+      <div>
+        <span>Preview</span>
+        <strong>
+          {% if codigo_preview %}
+            {{ codigo_preview }}
+          {% elif prenda %}
+            {{ prenda.codigo }}
+          {% else %}
+            Se genera automaticamente
+          {% endif %}
+        </strong>
+      </div>
+      <div>
+        <span>Regla</span>
+        <strong>Sacos y pantalones piden origen. El color restringido mantiene el stock ordenado.</strong>
+      </div>
     </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url cancel_url %}">Volver</a>
-      <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
+      <a class="ab-btn" href="{% url 'prendas:stock' %}">Ver stock</a>
     </div>
-  </div>
+  </aside>
+</section>
 
-  <div class="ab-body">
-    <div class="ab-card" style="border-radius: 22px; margin-bottom: 18px;">
-      <div class="ab-body">
-        <div class="ab-row" style="justify-content: space-between;">
-          <div>
-            <div class="ab-small">Codigo</div>
-            <div class="ab-pill" style="margin-top: 6px;">
-              {% if codigo_preview %}
-                {{ codigo_preview }}
-              {% elif prenda %}
-                {{ prenda.codigo }}
-              {% else %}
-                Se genera automaticamente
-              {% endif %}
-            </div>
-          </div>
-          <p class="ab-note" style="max-width: 440px;">
-            El formulario se acomoda segun la categoria y la marca. En sacos y pantalones debes indicar si la
-            prenda es nacional o importada, y el color se elige desde un desplegable obligatorio para que quede unificado.
-          </p>
+<div class="ab-page-stack">
+  <form method="post" id="prendaForm" class="ab-split-shell">
+    {% csrf_token %}
+
+    <section class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Formulario</p>
+          <h2 class="ab-mini-title">Datos de la prenda</h2>
         </div>
       </div>
-    </div>
-
-    <form method="post" id="prendaForm" class="ab-stack">
-      {% csrf_token %}
 
       {% if form.non_field_errors %}
         <div class="ab-msg err">{{ form.non_field_errors }}</div>
       {% endif %}
 
-      <div class="ab-actions">
+      <div class="ab-actions" style="margin-bottom: 18px;">
         {% if show_generate %}
           <button class="ab-btn2" type="submit" name="accion" value="generar">Ver codigo</button>
           <button class="ab-btn" type="submit" name="accion" value="confirmar">{{ accion_label }}</button>
@@ -61,13 +71,11 @@
           {{ form.categoria }}
           {% if form.categoria.errors %}<div class="ab-field-errors">{{ form.categoria.errors }}</div>{% endif %}
         </div>
-
         <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.marca.id_for_label }}">Marca</label>
           {{ form.marca }}
           {% if form.marca.errors %}<div class="ab-field-errors">{{ form.marca.errors }}</div>{% endif %}
         </div>
-
         <div class="col-4 ab-field" id="origenField">
           <label class="ab-lab" for="{{ form.origen.id_for_label }}">Origen</label>
           {{ form.origen }}
@@ -86,13 +94,11 @@
           </div>
           {% if form.color.errors %}<div class="ab-field-errors">{{ form.color.errors }}</div>{% endif %}
         </div>
-
         <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
           {{ form.talle }}
           {% if form.talle.errors %}<div class="ab-field-errors">{{ form.talle.errors }}</div>{% endif %}
         </div>
-
         <div class="col-12 ab-field">
           <label class="ab-lab" for="{{ form.notas.id_for_label }}">Notas</label>
           {{ form.notas }}
@@ -101,12 +107,12 @@
       </div>
 
       {% if codigo_preview and show_generate %}
-        <div class="ab-msg ok">
+        <div class="ab-msg ok" style="margin-top: 16px;">
           Codigo sugerido: <strong>{{ codigo_preview }}</strong>. Si esta bien, presiona <strong>Guardar prenda</strong>.
         </div>
       {% endif %}
 
-      <div class="ab-actions">
+      <div class="ab-actions" style="margin-top: 18px;">
         {% if show_generate %}
           <button class="ab-btn2" type="submit" name="accion" value="generar">Ver codigo</button>
           <button class="ab-btn" type="submit" name="accion" value="confirmar">{{ accion_label }}</button>
@@ -114,9 +120,20 @@
           <button class="ab-btn" type="submit">{{ accion_label }}</button>
         {% endif %}
       </div>
-    </form>
-  </div>
-</section>
+    </section>
+
+    <aside class="ab-create-aside">
+      <section class="ab-summary-panel">
+        <span class="ab-spec-label">Buenas practicas</span>
+        <ul class="ab-checklist">
+          <li>Usa el desplegable cuando el color esta restringido para no duplicar variantes.</li>
+          <li>En sacos y pantalones completa origen para que reportes y stock queden consistentes.</li>
+          <li>Si dudas del siguiente codigo, presiona primero "Ver codigo".</li>
+        </ul>
+      </section>
+    </aside>
+  </form>
+</div>
 
 <script>
   (function () {

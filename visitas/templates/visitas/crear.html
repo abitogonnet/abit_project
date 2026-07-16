@@ -1,59 +1,84 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ab-card">
-  <div class="ab-head">
-    <div>
-      <h1 class="ab-title">Crear visita</h1>
-      <p class="ab-sub">Lunes a viernes (17:00–20:00). Más adelante se valida con Calendar.</p>
-    </div>
-    <div class="ab-row">
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Agenda comercial</p>
+    <h1 class="ab-title">Crear visita</h1>
+    <p class="ab-sub">La carga queda ordenada por cliente, evento y horario para que cualquier persona del equipo pueda agendar sin dudas.</p>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Antes de guardar</span>
+    <ul class="ab-checklist">
+      <li>Confirma el telefono para poder retomar la conversacion despues.</li>
+      <li>Usa la fecha del evento para dar contexto comercial a la visita.</li>
+      <li>El horario de inicio es la base para ordenar toda la agenda.</li>
+    </ul>
+    <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'visitas:listar' %}">Volver</a>
     </div>
-  </div>
+  </aside>
+</section>
 
-  <div class="ab-body">
-    <form method="post">
-      {% csrf_token %}
+<div class="ab-page-stack">
+  <form method="post" class="ab-split-shell">
+    {% csrf_token %}
+
+    <section class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Formulario</p>
+          <h2 class="ab-mini-title">Datos de la visita</h2>
+        </div>
+      </div>
 
       <div class="ab-grid">
-        <div class="col-6">
-          <label class="ab-lab">Teléfono *</label>
+        <div class="col-6 ab-field">
+          <label class="ab-lab">Telefono *</label>
           {{ form.telefono }}
         </div>
-        <div class="col-6">
+        <div class="col-6 ab-field">
           <label class="ab-lab">Nombre</label>
           {{ form.nombre }}
         </div>
-
-        <div class="col-6">
+        <div class="col-6 ab-field">
           <label class="ab-lab">Fecha del evento *</label>
           {{ form.fecha_evento }}
         </div>
-        <div class="col-6">
+        <div class="col-6 ab-field">
           <label class="ab-lab">Inicio visita *</label>
           {{ form.inicio }}
         </div>
-
-        <div class="col-6">
-          <label class="ab-lab">Duración *</label>
+        <div class="col-6 ab-field">
+          <label class="ab-lab">Duracion *</label>
           {{ form.duracion_min }}
         </div>
-        <div class="col-6">
+        <div class="col-6 ab-field">
           <label class="ab-lab">Personas *</label>
           {{ form.personas }}
         </div>
       </div>
 
       {% if form.errors %}
-        <div class="ab-msg err" style="margin-top:12px;">
-          Revisá los campos marcados.
-        </div>
+        <div class="ab-msg err" style="margin-top: 14px;">Revisa los campos marcados.</div>
       {% endif %}
 
-      <div class="ab-row" style="margin-top:14px;">
+      <div class="ab-actions" style="margin-top: 18px;">
         <button class="ab-btn" type="submit">Guardar</button>
+        <a class="ab-btn2" href="{% url 'visitas:listar' %}">Cancelar</a>
       </div>
-    </form>
-  </div>
+    </section>
+
+    <aside class="ab-create-aside">
+      <section class="ab-summary-panel">
+        <span class="ab-spec-label">Objetivo</span>
+        <div class="ab-summary-list">
+          <div>
+            <span>Agenda clara</span>
+            <strong>Que el equipo vea rapido quien viene, cuando y para que evento.</strong>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </form>
 </div>
 {% endblock %}

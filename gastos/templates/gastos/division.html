@@ -1,35 +1,47 @@
 {% extends "base.html" %}
 {% load abito_tags %}
 {% block content %}
-<div class="ab-card">
-  <div class="ab-head">
-    <div>
-      <h1 class="ab-title">Division de bienes</h1>
-      <p class="ab-sub">Registra cuando se saca dinero de la cuenta y como se reparte en el mes que estas mirando.</p>
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Gestion</p>
+    <h1 class="ab-title">Division de bienes</h1>
+    <p class="ab-sub">Registra cuando se saca dinero de la cuenta y como se reparte dentro del mes que estas mirando.</p>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Marco financiero</span>
+    <div class="ab-summary-list">
+      <div>
+        <span>Mes visible</span>
+        <strong>{{ month_label }}</strong>
+      </div>
+      <div>
+        <span>Saldo actual en cuenta</span>
+        <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
+      </div>
     </div>
-    <div class="ab-row">
+    <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Volver</a>
     </div>
-  </div>
+  </aside>
+</section>
 
-  <div class="ab-body ab-stack">
-    <form method="get" class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body">
-        <div class="ab-grid">
-          <div class="col-4 ab-field">
-            <label class="ab-lab" for="id_ym">Mes visible</label>
-            <input class="ab-inp" type="month" name="ym" id="id_ym" value="{{ ym_value }}">
-          </div>
-          <div class="col-8 ab-field" style="justify-content: flex-end;">
-            <label class="ab-lab">&nbsp;</label>
-            <div class="ab-actions">
-              <button class="ab-btn" type="submit">Ver mes</button>
-            </div>
-          </div>
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <form method="get" class="ab-inline-form-grid">
+      <div class="ab-field">
+        <label class="ab-lab" for="id_ym">Mes visible</label>
+        <input class="ab-inp" type="month" name="ym" id="id_ym" value="{{ ym_value }}">
+      </div>
+      <div class="ab-field">
+        <label class="ab-lab">&nbsp;</label>
+        <div class="ab-actions">
+          <button class="ab-btn" type="submit">Ver mes</button>
         </div>
       </div>
     </form>
+  </section>
 
+  <section class="ab-section-card">
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
         <span class="ab-small">Saldo actual en cuenta</span>
@@ -56,18 +68,22 @@
         <strong class="ab-num">${{ total_dividido_periodo|miles0 }}</strong>
       </div>
     </div>
+  </section>
 
-    <div class="ab-form-note">
-      Estas cargando una salida dentro de <strong>{{ month_label }}</strong>. El saldo actual siempre toma toda la historia real de la cuenta.
-    </div>
+  <div class="ab-form-note">
+    Estas cargando una salida dentro de <strong>{{ month_label }}</strong>. El saldo actual siempre toma toda la historia real de la cuenta.
+  </div>
 
-    <form method="post" autocomplete="off" class="ab-stack">
-      {% csrf_token %}
-      <input type="hidden" name="ym" value="{{ ym_value }}">
+  <form method="post" autocomplete="off" class="ab-split-shell">
+    {% csrf_token %}
+    <input type="hidden" name="ym" value="{{ ym_value }}">
 
-      <div class="ab-actions">
-        <button class="ab-btn" type="submit">Guardar division</button>
-        <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
+    <section class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Formulario</p>
+          <h2 class="ab-mini-title">Reparto del dinero</h2>
+        </div>
       </div>
 
       <div class="ab-grid">
@@ -99,14 +115,24 @@
       </div>
 
       {% if form.non_field_errors %}
-        <div class="ab-msg err">{{ form.non_field_errors }}</div>
+        <div class="ab-msg err" style="margin-top: 14px;">{{ form.non_field_errors }}</div>
       {% endif %}
 
-      <div class="ab-actions">
+      <div class="ab-actions" style="margin-top: 18px;">
         <button class="ab-btn" type="submit">Guardar division</button>
         <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
       </div>
-    </form>
-  </div>
+    </section>
+
+    <aside class="ab-create-aside">
+      <section class="ab-summary-panel">
+        <span class="ab-spec-label">Recordatorio</span>
+        <ul class="ab-checklist">
+          <li>El total retirado debe quedar justificado por la suma de ambos repartos.</li>
+          <li>Usa notas para registrar el motivo o contexto de esa salida.</li>
+        </ul>
+      </section>
+    </aside>
+  </form>
 </div>
 {% endblock %}

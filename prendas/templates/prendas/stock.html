@@ -1,19 +1,50 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="ab-card">
-  <div class="ab-head">
-    <div>
-      <p class="ab-kicker">Stock</p>
-      <h1 class="ab-title">Ver stock</h1>
-      <p class="ab-sub">Actualiza estado, corrige datos desde modificar y filtra rapido por categoria o estado.</p>
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Inventario</p>
+    <h1 class="ab-title">Stock vivo</h1>
+    <p class="ab-sub">
+      Esta pantalla separa tres tareas concretas: completar origen, filtrar rapido y corregir estado o datos
+      de cada prenda sin perder contexto.
+    </p>
+    <div class="ab-chip-row">
+      <span class="ab-chip">{{ prendas|length }} prendas</span>
+      <span class="ab-chip">{{ prendas_sin_origen|length }} sin origen</span>
+      <span class="ab-chip">Edicion rapida</span>
+    </div>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Accesos utiles</span>
+    <div class="ab-summary-list">
+      <div>
+        <span>Carga</span>
+        <strong>Crear una prenda nueva con codigo guiado</strong>
+      </div>
+      <div>
+        <span>Busqueda</span>
+        <strong>Encontrar una prenda puntual por codigo o atributos</strong>
+      </div>
+      <div>
+        <span>Control</span>
+        <strong>Ver si una prenda ya esta comprometida en un alquiler</strong>
+      </div>
     </div>
     <div class="ab-actions">
       <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
       <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
     </div>
-  </div>
+  </aside>
+</section>
 
-  <div class="ab-body ab-stack">
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Resumen</p>
+        <h2 class="ab-mini-title">Lectura rapida del inventario</h2>
+      </div>
+    </div>
     <div class="ab-summary-grid">
       {% for item in resumen %}
         <div class="ab-summary-card">
@@ -22,243 +53,203 @@
         </div>
       {% endfor %}
     </div>
+  </section>
 
-    <div class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body ab-stack">
-        <div class="ab-row" style="justify-content: space-between; gap: 14px;">
-          <div>
-            <h2 class="ab-mini-title">Carga rapida de origen</h2>
-            <p class="ab-sub" style="margin-top: 6px;">
-              Aqui aparecen solo sacos y pantalones sin origen para que completes varios juntos y los guardes de una sola vez.
-            </p>
-          </div>
-          <span class="ab-pill" id="pendingOriginCount">{{ prendas_sin_origen|length }} pendiente{{ prendas_sin_origen|length|pluralize }}</span>
-        </div>
-
-        {% if prendas_sin_origen %}
-          <form method="post" class="ab-stack">
-            {% csrf_token %}
-            <input type="hidden" name="accion" value="guardar_origenes">
-
-            <div class="ab-grid">
-              <div class="col-4 ab-field">
-                <label class="ab-lab" for="pendingOriginCategory">Categoria</label>
-                <select class="ab-sel" id="pendingOriginCategory">
-                  <option value="">Todas</option>
-                  <option value="SACO">Sacos</option>
-                  <option value="PANTALON">Pantalones</option>
-                </select>
-              </div>
-
-              <div class="col-8 ab-field" style="justify-content: flex-end;">
-                <label class="ab-lab">&nbsp;</label>
-                <div class="ab-actions">
-                  <button class="ab-btn2" type="button" data-fill-origin="NACIONAL">Marcar visibles como Nacional</button>
-                  <button class="ab-btn2" type="button" data-fill-origin="IMPORTADO">Marcar visibles como Importado</button>
-                  <button class="ab-btn2" type="button" id="pendingOriginClear">Limpiar visibles</button>
-                  <button class="ab-btn" type="submit">Guardar origenes</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="ab-table-wrap">
-              <table class="ab-table" id="pendingOriginTable">
-                <thead>
-                  <tr>
-                    <th>Codigo</th>
-                    <th>Categoria</th>
-                    <th>Marca</th>
-                    <th>Color</th>
-                    <th>Talle</th>
-                    <th>Origen</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for p in prendas_sin_origen %}
-                    <tr data-origin-category="{{ p.categoria }}">
-                      <td><span class="ab-pill">{{ p.codigo }}</span></td>
-                      <td>{{ p.get_categoria_display }}</td>
-                      <td>{{ p.marca|default:"-" }}</td>
-                      <td>{{ p.color|default:"-" }}</td>
-                      <td>{{ p.talle|default:"-" }}</td>
-                      <td>
-                        <select class="ab-sel" name="origen_{{ p.id }}">
-                          <option value="">Elegir origen</option>
-                          {% for value, label in origenes %}
-                            <option value="{{ value }}">{{ label }}</option>
-                          {% endfor %}
-                        </select>
-                      </td>
-                      <td>
-                        <a class="ab-btn2" href="{% url 'prendas:editar' p.id %}">Modificar</a>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </form>
-        {% else %}
-          <div class="ab-msg ok">No hay sacos o pantalones pendientes de origen.</div>
-        {% endif %}
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Backlog</p>
+        <h2 class="ab-mini-title">Carga rapida de origen</h2>
+        <p class="ab-sub">Solo aparecen sacos y pantalones pendientes para completar varios de una sola vez.</p>
       </div>
+      <span class="ab-pill" id="pendingOriginCount">{{ prendas_sin_origen|length }} pendiente{{ prendas_sin_origen|length|pluralize }}</span>
     </div>
 
-    <div class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body">
-        <div class="ab-grid">
-          <div class="col-4 ab-field">
-            <label class="ab-lab" for="stockCategory">Categoria</label>
-            <select class="ab-sel" id="stockCategory">
+    {% if prendas_sin_origen %}
+      <form method="post" class="ab-stack">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="guardar_origenes">
+
+        <div class="ab-inline-form-grid">
+          <div class="ab-field">
+            <label class="ab-lab" for="pendingOriginCategory">Categoria</label>
+            <select class="ab-sel" id="pendingOriginCategory">
               <option value="">Todas</option>
-              {% for value, label in categorias %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
+              <option value="SACO">Sacos</option>
+              <option value="PANTALON">Pantalones</option>
             </select>
           </div>
-
-          <div class="col-4 ab-field">
-            <label class="ab-lab" for="stockState">Estado</label>
-            <select class="ab-sel" id="stockState">
-              <option value="">Todos</option>
-              {% for value, label in estados %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-4 ab-field" style="justify-content: flex-end;">
+          <div class="ab-field">
             <label class="ab-lab">&nbsp;</label>
-            <button class="ab-btn2" type="button" id="stockClear">Limpiar filtros</button>
+            <div class="ab-actions">
+              <button class="ab-btn2" type="button" data-fill-origin="NACIONAL">Visibles como Nacional</button>
+              <button class="ab-btn2" type="button" data-fill-origin="IMPORTADO">Visibles como Importado</button>
+              <button class="ab-btn2" type="button" id="pendingOriginClear">Limpiar visibles</button>
+              <button class="ab-btn" type="submit">Guardar origenes</button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body">
-        <div class="ab-row" style="justify-content: space-between; margin-bottom: 14px;">
-          <h2 class="ab-mini-title">Listado</h2>
-          <span class="ab-pill" id="stockCount">0 prendas</span>
-        </div>
-
-        <div class="ab-table-wrap ab-desktop-only">
-          <table class="ab-table" id="stockTable">
-            <thead>
-              <tr>
-                <th>Codigo</th>
-                <th>Categoria</th>
-                <th>Marca</th>
-                <th>Color</th>
-                <th>Talle</th>
-                <th>Origen</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in prendas %}
-                <tr
-                  data-category="{{ p.categoria }}"
-                  data-state="{{ p.estado }}"
-                >
-                  <td><span class="ab-pill">{{ p.codigo }}</span></td>
-                  <td>{{ p.get_categoria_display }}</td>
-                  <td>{{ p.marca|default:"-" }}</td>
-                  <td>{{ p.color|default:"-" }}</td>
-                  <td>{{ p.talle|default:"-" }}</td>
-                  <td>{{ p.get_origen_display|default:"-" }}</td>
-                  <td>
-                    <form method="post" class="ab-inline-form" id="stock-form-{{ p.id }}">
-                      {% csrf_token %}
-                      <input type="hidden" name="prenda_id" value="{{ p.id }}">
-                      <select class="ab-sel" name="estado">
-                        {% for value, label in estados %}
-                          <option value="{{ value }}" {% if p.estado == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                      </select>
-                    </form>
-                  </td>
-                  <td>
-                    <div class="ab-stack" style="gap: 10px;">
-                      <div class="ab-muted">Creada {{ p.creado_en|date:"d/m/Y" }}</div>
-                      <div class="ab-actions-column">
-                        <button class="ab-btn2" type="submit" name="accion" value="actualizar" form="stock-form-{{ p.id }}">Guardar estado</button>
-                        <a class="ab-btn" href="{% url 'prendas:editar' p.id %}">Modificar</a>
-                        <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" form="stock-form-{{ p.id }}" onclick="return confirm('Se va a eliminar la prenda {{ p.codigo }}. Continuar?');">Eliminar</button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="8" class="ab-muted">No hay prendas cargadas.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="ab-mobile-list" id="stockCards">
-          {% for p in prendas %}
-            <article
-              class="ab-list-card"
-              data-category="{{ p.categoria }}"
-              data-state="{{ p.estado }}"
-            >
+        <div class="ab-origin-grid" id="pendingOriginGrid">
+          {% for p in prendas_sin_origen %}
+            <article class="ab-origin-card" data-origin-category="{{ p.categoria }}">
               <div class="ab-row" style="justify-content: space-between;">
-                <h3>{{ p.codigo }}</h3>
-                <span class="ab-badge {% if p.estado == 'DISPONIBLE' %}ok{% elif p.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
-                  {{ p.get_estado_display }}
-                </span>
+                <strong>{{ p.codigo }}</strong>
+                <span class="ab-pill">{{ p.get_categoria_display }}</span>
               </div>
-
-              <div class="ab-meta" style="margin-top: 10px;">
-                <div><strong>{{ p.get_categoria_display }}</strong> · {{ p.marca|default:"-" }}</div>
+              <div class="ab-meta">
+                <div>Marca: {{ p.marca|default:"-" }}</div>
                 <div>Color: {{ p.color|default:"-" }}</div>
                 <div>Talle: {{ p.talle|default:"-" }}</div>
-                <div>Origen: {{ p.get_origen_display|default:"-" }}</div>
               </div>
-
-              <form method="post" class="ab-stack" style="margin-top: 14px;">
-                {% csrf_token %}
-                <input type="hidden" name="prenda_id" value="{{ p.id }}">
-                <select class="ab-sel" name="estado">
-                  {% for value, label in estados %}
-                    <option value="{{ value }}" {% if p.estado == value %}selected{% endif %}>{{ label }}</option>
+              <div class="ab-field" style="margin-top: 10px;">
+                <label class="ab-lab">Origen</label>
+                <select class="ab-sel" name="origen_{{ p.id }}">
+                  <option value="">Elegir origen</option>
+                  {% for value, label in origenes %}
+                    <option value="{{ value }}">{{ label }}</option>
                   {% endfor %}
                 </select>
-                <div class="ab-actions">
-                  <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar estado</button>
-                  <a class="ab-btn" href="{% url 'prendas:editar' p.id %}">Modificar</a>
-                  <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar la prenda {{ p.codigo }}. Continuar?');">Eliminar</button>
-                </div>
-              </form>
+              </div>
+              <div class="ab-actions" style="margin-top: 12px;">
+                <a class="ab-btn2" href="{% url 'prendas:editar' p.id %}">Modificar</a>
+              </div>
             </article>
-          {% empty %}
-            <div class="ab-empty">No hay prendas cargadas.</div>
           {% endfor %}
+        </div>
+      </form>
+    {% else %}
+      <div class="ab-msg ok">No hay sacos o pantalones pendientes de origen.</div>
+    {% endif %}
+  </section>
+
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Filtro</p>
+        <h2 class="ab-mini-title">Encontrar prendas rapido</h2>
+      </div>
+    </div>
+
+    <div class="ab-inline-form-grid">
+      <div class="ab-field">
+        <label class="ab-lab" for="stockCategory">Categoria</label>
+        <select class="ab-sel" id="stockCategory">
+          <option value="">Todas</option>
+          {% for value, label in categorias %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="ab-field">
+        <label class="ab-lab" for="stockState">Estado</label>
+        <select class="ab-sel" id="stockState">
+          <option value="">Todos</option>
+          {% for value, label in estados %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="ab-field">
+        <label class="ab-lab">&nbsp;</label>
+        <div class="ab-actions">
+          <button class="ab-btn2" type="button" id="stockClear">Limpiar filtros</button>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Listado</p>
+        <h2 class="ab-mini-title">Prendas disponibles y comprometidas</h2>
+      </div>
+      <span class="ab-pill" id="stockCount">0 prendas</span>
+    </div>
+
+    <div class="ab-entity-list" id="stockCards">
+      {% for p in prendas %}
+        <article class="ab-entity-card" data-stock-item data-category="{{ p.categoria }}" data-state="{{ p.estado }}">
+          <div class="ab-entity-card-head">
+            <div>
+              <p class="ab-entity-card-eyebrow">{{ p.get_categoria_display }}</p>
+              <h3 class="ab-entity-card-title">{{ p.codigo }}</h3>
+              <p class="ab-entity-card-subtitle">{{ p.marca|default:"Sin marca" }}</p>
+            </div>
+            <div class="ab-status-stack">
+              <span class="ab-badge {% if p.estado == 'DISPONIBLE' %}ok{% elif p.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
+                {{ p.get_estado_display }}
+              </span>
+            </div>
+          </div>
+
+          <div class="ab-entity-metrics">
+            <div class="ab-metric-chip">
+              <span>Color</span>
+              <strong>{{ p.color|default:"-" }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Talle</span>
+              <strong>{{ p.talle|default:"-" }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Origen</span>
+              <strong>{{ p.get_origen_display|default:"-" }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Creada</span>
+              <strong>{{ p.creado_en|date:"d/m/Y" }}</strong>
+            </div>
+          </div>
+
+          {% if p.alquiler_activo %}
+            <div class="ab-inline-note">
+              Comprometida del {{ p.alquiler_activo.fecha_entrega|date:"d/m/Y" }} al {{ p.alquiler_activo.fecha_devolucion|date:"d/m/Y" }}
+              {% if p.alquiler_activo.cliente_nombre %} · {{ p.alquiler_activo.cliente_nombre }}{% endif %}
+            </div>
+          {% endif %}
+
+          <form method="post" class="ab-inline-form-grid">
+            {% csrf_token %}
+            <input type="hidden" name="prenda_id" value="{{ p.id }}">
+            <div class="ab-field">
+              <label class="ab-lab">Estado</label>
+              <select class="ab-sel" name="estado">
+                {% for value, label in estados %}
+                  <option value="{{ value }}" {% if p.estado == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="ab-field">
+              <label class="ab-lab">&nbsp;</label>
+              <div class="ab-actions">
+                <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar estado</button>
+                <a class="ab-btn" href="{% url 'prendas:editar' p.id %}">Modificar</a>
+                <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar la prenda {{ p.codigo }}. Continuar?');">Eliminar</button>
+              </div>
+            </div>
+          </form>
+        </article>
+      {% empty %}
+        <div class="ab-empty">No hay prendas cargadas.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
 
 <script>
   (function () {
     const pendingCategory = document.getElementById("pendingOriginCategory");
     const pendingClear = document.getElementById("pendingOriginClear");
     const pendingCount = document.getElementById("pendingOriginCount");
-    const pendingRows = Array.from(document.querySelectorAll("#pendingOriginTable tbody tr[data-origin-category]"));
+    const pendingItems = Array.from(document.querySelectorAll("#pendingOriginGrid [data-origin-category]"));
     const pendingFillButtons = Array.from(document.querySelectorAll("[data-fill-origin]"));
     const category = document.getElementById("stockCategory");
     const state = document.getElementById("stockState");
     const clear = document.getElementById("stockClear");
-    const tableRows = Array.from(document.querySelectorAll("#stockTable tbody tr[data-category]"));
-    const cards = Array.from(document.querySelectorAll("#stockCards [data-category]"));
+    const cards = Array.from(document.querySelectorAll("#stockCards [data-stock-item]"));
     const count = document.getElementById("stockCount");
-    let resizeScheduled = false;
 
     function updatePendingCount(visible) {
       if (!pendingCount) return;
@@ -268,20 +259,18 @@
     function applyPendingFilter() {
       const wantedCategory = (pendingCategory && pendingCategory.value) || "";
       let visible = 0;
-
-      pendingRows.forEach(function (row) {
-        const show = !wantedCategory || row.dataset.originCategory === wantedCategory;
-        row.style.display = show ? "" : "none";
+      pendingItems.forEach(function (item) {
+        const show = !wantedCategory || item.dataset.originCategory === wantedCategory;
+        item.style.display = show ? "" : "none";
         if (show) visible += 1;
       });
-
       updatePendingCount(visible);
     }
 
     function fillVisibleOrigins(value) {
-      pendingRows.forEach(function (row) {
-        if (row.style.display === "none") return;
-        const field = row.querySelector("select[name^='origen_']");
+      pendingItems.forEach(function (item) {
+        if (item.style.display === "none") return;
+        const field = item.querySelector("select[name^='origen_']");
         if (field) field.value = value;
       });
     }
@@ -291,37 +280,25 @@
       const wantedState = (state && state.value) || "";
       let visible = 0;
 
-      function matches(node) {
-        const nodeCategory = node.dataset.category || "";
-        const nodeState = node.dataset.state || "";
-        return (!wantedCategory || nodeCategory === wantedCategory) && (!wantedState || nodeState === wantedState);
-      }
-
-      tableRows.forEach(function (row) {
-        const show = matches(row);
-        row.style.display = show ? "" : "none";
+      cards.forEach(function (card) {
+        const matchCategory = !wantedCategory || card.dataset.category === wantedCategory;
+        const matchState = !wantedState || card.dataset.state === wantedState;
+        const show = matchCategory && matchState;
+        card.style.display = show ? "" : "none";
         if (show) visible += 1;
       });
 
-      let mobileVisible = 0;
-      cards.forEach(function (card) {
-        const show = matches(card);
-        card.style.display = show ? "" : "none";
-        if (show) mobileVisible += 1;
-      });
-
-      const totalVisible = window.innerWidth <= 760 ? mobileVisible : visible;
       if (count) {
-        count.textContent = totalVisible + (totalVisible === 1 ? " prenda" : " prendas");
+        count.textContent = visible + (visible === 1 ? " prenda" : " prendas");
       }
     }
 
     if (pendingCategory) pendingCategory.addEventListener("change", applyPendingFilter);
     if (pendingClear) {
       pendingClear.addEventListener("click", function () {
-        pendingRows.forEach(function (row) {
-          if (row.style.display === "none") return;
-          const field = row.querySelector("select[name^='origen_']");
+        pendingItems.forEach(function (item) {
+          if (item.style.display === "none") return;
+          const field = item.querySelector("select[name^='origen_']");
           if (field) field.value = "";
         });
       });
@@ -342,14 +319,6 @@
       });
     }
 
-    window.addEventListener("resize", function () {
-      if (resizeScheduled) return;
-      resizeScheduled = true;
-      window.requestAnimationFrame(function () {
-        resizeScheduled = false;
-        applyFilters();
-      });
-    });
     applyPendingFilter();
     applyFilters();
   })();

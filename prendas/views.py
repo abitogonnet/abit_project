@@ -331,6 +331,7 @@ def stock(request):
         return redirect("prendas:stock")
 
     prendas = list(Prenda.objects.all().order_by("categoria", "-creado_en", "-codigo"))
+    _ocupar_prendas_con_alquiler(prendas)
     prendas_sin_origen = list(_prendas_sin_origen())
     resumen = [
         {"label": "Total", "valor": len(prendas)},

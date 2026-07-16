@@ -29,7 +29,7 @@
         <span class="ab-dot"></span>
         <span>ABITO</span>
       </a>
-      <a class="ab-mobilebar-cta" href="{{ alquiler_crear_url }}">Nuevo</a>
+      <a class="ab-mobilebar-cta" href="{{ alquiler_crear_url }}">Nuevo alquiler</a>
     </div>
 
     <div class="ab-sidebar-backdrop" hidden data-sidebar-backdrop></div>
@@ -124,6 +124,220 @@
           }
         });
       });
+    })();
+
+    (function () {
+      const availableNode = document.getElementById("ab-available-prendas");
+      const availablePayload = availableNode ? JSON.parse(availableNode.textContent) : {};
+
+      function parseAmount(value) {
+        const normalized = String(value || "").replace(",", ".").trim();
+        const parsed = Number.parseFloat(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+
+      function formatAmount(value) {
+        return (Math.round(value * 100) / 100).toFixed(2);
+      }
+
+      function garmentOptionsForSelect(select) {
+        const key = select.dataset.categoryKey || "";
+        const merged = [];
+        const seen = new Set();
+
+        (availablePayload[key] || []).forEach(function (item) {
+          if (!item || !item.value || seen.has(item.value)) return;
+          merged.push(item);
+          seen.add(item.value);
+        });
+
+        Array.from(select.options).forEach(function (option) {
+          if (!option.value || seen.has(option.value)) return;
+          merged.unshift({
+            value: option.value,
+            label: option.textContent,
+          });
+          seen.add(option.value);
+        });
+
+        return merged;
+      }
+
+      function optionMatchesDigits(optionValue, digits) {
+        if (!digits) return true;
+        const raw = String(optionValue || "");
+        const codeDigits = raw.includes("-") ? raw.split("-").slice(1).join("-") : raw;
+        return codeDigits.startsWith(digits) || codeDigits.includes(digits);
+      }
+
+      function replaceSelectOptions(select, options, selectedValue) {
+        const blankOption = document.createElement("option");
+        blankOption.value = "";
+        blankOption.textContent = "Sin seleccionar";
+        select.innerHTML = "";
+        select.appendChild(blankOption);
+
+        let selectedFound = false;
+        options.forEach(function (optionData) {
+          const option = document.createElement("option");
+          option.value = optionData.value;
+          option.textContent = optionData.label;
+          if (optionData.value === selectedValue) {
+            option.selected = true;
+            selectedFound = true;
+          }
+          select.appendChild(option);
+        });
+
+        if (!selectedFound) {
+          blankOption.selected = true;
+        }
+      }
+
+      function syncInputFromSelect(select) {
+        const wrapper = select.closest("form");
+        if (!wrapper) return;
+        const input = wrapper.querySelector("[data-target-select='" + select.id + "']");
+        if (!input) return;
+
+        const value = select.value || "";
+        if (!value) {
+          if (!input.dataset.userTyped) {
+            input.value = "";
+          }
+          return;
+        }
+
+        const digits = value.includes("-") ? value.split("-").slice(1).join("-") : value;
+        input.value = digits;
+      }
+
+      function syncSelectFromInput(input) {
+        const selectId = input.dataset.targetSelect;
+        const select = selectId ? document.getElementById(selectId) : null;
+        if (!select) return;
+
+        const digits = String(input.value || "").replace(/\D/g, "");
+        const selectedValue = select.value || "";
+        const options = garmentOptionsForSelect(select).filter(function (item) {
+          return optionMatchesDigits(item.value, digits);
+        });
+
+        replaceSelectOptions(select, options, selectedValue);
+      }
+
+      function bindEditTotals(form) {
+        const totalField = form.querySelector("[name$='-total_bruto']");
+        const discountField = form.querySelector("[name$='-descuento_pct']");
+        const senaField = form.querySelector("[name$='-sena']");
+        const totalOut = form.querySelector(".js-edit-total-final");
+        const saldoOut = form.querySelector(".js-edit-saldo");
+        if (!totalField || !discountField || !senaField || !totalOut || !saldoOut) return;
+
+        function update() {
+          const total = parseAmount(totalField.value);
+          const discountPct = parseAmount(discountField.value);
+          const sena = parseAmount(senaField.value);
+          const totalFinal = Math.max(total - (total * discountPct / 100), 0);
+          const saldo = Math.max(totalFinal - sena, 0);
+          totalOut.value = formatAmount(totalFinal);
+          saldoOut.value = formatAmount(saldo);
+        }
+
+        [totalField, discountField, senaField].forEach(function (field) {
+          field.addEventListener("input", update);
+          field.addEventListener("change", update);
+        });
+        update();
+      }
+
+      function bindEditCodeFilters(form) {
+        const inputs = Array.from(form.querySelectorAll(".js-code-filter"));
+        const selects = Array.from(form.querySelectorAll(".js-code-select"));
+
+        selects.forEach(function (select) {
+          select.addEventListener("change", function () {
+            syncInputFromSelect(select);
+          });
+          syncInputFromSelect(select);
+        });
+
+        inputs.forEach(function (input) {
+          input.addEventListener("input", function () {
+            input.dataset.userTyped = "1";
+            syncSelectFromInput(input);
+          });
+          input.addEventListener("change", function () {
+            input.dataset.userTyped = "1";
+            syncSelectFromInput(input);
+          });
+          syncSelectFromInput(input);
+        });
+      }
+
+      function enhanceEditForm(form) {
+        if (!form || form.dataset.enhanced === "1") return;
+        form.dataset.enhanced = "1";
+        bindEditCodeFilters(form);
+        bindEditTotals(form);
+      }
+
+      function enhanceEditForms(root) {
+        root.querySelectorAll(".js-alq-edit-form").forEach(function (form) {
+          enhanceEditForm(form);
+        });
+      }
+
+      async function loadRemotePanel(panel) {
+        if (!panel || panel.dataset.loaded === "1" || panel.dataset.loading === "1") return;
+        const url = panel.dataset.panelUrl;
+        if (!url) return;
+
+        panel.dataset.loading = "1";
+        panel.innerHTML = '<div class="ab-small">Cargando...</div>';
+
+        try {
+          const response = await fetch(url, {
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+            },
+          });
+          if (!response.ok) {
+            throw new Error("No se pudo abrir el panel");
+          }
+
+          panel.innerHTML = await response.text();
+          panel.dataset.loaded = "1";
+          enhanceEditForms(panel);
+        } catch (_error) {
+          panel.innerHTML = '<div class="ab-msg err">No se pudo cargar este panel ahora.</div>';
+        } finally {
+          panel.dataset.loading = "0";
+        }
+      }
+
+      function bindDetailPanel(details) {
+        if (!details || details.dataset.bound === "1") return;
+        details.dataset.bound = "1";
+
+        async function onToggle() {
+          if (!details.open) return;
+          const panels = details.querySelectorAll(".js-remote-panel");
+          for (const panel of panels) {
+            await loadRemotePanel(panel);
+          }
+        }
+
+        details.addEventListener("toggle", onToggle);
+        if (details.open) {
+          onToggle();
+        }
+      }
+
+      document.querySelectorAll(".ab-detail-toggle").forEach(function (details) {
+        bindDetailPanel(details);
+      });
+      enhanceEditForms(document);
     })();
   </script>
 </body>

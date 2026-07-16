@@ -1,28 +1,36 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ab-card">
-  <div class="ab-head">
-    <div>
-      <h1 class="ab-title">Cargar gasto</h1>
-      <p class="ab-sub">Registra fecha, monto y detalle del gasto dentro del mes que estas revisando.</p>
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Gestion</p>
+    <h1 class="ab-title">Cargar gasto</h1>
+    <p class="ab-sub">Registra fecha, monto y detalle dentro del mes que estas revisando para que la caja quede trazable.</p>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Mes de trabajo</span>
+    <div class="ab-summary-list">
+      <div>
+        <span>Se guarda en</span>
+        <strong>{{ month_label }}</strong>
+      </div>
     </div>
-    <div class="ab-row">
+    <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Volver</a>
     </div>
-  </div>
+  </aside>
+</section>
 
-  <div class="ab-body">
-    <form method="post" autocomplete="off" class="ab-stack">
-      {% csrf_token %}
-      <input type="hidden" name="ym" value="{{ ym_value }}">
+<div class="ab-page-stack">
+  <form method="post" autocomplete="off" class="ab-split-shell">
+    {% csrf_token %}
+    <input type="hidden" name="ym" value="{{ ym_value }}">
 
-      <div class="ab-form-note">
-        Se va a guardar dentro de <strong>{{ month_label }}</strong>.
-      </div>
-
-      <div class="ab-actions">
-        <button class="ab-btn" type="submit">Guardar gasto</button>
-        <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
+    <section class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Formulario</p>
+          <h2 class="ab-mini-title">Datos del gasto</h2>
+        </div>
       </div>
 
       <div class="ab-grid">
@@ -46,7 +54,6 @@
           {{ form.monto }}
           {% if form.monto.errors %}<div class="ab-field-errors">{{ form.monto.errors }}</div>{% endif %}
         </div>
-
         <div class="col-6 ab-field">
           <label class="ab-lab" for="{{ form.descripcion.id_for_label }}">En que fue gastado</label>
           {{ form.descripcion }}
@@ -60,14 +67,24 @@
       </div>
 
       {% if form.non_field_errors %}
-        <div class="ab-msg err">{{ form.non_field_errors }}</div>
+        <div class="ab-msg err" style="margin-top: 14px;">{{ form.non_field_errors }}</div>
       {% endif %}
 
-      <div class="ab-actions">
+      <div class="ab-actions" style="margin-top: 18px;">
         <button class="ab-btn" type="submit">Guardar gasto</button>
         <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Cancelar</a>
       </div>
-    </form>
-  </div>
+    </section>
+
+    <aside class="ab-create-aside">
+      <section class="ab-summary-panel">
+        <span class="ab-spec-label">Consejo</span>
+        <ul class="ab-checklist">
+          <li>Describe el gasto con el mayor contexto posible para entender despues por que salio ese dinero.</li>
+          <li>Usa notas para dejar referencia del evento, proveedor o motivo.</li>
+        </ul>
+      </section>
+    </aside>
+  </form>
 </div>
 {% endblock %}

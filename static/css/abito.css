@@ -1825,3 +1825,235 @@ body.ab-page {
     grid-template-columns: 1fr;
   }
 }
+
+.ab-page-stack {
+  display: grid;
+  gap: 22px;
+}
+
+.ab-search-layout,
+.ab-split-shell,
+.ab-edit-grid-modern {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+}
+
+.ab-inline-form-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+}
+
+.ab-entity-list,
+.ab-origin-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.ab-entity-card,
+.ab-origin-card {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid rgba(109, 91, 76, 0.14);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 250, 244, 0.92));
+  box-shadow: 0 18px 44px rgba(48, 30, 16, 0.08);
+}
+
+.ab-entity-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.ab-entity-card-eyebrow {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ab-entity-card-title {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.ab-entity-card-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.ab-status-stack {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.ab-entity-metrics {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.ab-metric-chip {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(109, 91, 76, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.ab-metric-chip span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ab-metric-chip strong {
+  font-size: 1rem;
+}
+
+.ab-entity-columns {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ab-entity-section {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(109, 91, 76, 0.12);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.ab-entity-section h4 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.ab-persona-summary-list,
+.ab-inline-item-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ab-persona-summary-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 252, 246, 0.88);
+  border: 1px solid rgba(109, 91, 76, 0.1);
+}
+
+.ab-inline-item {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.ab-inline-item span {
+  color: var(--muted);
+}
+
+.ab-origin-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.ab-origin-card .ab-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.ab-edit-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.ab-edit-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(217, 176, 107, 0.12));
+  border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.ab-edit-sidebar {
+  display: grid;
+  gap: 16px;
+}
+
+.ab-prenda-grid-edit {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ab-lock-shell {
+  display: grid;
+  min-height: calc(100vh - 140px);
+  align-items: center;
+}
+
+.ab-schedule-day {
+  padding: 10px 4px 2px;
+  color: var(--accent-strong);
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1220px) {
+  .ab-search-layout,
+  .ab-split-shell,
+  .ab-edit-grid-modern,
+  .ab-entity-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 940px) {
+  .ab-inline-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ab-prenda-grid-edit {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .ab-entity-card,
+  .ab-origin-card,
+  .ab-entity-section,
+  .ab-edit-banner {
+    padding: 18px;
+  }
+
+  .ab-entity-card-head,
+  .ab-edit-banner {
+    flex-direction: column;
+  }
+
+  .ab-status-stack {
+    justify-items: start;
+  }
+
+  .ab-inline-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

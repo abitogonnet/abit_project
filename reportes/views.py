@@ -3,6 +3,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 import unicodedata
 
+from django.db.models import Max
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -62,6 +63,24 @@ def _month_label(day: date) -> str:
     return f"{MESES_ES[day.month - 1].capitalize()} {day.year}"
 
 
+def _latest_reporting_month_start():
+    candidates = [
+        Alquiler.objects.aggregate(value=Max("fecha_entrega"))["value"],
+        Alquiler.objects.aggregate(value=Max("fecha_reserva"))["value"],
+        (
+            Alquiler.objects
+            .filter(estado_saldo=Alquiler.SAL_PAG, saldo_pagado_en__isnull=False)
+            .aggregate(value=Max("saldo_pagado_en"))["value"]
+        ),
+    ]
+    candidates = [item for item in candidates if item]
+    if not candidates:
+        return None
+
+    latest = max(candidates)
+    return date(latest.year, latest.month, 1)
+
+
 def _normalize_color_key(value: str) -> str:
     text = unicodedata.normalize("NFD", (value or "").strip().casefold())
     return "".join(char for char in text if unicodedata.category(char) != "Mn")
@@ -88,7 +107,7 @@ def _resolve_period(request):
         except Exception:
             start = date(today.year, today.month, 1)
     else:
-        start = date(today.year, today.month, 1)
+        start = _latest_reporting_month_start() or date(today.year, today.month, 1)
 
     end = _first_day_next_month(start)
     weeks_n = _weeks_in_month(start.year, start.month)

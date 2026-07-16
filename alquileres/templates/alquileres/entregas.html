@@ -1,167 +1,192 @@
 {% extends "base.html" %}
-{% load static %}
 {% block content %}
 {{ disponibles_json|json_script:"ab-available-prendas" }}
-<div class="ab-card">
-  <div class="ab-head">
-    <div>
-      <h1 class="ab-title">Entregas</h1>
-      <p class="ab-sub">Desde hoy {{ hoy|date:"d/m/Y" }} hasta {{ hasta|date:"d/m/Y" }}</p>
+
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Operacion de salida</p>
+    <h1 class="ab-title">Entregas</h1>
+    <p class="ab-sub">Desde hoy {{ hoy|date:"d/m/Y" }} hasta {{ hasta|date:"d/m/Y" }}. Esta vista sirve para preparar lo que sale y no perder contexto al momento de entregar.</p>
+    <div class="ab-chip-row">
+      <span class="ab-chip">{{ alquileres|length }} entrega{{ alquileres|length|pluralize }}</span>
+      <span class="ab-chip">Detalle remoto</span>
+      <span class="ab-chip">Edicion rapida</span>
+    </div>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Uso recomendado</span>
+    <div class="ab-summary-list">
+      <div>
+        <span>1. Preparar</span>
+        <strong>Ver detallado para revisar prendas, talle y ruedos</strong>
+      </div>
+      <div>
+        <span>2. Corregir</span>
+        <strong>Editar si hubo cambio de fecha, nombres o pago</strong>
+      </div>
+      <div>
+        <span>3. Seguir</span>
+        <strong>Volver a alquileres para cerrar saldos y estados</strong>
+      </div>
+    </div>
+    <div class="ab-actions">
+      <a class="ab-btn" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
+      <a class="ab-btn2" href="{% url 'alquileres:crear' %}">Nuevo alquiler</a>
+    </div>
+  </aside>
+</section>
+
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Ventana visible</p>
+        <h2 class="ab-mini-title">Filtrar hasta una fecha</h2>
+      </div>
     </div>
 
-    <form method="get" class="ab-row">
-      <div style="min-width: 220px;">
+    <form method="get" class="ab-inline-form-grid">
+      <div class="ab-field">
         <label class="ab-lab">Hasta</label>
         <input class="ab-inp" type="date" name="hasta" value="{{ hasta|date:'Y-m-d' }}">
       </div>
-      <button class="ab-btn2" type="submit">Filtrar</button>
+      <div class="ab-field">
+        <label class="ab-lab">&nbsp;</label>
+        <div class="ab-actions">
+          <button class="ab-btn" type="submit">Filtrar</button>
+          <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Volver a 7 dias</a>
+        </div>
+      </div>
     </form>
-  </div>
+  </section>
 
-  <div class="ab-body">
-    <div class="ab-table-wrap ab-desktop-only">
-      <table class="ab-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Fechas</th>
-            <th>Prendas</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in alquileres %}
-            <tr>
-              <td><span class="ab-pill">#{{ a.id }}</span></td>
-              <td>
-                <div style="font-weight: 900;">{{ a.cliente_nombre }}</div>
-                <div class="ab-muted">{{ a.cliente_telefono }}</div>
-                <div class="ab-chip-row" style="margin-top: 10px;">
-                  {% for persona in a.detalle_personas %}
-                    <span class="ab-chip">{{ persona.nombre }}</span>
-                  {% endfor %}
-                </div>
-              </td>
-              <td class="ab-muted">
-                Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}<br>
-                Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}<br>
-                Saldo restante: ${{ a.saldo_restante_actual }}
-              </td>
-              <td class="ab-muted">
-                {% for persona in a.detalle_personas %}
-                  <div class="ab-stack" style="gap: 4px;">
-                    <strong>{{ persona.nombre }}</strong>
-                    <span>{{ persona.cantidad }} prenda{{ persona.cantidad|pluralize }}</span>
-                    {% if persona.codigos %}
-                      <span class="ab-small">Codigos: {{ persona.codigos }}</span>
-                    {% endif %}
-                  </div>
-                  {% if not forloop.last %}
-                    <div class="ab-hr" style="margin: 10px 0;"></div>
-                  {% endif %}
-                {% endfor %}
-              </td>
-              <td>
-                {% if a.estado_alquiler == "CERRADO" %}
-                  <span class="ab-badge secondary">{{ a.get_estado_alquiler_display }}</span>
-                {% elif a.fecha_entrega == hoy %}
-                  <span class="ab-badge warn">HOY</span>
-                {% else %}
-                  <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
-                {% endif %}
-              </td>
-            </tr>
-            <tr class="ab-table-detail-row">
-              <td colspan="5">
-                <div class="ab-detail-actions">
-                  <details class="ab-detail-toggle ab-detail-toggle-split">
-                    <summary class="ab-detail-summary">
-                      <span>Ver detallado</span>
-                      <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }} para preparar</span>
-                    </summary>
-                    <div class="ab-detail-panel">
-                      <div class="js-remote-panel" data-panel-url="{{ a.detail_panel_url }}"></div>
-                    </div>
-                  </details>
-
-                  <details class="ab-detail-toggle ab-detail-toggle-split" {% if edit_open_id == a.id %}open{% endif %}>
-                    <summary class="ab-detail-summary">
-                      <span>Editar</span>
-                      <span class="ab-small">Nombres, fechas, pagos y prendas</span>
-                    </summary>
-                    <div class="ab-detail-panel">
-                      {% if edit_open_id == a.id and a.edit_form %}
-                        {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
-                      {% else %}
-                        <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
-                      {% endif %}
-                    </div>
-                  </details>
-                </div>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="5" class="ab-muted">No hay entregas en ese periodo.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Preparacion</p>
+        <h2 class="ab-mini-title">Alquileres por entregar</h2>
+        <p class="ab-sub">La tarjeta deja visibles cliente, fechas, saldo y personas antes de abrir el detalle.</p>
+      </div>
+      <span class="ab-pill">{{ alquileres|length }} alquiler{{ alquileres|length|pluralize }}</span>
     </div>
 
-    <div class="ab-mobile-list">
+    <div class="ab-entity-list">
       {% for a in alquileres %}
-        <article class="ab-list-card">
-          <div class="ab-row" style="justify-content: space-between;">
-            <h3>#{{ a.id }} - {{ a.cliente_nombre }}</h3>
-            {% if a.estado_alquiler == "CERRADO" %}
-              <span class="ab-badge secondary">{{ a.get_estado_alquiler_display }}</span>
-            {% elif a.fecha_entrega == hoy %}
-              <span class="ab-badge warn">HOY</span>
-            {% else %}
-              <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
-            {% endif %}
-          </div>
-
-          <div class="ab-meta" style="margin-top: 10px;">
-            <div>Telefono: {{ a.cliente_telefono }}</div>
-            <div>Personas: {{ a.personas_resumen }}</div>
-            <div>Retiro / entrega: {{ a.fecha_entrega|date:"d/m/Y" }}</div>
-            <div>Devolucion: {{ a.fecha_devolucion|date:"d/m/Y" }}</div>
-            <div>Saldo restante: ${{ a.saldo_restante_actual }}</div>
-          </div>
-
-          <details class="ab-detail-toggle" style="margin-top: 14px;">
-            <summary class="ab-detail-summary">
-              <span>Ver detallado</span>
-              <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }}</span>
-            </summary>
-            <div class="ab-detail-panel">
-              <div class="js-remote-panel" data-panel-url="{{ a.detail_panel_url }}"></div>
+        <article class="ab-entity-card">
+          <div class="ab-entity-card-head">
+            <div>
+              <p class="ab-entity-card-eyebrow">#{{ a.id }} · {{ a.fecha_entrega|date:"d/m/Y" }}</p>
+              <h3 class="ab-entity-card-title">{{ a.cliente_nombre }}</h3>
+              <p class="ab-entity-card-subtitle">{{ a.cliente_telefono|default:"Sin telefono" }} · {{ a.personas_resumen }}</p>
             </div>
-          </details>
-
-          <details class="ab-detail-toggle" style="margin-top: 14px;" {% if edit_open_id == a.id %}open{% endif %}>
-            <summary class="ab-detail-summary">
-              <span>Editar</span>
-              <span class="ab-small">Nombres, fechas, pagos y prendas</span>
-            </summary>
-            <div class="ab-detail-panel">
-              {% if edit_open_id == a.id and a.edit_form %}
-                {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+            <div class="ab-status-stack">
+              {% if a.estado_alquiler == "CERRADO" %}
+                <span class="ab-badge secondary">{{ a.get_estado_alquiler_display }}</span>
+              {% elif a.fecha_entrega == hoy %}
+                <span class="ab-badge warn">HOY</span>
               {% else %}
-                <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
+                <span class="ab-badge ok">{{ a.get_estado_alquiler_display }}</span>
               {% endif %}
             </div>
-          </details>
+          </div>
+
+          <div class="ab-entity-metrics">
+            <div class="ab-metric-chip">
+              <span>Retiro / entrega</span>
+              <strong>{{ a.fecha_entrega|date:"d/m/Y" }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Devolucion</span>
+              <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Saldo restante</span>
+              <strong>${{ a.saldo_restante_actual }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Prendas</span>
+              <strong>{{ a.total_prendas_detalle }}</strong>
+            </div>
+          </div>
+
+          <div class="ab-entity-columns">
+            <section class="ab-entity-section">
+              <h4>Personas y codigos</h4>
+              <div class="ab-persona-summary-list">
+                {% for persona in a.detalle_personas %}
+                  <article class="ab-persona-summary-card">
+                    <div class="ab-row" style="justify-content: space-between;">
+                      <strong>{{ persona.nombre }}</strong>
+                      <span class="ab-pill">{{ persona.cantidad }} prenda{{ persona.cantidad|pluralize }}</span>
+                    </div>
+                    <div class="ab-inline-item-list">
+                      {% for item in persona.items %}
+                        <div class="ab-inline-item">
+                          <strong>{{ item.codigo }}</strong>
+                          <span>{{ item.categoria }} · {{ item.marca }} · {{ item.color }}</span>
+                        </div>
+                      {% empty %}
+                        <span class="ab-small">Sin prendas</span>
+                      {% endfor %}
+                    </div>
+                  </article>
+                {% endfor %}
+              </div>
+            </section>
+
+            <section class="ab-entity-section">
+              <h4>Seguimiento rapido</h4>
+              <div class="ab-summary-list">
+                <div>
+                  <span>Personas</span>
+                  <strong>{{ a.personas_resumen }}</strong>
+                </div>
+                <div>
+                  <span>Pago</span>
+                  <strong>
+                    {% for metodo in a.metodos_pago_actuales %}
+                      {{ metodo }}{% if not forloop.last %} · {% endif %}
+                    {% endfor %}
+                  </strong>
+                </div>
+                <div>
+                  <span>Estado actual</span>
+                  <strong>{{ a.get_estado_alquiler_display }}</strong>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="ab-detail-actions">
+            <details class="ab-detail-toggle ab-detail-toggle-split">
+              <summary class="ab-detail-summary">
+                <span>Ver detallado</span>
+                <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }} para preparar</span>
+              </summary>
+              <div class="ab-detail-panel">
+                <div class="js-remote-panel" data-panel-url="{{ a.detail_panel_url }}"></div>
+              </div>
+            </details>
+
+            <details class="ab-detail-toggle ab-detail-toggle-split" {% if edit_open_id == a.id %}open{% endif %}>
+              <summary class="ab-detail-summary">
+                <span>Editar</span>
+                <span class="ab-small">Nombres, fechas, pagos y prendas</span>
+              </summary>
+              <div class="ab-detail-panel">
+                {% if edit_open_id == a.id and a.edit_form %}
+                  {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+                {% else %}
+                  <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
+                {% endif %}
+              </div>
+            </details>
+          </div>
         </article>
       {% empty %}
         <div class="ab-empty">No hay entregas en ese periodo.</div>
       {% endfor %}
     </div>
-  </div>
+  </section>
 </div>
-
-<script src="{% static 'js/alquiler-edit.js' %}"></script>
 {% endblock %}

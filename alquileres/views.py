@@ -1014,13 +1014,14 @@ def entregas(request):
 def retrasados(request):
     hoy = timezone.localdate()
 
-    alquileres = (
+    alquileres = list(
         Alquiler.objects
         .exclude(estado_alquiler=Alquiler.EST_CERRADO)
         .filter(fecha_devolucion__lt=hoy)
         .order_by("fecha_devolucion", "fecha_entrega", "id")
         .prefetch_related("items__prenda")
     )
+    _adjuntar_detalle_alquiler(alquileres)
 
     retrasos = []
     for alquiler in alquileres:

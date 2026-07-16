@@ -1,72 +1,109 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ab-card">
-  <div class="ab-head">
-    <div>
-      <h1 class="ab-title">Retrasados</h1>
-      <p class="ab-sub">Hoy: {{ hoy|date:"d/m/Y" }} — alquileres con devolución vencida y no cerrados</p>
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Alertas</p>
+    <h1 class="ab-title">Retrasados</h1>
+    <p class="ab-sub">Hoy: {{ hoy|date:"d/m/Y" }}. Aqui quedan visibles los alquileres con devolucion vencida y que todavia no fueron cerrados.</p>
+    <div class="ab-chip-row">
+      <span class="ab-chip">{{ retrasos|length }} caso{{ retrasos|length|pluralize }}</span>
+      <span class="ab-chip">Seguimiento prioritario</span>
     </div>
   </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Objetivo de esta vista</span>
+    <div class="ab-summary-list">
+      <div>
+        <span>Detectar</span>
+        <strong>Quien ya vencio y cuantos dias acumula</strong>
+      </div>
+      <div>
+        <span>Recordar</span>
+        <strong>Que prendas y personas estan comprometidas</strong>
+      </div>
+      <div>
+        <span>Actuar</span>
+        <strong>Contactar y luego volver a alquileres para cerrar</strong>
+      </div>
+    </div>
+    <div class="ab-actions">
+      <a class="ab-btn" href="{% url 'alquileres:ver' %}">Abrir alquileres</a>
+      <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Ver entregas</a>
+    </div>
+  </aside>
+</section>
 
-  <div class="ab-body">
-    <div class="ab-table-wrap">
-      <table class="ab-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Vencía</th>
-            <th>Días tarde</th>
-            <th>Prendas</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a, dias in retrasos %}
-          <tr>
-            <td><span class="ab-pill">#{{ a.id }}</span></td>
-            <td>
-              <div style="font-weight:900;">{{ a.cliente_nombre }}</div>
-              <div class="ab-muted">{{ a.cliente_telefono }}</div>
-            </td>
-            <td class="ab-muted">{{ a.fecha_devolucion|date:"d/m/Y" }}</td>
-            <td>
-              <span class="ab-badge danger">{{ dias }} día(s)</span>
-            </td>
-            <td class="ab-muted">
-              <div style="font-weight:800;">P1: {{ a.persona1_nombre }}</div>
-              {% for it in a.items.all %}
-                {% if it.persona_num == 1 %}
-                  - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
-                {% endif %}
-              {% endfor %}
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Casos abiertos</p>
+        <h2 class="ab-mini-title">Devoluciones vencidas</h2>
+      </div>
+      <span class="ab-pill">{{ retrasos|length }} seguimiento{{ retrasos|length|pluralize }}</span>
+    </div>
 
-              {% if a.persona2_nombre %}
-                <div class="ab-hr" style="margin:8px 0;"></div>
-                <div style="font-weight:800;">P2: {{ a.persona2_nombre }}</div>
-                {% for it in a.items.all %}
-                  {% if it.persona_num == 2 %}
-                    - {{ it.prenda.codigo }} ({{ it.prenda.get_categoria_display }})<br>
-                  {% endif %}
-                {% endfor %}
-              {% endif %}
-            </td>
-            <td>
+    <div class="ab-entity-list">
+      {% for a, dias in retrasos %}
+        <article class="ab-entity-card">
+          <div class="ab-entity-card-head">
+            <div>
+              <p class="ab-entity-card-eyebrow">#{{ a.id }} · Vencia {{ a.fecha_devolucion|date:"d/m/Y" }}</p>
+              <h3 class="ab-entity-card-title">{{ a.cliente_nombre }}</h3>
+              <p class="ab-entity-card-subtitle">{{ a.cliente_telefono|default:"Sin telefono" }}</p>
+            </div>
+            <div class="ab-status-stack">
+              <span class="ab-badge danger">{{ dias }} dia(s)</span>
               {% if a.estado_alquiler == "ENTREGADO" %}
-                <span class="ab-badge danger">ENTREGADO (no volvió)</span>
+                <span class="ab-badge danger">ENTREGADO (no volvio)</span>
               {% elif a.estado_alquiler == "RESERVADO" %}
                 <span class="ab-badge warn">RESERVADO</span>
               {% else %}
-                <span class="ab-badge">{{ a.get_estado_alquiler_display }}</span>
+                <span class="ab-badge {{ a.estado_alquiler_badge }}">{{ a.get_estado_alquiler_display }}</span>
               {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="6" class="ab-muted">No hay retrasados 🎉</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            </div>
+          </div>
+
+          <div class="ab-entity-metrics">
+            <div class="ab-metric-chip">
+              <span>Entrega</span>
+              <strong>{{ a.fecha_entrega|date:"d/m/Y" }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Devolucion</span>
+              <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
+            </div>
+            <div class="ab-metric-chip">
+              <span>Saldo</span>
+              <strong>${{ a.saldo_restante_actual }}</strong>
+            </div>
+          </div>
+
+          <div class="ab-persona-summary-list">
+            {% for persona in a.detalle_personas %}
+              <article class="ab-persona-summary-card">
+                <div class="ab-row" style="justify-content: space-between;">
+                  <strong>{{ persona.nombre }}</strong>
+                  <span class="ab-pill">Persona {{ persona.numero }}</span>
+                </div>
+                <div class="ab-inline-item-list">
+                  {% for item in persona.items %}
+                    <div class="ab-inline-item">
+                      <strong>{{ item.codigo }}</strong>
+                      <span>{{ item.categoria }} · {{ item.marca }} · {{ item.color }} · {{ item.ruedo }}</span>
+                    </div>
+                  {% empty %}
+                    <span class="ab-small">Sin prendas</span>
+                  {% endfor %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </article>
+      {% empty %}
+        <div class="ab-empty">No hay retrasados.</div>
+      {% endfor %}
     </div>
-  </div>
+  </section>
 </div>
 {% endblock %}

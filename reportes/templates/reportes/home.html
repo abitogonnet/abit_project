@@ -1,45 +1,70 @@
 {% extends "base.html" %}
 {% load abito_tags %}
 {% block content %}
-<section class="ab-card">
-  <div class="ab-head">
-    <div>
-      <p class="ab-kicker">Analitica</p>
-      <h1 class="ab-title">Reportes visuales</h1>
-      <p class="ab-sub">Lectura del mes para ver ingresos, prendas alquiladas y preferencias por color, talle y marca sin tener que exportar nada.</p>
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Analitica</p>
+    <h1 class="ab-title">Reportes visuales</h1>
+    <p class="ab-sub">Lectura del mes para ver ingresos, prendas alquiladas y preferencias por color, talle y marca sin exportar nada.</p>
+    <div class="ab-chip-row">
+      <span class="ab-chip">{{ month_label }}</span>
+      <span class="ab-chip">{{ periodo|title }}</span>
+      <span class="ab-chip">{{ total_items }} prendas</span>
     </div>
   </div>
-
-  <div class="ab-body ab-stack">
-    <form method="get" class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body">
-        <div class="ab-grid">
-          <div class="col-4 ab-field">
-            <label class="ab-lab" for="id_periodo">Como leer el mes</label>
-            <select class="ab-sel" name="periodo" id="id_periodo">
-              <option value="mensual" {% if periodo == "mensual" %}selected{% endif %}>Mes completo</option>
-              <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semana por semana</option>
-            </select>
-          </div>
-          <div class="col-4 ab-field">
-            <label class="ab-lab" for="id_ym">Mes</label>
-            <input class="ab-inp" type="month" name="ym" id="id_ym" value="{{ ym_value }}">
-          </div>
-          <div class="col-4 ab-field" style="justify-content: flex-end;">
-            <label class="ab-lab">&nbsp;</label>
-            <div class="ab-actions">
-              <button class="ab-btn2" type="submit">Aplicar</button>
-              <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
-            </div>
-          </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Interpretacion rapida</span>
+    <div class="ab-summary-list">
+      {% for item in summary %}
+        <div>
+          <span>{{ item.label }}</span>
+          <strong>{% if item.money %}${{ item.value|miles0 }}{% else %}{{ item.value }}{% endif %}</strong>
         </div>
-        <div class="ab-form-note" style="margin-top: 16px;">
-          Estás mirando <strong>{{ month_label }}</strong>.
-          En ingresos, las señas cuentan por fecha de reserva y los saldos por el dia en que fueron marcados como pagados.
+      {% endfor %}
+    </div>
+    <div class="ab-actions">
+      <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
+    </div>
+  </aside>
+</section>
+
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Configuracion</p>
+        <h2 class="ab-mini-title">Como leer el periodo</h2>
+      </div>
+    </div>
+
+    <form method="get" class="ab-inline-form-grid">
+      <div class="ab-field">
+        <label class="ab-lab" for="id_periodo">Como leer el mes</label>
+        <select class="ab-sel" name="periodo" id="id_periodo">
+          <option value="mensual" {% if periodo == "mensual" %}selected{% endif %}>Mes completo</option>
+          <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semana por semana</option>
+        </select>
+      </div>
+      <div class="ab-field">
+        <label class="ab-lab" for="id_ym">Mes</label>
+        <input class="ab-inp" type="month" name="ym" id="id_ym" value="{{ ym_value }}">
+      </div>
+      <div class="ab-field">
+        <label class="ab-lab">&nbsp;</label>
+        <div class="ab-actions">
+          <button class="ab-btn2" type="submit">Aplicar</button>
+          <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
         </div>
       </div>
     </form>
 
+    <div class="ab-form-note" style="margin-top: 16px;">
+      Estas mirando <strong>{{ month_label }}</strong>.
+      En ingresos, las señas cuentan por fecha de reserva y los saldos por el dia en que fueron marcados como pagados.
+    </div>
+  </section>
+
+  <section class="ab-section-card">
     <div class="ab-summary-grid">
       {% for item in summary %}
         <div class="ab-summary-card">
@@ -48,157 +73,157 @@
         </div>
       {% endfor %}
     </div>
+  </section>
 
-    <div class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body">
-        <div class="ab-section-title">
-          <h2>Ingresos</h2>
-          <span class="ab-pill">{{ periodo|title }}</span>
-        </div>
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Ingresos</p>
+        <h2 class="ab-mini-title">Cobros por metodo</h2>
+      </div>
+      <span class="ab-pill">{{ periodo|title }}</span>
+    </div>
 
-        {% if ingresos.tipo == "mensual" %}
-          {% if ingresos.total_general %}
-            <div class="ab-card-grid">
-              {% for row in ingresos.rows %}
-                <article class="ab-list-card">
-                  <div class="ab-row" style="justify-content: space-between;">
-                    <h3>{{ row.label }}</h3>
-                    <span class="ab-pill">${{ row.total|miles0 }}</span>
-                  </div>
+    {% if ingresos.tipo == "mensual" %}
+      {% if ingresos.total_general %}
+        <div class="ab-card-grid">
+          {% for row in ingresos.rows %}
+            <article class="ab-list-card">
+              <div class="ab-row" style="justify-content: space-between;">
+                <h3>{{ row.label }}</h3>
+                <span class="ab-pill">${{ row.total|miles0 }}</span>
+              </div>
 
-                  <div class="ab-dual-meter" style="margin-top: 14px;">
-                    <div class="ab-dual-meter-line">
-                      <span>Senas</span>
-                      <div class="ab-bar-track"><div class="ab-bar-fill" style="width: {{ row.pct_sena }}%;"></div></div>
-                      <strong>${{ row.sena|miles0 }}</strong>
-                    </div>
-                    <div class="ab-dual-meter-line">
-                      <span>Saldos</span>
-                      <div class="ab-bar-track"><div class="ab-bar-fill secondary" style="width: {{ row.pct_saldo }}%;"></div></div>
-                      <strong>${{ row.saldo|miles0 }}</strong>
-                    </div>
-                    <div class="ab-dual-meter-line">
-                      <span>Total</span>
-                      <div class="ab-bar-track"><div class="ab-bar-fill warn" style="width: {{ row.pct_total }}%;"></div></div>
-                      <strong>${{ row.total|miles0 }}</strong>
-                    </div>
-                  </div>
-                </article>
-              {% endfor %}
-            </div>
-
-            <div class="ab-card" style="border-radius: 22px; margin-top: 18px;">
-              <div class="ab-body">
-                <div class="ab-row" style="justify-content: space-between;">
-                  <span class="ab-chip">Senas: ${{ ingresos.total_sena|miles0 }}</span>
-                  <span class="ab-chip">Saldos: ${{ ingresos.total_saldo|miles0 }}</span>
-                  <span class="ab-chip">Total: ${{ ingresos.total_general|miles0 }}</span>
+              <div class="ab-dual-meter" style="margin-top: 14px;">
+                <div class="ab-dual-meter-line">
+                  <span>Señas</span>
+                  <div class="ab-bar-track"><div class="ab-bar-fill" style="width: {{ row.pct_sena }}%;"></div></div>
+                  <strong>${{ row.sena|miles0 }}</strong>
+                </div>
+                <div class="ab-dual-meter-line">
+                  <span>Saldos</span>
+                  <div class="ab-bar-track"><div class="ab-bar-fill secondary" style="width: {{ row.pct_saldo }}%;"></div></div>
+                  <strong>${{ row.saldo|miles0 }}</strong>
+                </div>
+                <div class="ab-dual-meter-line">
+                  <span>Total</span>
+                  <div class="ab-bar-track"><div class="ab-bar-fill warn" style="width: {{ row.pct_total }}%;"></div></div>
+                  <strong>${{ row.total|miles0 }}</strong>
                 </div>
               </div>
-            </div>
-          {% else %}
-            <div class="ab-empty">No hubo ingresos registrados en este periodo.</div>
-          {% endif %}
-        {% else %}
-          <div class="ab-card-grid">
-            {% for week in ingresos.weeks %}
-              <article class="ab-list-card">
-                <div class="ab-row" style="justify-content: space-between;">
-                  <h3>Semana {{ week.wk }}</h3>
-                  <span class="ab-pill">${{ week.total_general|miles0 }}</span>
-                </div>
-                <div class="ab-bar-track" style="margin-top: 12px;">
-                  <div class="ab-bar-fill warn" style="width: {{ week.pct_total }}%;"></div>
-                </div>
+            </article>
+          {% endfor %}
+        </div>
 
-                <div class="ab-stack" style="margin-top: 14px;">
-                  {% for row in week.rows %}
+        <div class="ab-section-card" style="margin-top: 18px;">
+          <div class="ab-actions">
+            <span class="ab-chip">Señas: ${{ ingresos.total_sena|miles0 }}</span>
+            <span class="ab-chip">Saldos: ${{ ingresos.total_saldo|miles0 }}</span>
+            <span class="ab-chip">Total: ${{ ingresos.total_general|miles0 }}</span>
+          </div>
+        </div>
+      {% else %}
+        <div class="ab-empty">No hubo ingresos registrados en este periodo.</div>
+      {% endif %}
+    {% else %}
+      <div class="ab-card-grid">
+        {% for week in ingresos.weeks %}
+          <article class="ab-list-card">
+            <div class="ab-row" style="justify-content: space-between;">
+              <h3>Semana {{ week.wk }}</h3>
+              <span class="ab-pill">${{ week.total_general|miles0 }}</span>
+            </div>
+            <div class="ab-bar-track" style="margin-top: 12px;">
+              <div class="ab-bar-fill warn" style="width: {{ week.pct_total }}%;"></div>
+            </div>
+
+            <div class="ab-stack" style="margin-top: 14px;">
+              {% for row in week.rows %}
+                <div class="ab-bar-row">
+                  <strong>{{ row.label }}</strong>
+                  <div class="ab-bar-track">
+                    <div class="ab-bar-fill" style="width: {{ row.pct_total }}%;"></div>
+                  </div>
+                  <span>${{ row.total|miles0 }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+
+  {% if total_items == 0 %}
+    <div class="ab-empty">No hay movimientos de prendas en el mes seleccionado.</div>
+  {% endif %}
+
+  {% for section in report %}
+    <section class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Preferencias</p>
+          <h2 class="ab-mini-title">{{ section.label }}</h2>
+        </div>
+        <span class="ab-chip">{{ section.mode|title }}</span>
+      </div>
+
+      <div class="ab-card-grid">
+        {% for card in section.cards %}
+          <article class="ab-list-card">
+            <h3>{{ card.title }}</h3>
+
+            {% if section.mode == "mensual" %}
+              {% if card.items %}
+                <div class="ab-visual-list" style="margin-top: 14px;">
+                  {% for item in card.items %}
                     <div class="ab-bar-row">
-                      <strong>{{ row.label }}</strong>
+                      <strong>{{ item.label }}</strong>
                       <div class="ab-bar-track">
-                        <div class="ab-bar-fill" style="width: {{ row.pct_total }}%;"></div>
+                        <div class="ab-bar-fill{% if not item.fill_color and item.tone != 'accent' %} {{ item.tone }}{% endif %}" style="width: {{ item.pct }}%;{% if item.fill_color %} background: {{ item.fill_color }};{% endif %}"></div>
                       </div>
-                      <span>${{ row.total|miles0 }}</span>
+                      <span>{{ item.value }}</span>
                     </div>
                   {% endfor %}
                 </div>
-              </article>
-            {% endfor %}
-          </div>
-        {% endif %}
+              {% else %}
+                <div class="ab-empty" style="margin-top: 14px;">Sin datos.</div>
+              {% endif %}
+            {% else %}
+              {% if card.rows %}
+                <div class="ab-stack" style="margin-top: 14px;">
+                  {% for row in card.rows %}
+                    <div class="ab-stack" style="gap: 8px;">
+                      <div class="ab-row" style="justify-content: space-between;">
+                        <strong>{{ row.label }}</strong>
+                        <span>{{ row.total }}</span>
+                      </div>
+                      <div class="ab-microbars">
+                        {% for week in row.weeks %}
+                          <div class="ab-microbar" title="Semana {{ forloop.counter }}: {{ week.value }}">
+                            <span style="height: {{ week.pct }}%;{% if row.fill_color %} background: {{ row.fill_color }};{% endif %}"></span>
+                          </div>
+                        {% endfor %}
+                      </div>
+                      <div class="ab-bar-track">
+                        <div class="ab-bar-fill{% if not row.fill_color and row.tone != 'accent' %} {{ row.tone }}{% endif %}" style="width: {{ row.total_pct }}%;{% if row.fill_color %} background: {{ row.fill_color }};{% endif %}"></div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                <div class="ab-chip-row" style="margin-top: 14px;">
+                  {% for week_label in section.weeks_labels %}
+                    <span class="ab-chip">Semana {{ week_label }}</span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="ab-empty" style="margin-top: 14px;">Sin datos.</div>
+              {% endif %}
+            {% endif %}
+          </article>
+        {% endfor %}
       </div>
-    </div>
-
-    {% if total_items == 0 %}
-      <div class="ab-empty">No hay movimientos de prendas en el mes seleccionado.</div>
-    {% endif %}
-
-    {% for section in report %}
-      <div class="ab-card" style="border-radius: 22px;">
-        <div class="ab-body">
-          <div class="ab-section-title">
-            <h2>{{ section.label }}</h2>
-            <span class="ab-chip">{{ section.mode|title }}</span>
-          </div>
-
-          <div class="ab-card-grid">
-            {% for card in section.cards %}
-              <article class="ab-list-card">
-                <h3>{{ card.title }}</h3>
-
-                {% if section.mode == "mensual" %}
-                  {% if card.items %}
-                    <div class="ab-visual-list" style="margin-top: 14px;">
-                      {% for item in card.items %}
-                        <div class="ab-bar-row">
-                          <strong>{{ item.label }}</strong>
-                          <div class="ab-bar-track">
-                            <div class="ab-bar-fill{% if not item.fill_color and item.tone != 'accent' %} {{ item.tone }}{% endif %}" style="width: {{ item.pct }}%;{% if item.fill_color %} background: {{ item.fill_color }};{% endif %}"></div>
-                          </div>
-                          <span>{{ item.value }}</span>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <div class="ab-empty" style="margin-top: 14px;">Sin datos.</div>
-                  {% endif %}
-                {% else %}
-                  {% if card.rows %}
-                    <div class="ab-stack" style="margin-top: 14px;">
-                      {% for row in card.rows %}
-                        <div class="ab-stack" style="gap: 8px;">
-                          <div class="ab-row" style="justify-content: space-between;">
-                            <strong>{{ row.label }}</strong>
-                            <span>{{ row.total }}</span>
-                          </div>
-                          <div class="ab-microbars">
-                            {% for week in row.weeks %}
-                              <div class="ab-microbar" title="Semana {{ forloop.counter }}: {{ week.value }}">
-                                <span style="height: {{ week.pct }}%;{% if row.fill_color %} background: {{ row.fill_color }};{% endif %}"></span>
-                              </div>
-                            {% endfor %}
-                          </div>
-                          <div class="ab-bar-track">
-                            <div class="ab-bar-fill{% if not row.fill_color and row.tone != 'accent' %} {{ row.tone }}{% endif %}" style="width: {{ row.total_pct }}%;{% if row.fill_color %} background: {{ row.fill_color }};{% endif %}"></div>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    </div>
-                    <div class="ab-chip-row" style="margin-top: 14px;">
-                      {% for week_label in section.weeks_labels %}
-                        <span class="ab-chip">Semana {{ week_label }}</span>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <div class="ab-empty" style="margin-top: 14px;">Sin datos.</div>
-                  {% endif %}
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-</section>
+    </section>
+  {% endfor %}
+</div>
 {% endblock %}

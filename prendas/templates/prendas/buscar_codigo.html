@@ -1,183 +1,246 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="ab-card">
-  <div class="ab-head">
-    <div>
-      <p class="ab-kicker">Busqueda</p>
-      <h1 class="ab-title">Buscar prenda</h1>
-      <p class="ab-sub">Puedes buscar directo por codigo o filtrar por prenda, marca, color, talle y origen.</p>
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Busqueda</p>
+    <h1 class="ab-title">Buscar prenda</h1>
+    <p class="ab-sub">La pantalla separa busqueda directa por codigo y exploracion por filtros para que el recorrido sea simple incluso si no conoces el sistema.</p>
+    <div class="ab-chip-row">
+      <span class="ab-chip">Codigo rapido</span>
+      <span class="ab-chip">Filtros cruzados</span>
+      <span class="ab-chip">Reservas visibles</span>
+    </div>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Cuando usar cada bloque</span>
+    <div class="ab-summary-list">
+      <div>
+        <span>Codigo</span>
+        <strong>Si ya sabes que buscas y quieres llegar en un paso</strong>
+      </div>
+      <div>
+        <span>Filtros</span>
+        <strong>Si recuerdas marca, color, talle u origen, pero no el codigo</strong>
+      </div>
+      <div>
+        <span>Resultado</span>
+        <strong>Tambien muestra reservas activas para no prometer una prenda ocupada</strong>
+      </div>
     </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
+      <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
     </div>
-  </div>
+  </aside>
+</section>
 
-  <div class="ab-body ab-stack">
-    <form method="get" class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body">
-        <div class="ab-section-title">
-          <h2>Buscar solo por codigo</h2>
-        </div>
-        <div class="ab-grid">
-          <div class="col-8 ab-field">
-            <label class="ab-lab" for="id_codigo">Codigo</label>
-            <input class="ab-inp" type="text" name="codigo" id="id_codigo" value="{{ codigo_buscado }}" placeholder="Ej: SA-001 o 001" autocomplete="off">
-          </div>
-          <div class="col-4 ab-field" style="justify-content: flex-end;">
-            <label class="ab-lab">&nbsp;</label>
-            <div class="ab-actions">
-              <button class="ab-btn" type="submit">Buscar codigo</button>
-              <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Limpiar</a>
-            </div>
-          </div>
+<div class="ab-page-stack">
+  <section class="ab-search-layout">
+    <article class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Atajo</p>
+          <h2 class="ab-mini-title">Buscar solo por codigo</h2>
         </div>
       </div>
-    </form>
 
-    {% if codigo_buscado %}
-      <div class="ab-card" style="border-radius: 22px;">
-        <div class="ab-body">
-          <div class="ab-section-title">
-            <h2>Resultado por codigo</h2>
-            <span class="ab-pill">{{ prendas_por_codigo|length }} coincidencia{{ prendas_por_codigo|length|pluralize }}</span>
-          </div>
+      <form method="get" class="ab-stack">
+        <div class="ab-field">
+          <label class="ab-lab" for="id_codigo">Codigo</label>
+          <input class="ab-inp" type="text" name="codigo" id="id_codigo" value="{{ codigo_buscado }}" placeholder="Ej: SA-001 o 001" autocomplete="off">
+        </div>
+        <div class="ab-actions">
+          <button class="ab-btn" type="submit">Buscar codigo</button>
+          <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Limpiar</a>
+        </div>
+      </form>
+    </article>
 
-          {% if prendas_por_codigo %}
-            <div class="ab-card-grid">
-              {% for prenda in prendas_por_codigo %}
-                <article class="ab-list-card">
-                  <div class="ab-row" style="justify-content: space-between;">
-                    <h3>{{ prenda.codigo }}</h3>
-                    <span class="ab-badge {% if prenda.estado == 'DISPONIBLE' %}ok{% elif prenda.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
-                      {{ prenda.get_estado_display }}
-                    </span>
-                  </div>
-
-                  <div class="ab-meta" style="margin-top: 10px;">
-                    <div><strong>Prenda: {{ prenda.get_categoria_display }}</strong></div>
-                    <div>Marca: {{ prenda.marca|default:"-" }}</div>
-                    <div>Color: {{ prenda.color|default:"-" }}</div>
-                    <div>Talle: {{ prenda.talle|default:"-" }}</div>
-                    <div>Origen: {{ prenda.get_origen_display|default:"-" }}</div>
-                    {% if prenda.alquileres_activos %}
-                      <div style="margin-top: 10px;"><strong>Reservas activas</strong></div>
-                      {% for alquiler in prenda.alquileres_activos %}
-                        <div>
-                          {{ alquiler.get_estado_alquiler_display }}:
-                          {{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}
-                          {% if alquiler.cliente_nombre %} - {{ alquiler.cliente_nombre }}{% endif %}
-                        </div>
-                      {% endfor %}
-                    {% endif %}
-                  </div>
-
-                  <div class="ab-actions" style="margin-top: 14px;">
-                    <a class="ab-btn2" href="{% url 'prendas:editar' prenda.id %}">Modificar</a>
-                  </div>
-                </article>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="ab-empty">No se encontraron prendas con ese codigo.</div>
-          {% endif %}
+    <article class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Explorar</p>
+          <h2 class="ab-mini-title">Buscar con filtros</h2>
         </div>
       </div>
-    {% endif %}
 
-    <form method="get" class="ab-card" style="border-radius: 22px;">
-      <div class="ab-body">
-        <div class="ab-section-title">
-          <h2>Buscar con filtros</h2>
-        </div>
+      <form method="get" class="ab-stack">
         <div class="ab-grid">
-          <div class="col-2 ab-field">
+          <div class="col-6 ab-field">
             <label class="ab-lab" for="{{ form.categoria.id_for_label }}">Prenda</label>
             {{ form.categoria }}
           </div>
-          <div class="col-2 ab-field">
+          <div class="col-6 ab-field">
             <label class="ab-lab" for="{{ form.marca.id_for_label }}">Marca</label>
             {{ form.marca }}
           </div>
-          <div class="col-2 ab-field">
+          <div class="col-6 ab-field">
             <label class="ab-lab" for="{{ form.color.id_for_label }}">Color</label>
             {{ form.color }}
           </div>
-          <div class="col-2 ab-field">
+          <div class="col-6 ab-field">
             <label class="ab-lab" for="{{ form.talle.id_for_label }}">Talle</label>
             {{ form.talle }}
           </div>
-          <div class="col-2 ab-field">
+          <div class="col-6 ab-field">
             <label class="ab-lab" for="{{ form.origen.id_for_label }}">Origen</label>
             {{ form.origen }}
           </div>
-          <div class="col-2 ab-field" style="justify-content: flex-end;">
-            <label class="ab-lab">&nbsp;</label>
-            <div class="ab-actions">
-              <button class="ab-btn" type="submit">Buscar</button>
-            </div>
-          </div>
         </div>
-
+        <div class="ab-actions">
+          <button class="ab-btn" type="submit">Buscar</button>
+          <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Limpiar</a>
+        </div>
         {% if form.errors %}
-          <div class="ab-msg err" style="margin-top: 14px;">Revisa los filtros seleccionados.</div>
+          <div class="ab-msg err">Revisa los filtros seleccionados.</div>
         {% endif %}
-      </div>
-    </form>
+      </form>
+    </article>
+  </section>
 
-    {% if buscado %}
-      <div class="ab-card" style="border-radius: 22px;">
-        <div class="ab-body">
-          <div class="ab-section-title">
-            <h2>Resultados por filtros</h2>
-            <span class="ab-pill">{{ prendas|length }} codigo{{ prendas|length|pluralize }}</span>
-          </div>
-
-          {% if prendas %}
-            <div class="ab-card-grid">
-              {% for prenda in prendas %}
-                <article class="ab-list-card">
-                  <div class="ab-row" style="justify-content: space-between;">
-                    <h3>{{ prenda.codigo }}</h3>
-                    <span class="ab-badge {% if prenda.estado == 'DISPONIBLE' %}ok{% elif prenda.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
-                      {{ prenda.get_estado_display }}
-                    </span>
-                  </div>
-
-                  <div class="ab-meta" style="margin-top: 10px;">
-                    <div><strong>{{ prenda.get_categoria_display }}</strong></div>
-                    <div>Marca: {{ prenda.marca|default:"-" }}</div>
-                    <div>Talle: {{ prenda.talle|default:"-" }}</div>
-                    <div>Color: {{ prenda.color|default:"-" }}</div>
-                    <div>Origen: {{ prenda.get_origen_display|default:"-" }}</div>
-                    {% if prenda.alquileres_activos %}
-                      <div style="margin-top: 10px;"><strong>Reservas activas</strong></div>
-                      {% for alquiler in prenda.alquileres_activos %}
-                        <div>
-                          {{ alquiler.get_estado_alquiler_display }}:
-                          {{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}
-                          {% if alquiler.cliente_nombre %} - {{ alquiler.cliente_nombre }}{% endif %}
-                        </div>
-                      {% endfor %}
-                    {% endif %}
-                  </div>
-
-                  <div class="ab-actions" style="margin-top: 14px;">
-                    <a class="ab-btn2" href="{% url 'prendas:editar' prenda.id %}">Modificar</a>
-                  </div>
-                </article>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="ab-empty">No hay prendas con esos filtros.</div>
-          {% endif %}
+  {% if codigo_buscado %}
+    <section class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Resultado</p>
+          <h2 class="ab-mini-title">Resultado por codigo</h2>
         </div>
+        <span class="ab-pill">{{ prendas_por_codigo|length }} coincidencia{{ prendas_por_codigo|length|pluralize }}</span>
       </div>
-    {% else %}
-      <div class="ab-form-note">
-        El bloque de filtros sirve para cruzar prenda, marca, color, talle y origen.
-        Si ya conoces el codigo, usa la busqueda exclusiva de arriba.
+
+      {% if prendas_por_codigo %}
+        <div class="ab-entity-list">
+          {% for prenda in prendas_por_codigo %}
+            <article class="ab-entity-card">
+              <div class="ab-entity-card-head">
+                <div>
+                  <p class="ab-entity-card-eyebrow">Codigo encontrado</p>
+                  <h3 class="ab-entity-card-title">{{ prenda.codigo }}</h3>
+                  <p class="ab-entity-card-subtitle">Prenda: {{ prenda.get_categoria_display }}</p>
+                </div>
+                <div class="ab-status-stack">
+                  <span class="ab-badge {% if prenda.estado == 'DISPONIBLE' %}ok{% elif prenda.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
+                    {{ prenda.get_estado_display }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="ab-entity-metrics">
+                <div class="ab-metric-chip">
+                  <span>Marca</span>
+                  <strong>{{ prenda.marca|default:"-" }}</strong>
+                </div>
+                <div class="ab-metric-chip">
+                  <span>Color</span>
+                  <strong>{{ prenda.color|default:"-" }}</strong>
+                </div>
+                <div class="ab-metric-chip">
+                  <span>Talle</span>
+                  <strong>{{ prenda.talle|default:"-" }}</strong>
+                </div>
+                <div class="ab-metric-chip">
+                  <span>Origen</span>
+                  <strong>{{ prenda.get_origen_display|default:"-" }}</strong>
+                </div>
+              </div>
+
+              {% if prenda.alquileres_activos %}
+                <section class="ab-entity-section">
+                  <h4>Reservas activas</h4>
+                  <div class="ab-inline-item-list">
+                    {% for alquiler in prenda.alquileres_activos %}
+                      <div class="ab-inline-item">
+                        <strong>{{ alquiler.get_estado_alquiler_display }}</strong>
+                        <span>{{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}{% if alquiler.cliente_nombre %} · {{ alquiler.cliente_nombre }}{% endif %}</span>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </section>
+              {% endif %}
+
+              <div class="ab-actions">
+                <a class="ab-btn2" href="{% url 'prendas:editar' prenda.id %}">Modificar</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="ab-empty">No se encontraron prendas con ese codigo.</div>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if buscado %}
+    <section class="ab-section-card">
+      <div class="ab-section-head">
+        <div>
+          <p class="ab-kicker">Resultados</p>
+          <h2 class="ab-mini-title">Resultados por filtros</h2>
+        </div>
+        <span class="ab-pill">{{ prendas|length }} codigo{{ prendas|length|pluralize }}</span>
       </div>
-    {% endif %}
-  </div>
-</section>
+
+      {% if prendas %}
+        <div class="ab-entity-list">
+          {% for prenda in prendas %}
+            <article class="ab-entity-card">
+              <div class="ab-entity-card-head">
+                <div>
+                  <p class="ab-entity-card-eyebrow">{{ prenda.get_categoria_display }}</p>
+                  <h3 class="ab-entity-card-title">{{ prenda.codigo }}</h3>
+                  <p class="ab-entity-card-subtitle">{{ prenda.marca|default:"Sin marca" }}</p>
+                </div>
+                <div class="ab-status-stack">
+                  <span class="ab-badge {% if prenda.estado == 'DISPONIBLE' %}ok{% elif prenda.estado == 'DANADA' %}danger{% else %}warn{% endif %}">
+                    {{ prenda.get_estado_display }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="ab-entity-metrics">
+                <div class="ab-metric-chip">
+                  <span>Color</span>
+                  <strong>{{ prenda.color|default:"-" }}</strong>
+                </div>
+                <div class="ab-metric-chip">
+                  <span>Talle</span>
+                  <strong>{{ prenda.talle|default:"-" }}</strong>
+                </div>
+                <div class="ab-metric-chip">
+                  <span>Origen</span>
+                  <strong>{{ prenda.get_origen_display|default:"-" }}</strong>
+                </div>
+              </div>
+
+              {% if prenda.alquileres_activos %}
+                <section class="ab-entity-section">
+                  <h4>Reservas activas</h4>
+                  <div class="ab-inline-item-list">
+                    {% for alquiler in prenda.alquileres_activos %}
+                      <div class="ab-inline-item">
+                        <strong>{{ alquiler.get_estado_alquiler_display }}</strong>
+                        <span>{{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}{% if alquiler.cliente_nombre %} · {{ alquiler.cliente_nombre }}{% endif %}</span>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </section>
+              {% endif %}
+
+              <div class="ab-actions">
+                <a class="ab-btn2" href="{% url 'prendas:editar' prenda.id %}">Modificar</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="ab-empty">No hay prendas con esos filtros.</div>
+      {% endif %}
+    </section>
+  {% else %}
+    <div class="ab-form-note">
+      Si ya conoces el codigo, usa el bloque superior.
+      Si no, combina prenda, marca, color, talle y origen para ir cerrando el resultado.
+    </div>
+  {% endif %}
+</div>
 {% endblock %}
