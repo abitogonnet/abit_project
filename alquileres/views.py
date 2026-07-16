@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from urllib.parse import urlencode
 
@@ -18,6 +18,18 @@ try:
     from visitas.models import Visita
 except Exception:  # pragma: no cover - fallback defensivo si la app no esta disponible
     Visita = None
+
+
+RUEDOS_MESSAGE_LABELS = {
+    Prenda.C_SACO: "SACO",
+    Prenda.C_PANTALON: "PANT",
+    Prenda.C_CAMISA: "CAMISA",
+    Prenda.C_CHALECO: "CHALECO",
+    Prenda.C_MONO: "MONO",
+    Prenda.C_CORBATA: "CORBATA",
+    Prenda.C_ZAPATOS: "ZAPATOS",
+    Prenda.C_CINTURON: "CINTURON",
+}
 
 
 def home(request):
@@ -207,10 +219,91 @@ def _descripcion_prenda(prenda: Prenda) -> str:
 def _texto_ruedo(item: AlquilerItem) -> str:
     partes = []
     if item.ruedo_valor is not None:
-        partes.append(str(item.ruedo_valor))
+        partes.append(_fmt_decimal_compact(item.ruedo_valor))
     if item.ruedo_tipo:
         partes.append(item.get_ruedo_tipo_display())
     return " ".join(partes)
+
+
+def _start_of_week(day):
+    return day - timedelta(days=day.weekday())
+
+
+def _week_value(day):
+    iso = day.isocalendar()
+    return f"{iso.year}-W{iso.week:02d}"
+
+
+def _parse_week_value(raw, fallback):
+    value = (raw or "").strip()
+    if not value or "-W" not in value:
+        return fallback
+
+    year_text, week_text = value.split("-W", 1)
+    try:
+        return date.fromisocalendar(int(year_text), int(week_text), 1)
+    except Exception:
+        return fallback
+
+
+def _fmt_decimal_compact(value):
+    if value is None:
+        return ""
+
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
+
+def _texto_ruedo_mensaje(item: AlquilerItem) -> str:
+    cantidad = _fmt_decimal_compact(item.ruedo_valor)
+    tipo = item.get_ruedo_tipo_display().upper() if item.ruedo_tipo else ""
+    if cantidad and tipo:
+        return f"{cantidad}{tipo}"
+    return cantidad or tipo
+
+
+def _detalle_prenda_ruedo_tabla(prenda: Prenda) -> str:
+    partes = [prenda.get_categoria_display()]
+    if prenda.color:
+        partes.append(prenda.color)
+    if prenda.marca:
+        partes.append(prenda.marca)
+    if prenda.talle:
+        partes.append(f"talle {prenda.talle}")
+    if prenda.origen:
+        partes.append(prenda.get_origen_display())
+    return " ".join(partes)
+
+
+def _detalle_prenda_ruedo_mensaje(prenda: Prenda) -> str:
+    partes = [RUEDOS_MESSAGE_LABELS.get(prenda.categoria, prenda.get_categoria_display().upper())]
+    if prenda.color:
+        partes.append(prenda.color.upper())
+    if prenda.marca:
+        partes.append(prenda.marca.upper())
+    if prenda.talle:
+        partes.append(str(prenda.talle).upper())
+    if prenda.origen:
+        partes.append(prenda.get_origen_display().upper())
+    return " ".join(partes)
+
+
+def _armar_mensaje_ruedos(items):
+    if not items:
+        return ""
+
+    partes = []
+    fecha_actual = None
+    for item in items:
+        if item["fecha_a_hacer"] != fecha_actual:
+            if fecha_actual is not None:
+                partes.append("")
+            partes.append(f'FECHA A HACER {item["fecha_a_hacer"].strftime("%d/%m/%Y")}')
+            fecha_actual = item["fecha_a_hacer"]
+        partes.append(item["mensaje_linea"])
+    return "\n".join(partes)
 
 
 def _numero_codigo(codigo: str) -> str:
@@ -849,6 +942,67 @@ def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
         "filter_hidden_fields": hidden_fields,
         "disponibles_json": _disponibles_payload(disponibles),
     }
+
+
+def ruedos(request):
+    hoy = timezone.localdate()
+    semana_actual = _start_of_week(hoy)
+    semana_inicio = _parse_week_value(request.GET.get("semana"), semana_actual)
+    semana_fin = semana_inicio + timedelta(days=6)
+
+    items = list(
+        AlquilerItem.objects
+        .select_related("alquiler", "prenda")
+        .filter(
+            alquiler__fecha_entrega__gte=semana_inicio,
+            alquiler__fecha_entrega__lte=semana_fin,
+            ruedo_valor__gt=0,
+        )
+        .order_by(
+            "alquiler__fecha_entrega",
+            "alquiler__cliente_nombre",
+            "persona_num",
+            "prenda__codigo",
+        )
+    )
+
+    ruedos_items = []
+    for item in items:
+        alquiler = item.alquiler
+        prenda = item.prenda
+        persona_nombre = (alquiler.persona1_nombre if item.persona_num == 1 else alquiler.persona2_nombre).strip()
+        fecha_a_hacer = alquiler.fecha_entrega - timedelta(days=1)
+        mensaje_linea = f"{_detalle_prenda_ruedo_mensaje(prenda)}, {_texto_ruedo_mensaje(item)}".strip()
+
+        ruedos_items.append({
+            "fecha_retiro": alquiler.fecha_entrega,
+            "fecha_a_hacer": fecha_a_hacer,
+            "cliente_nombre": alquiler.cliente_nombre,
+            "persona_nombre": persona_nombre or f"Persona {item.persona_num}",
+            "codigo": prenda.codigo,
+            "detalle": _detalle_prenda_ruedo_tabla(prenda),
+            "ruedo": _texto_ruedo(item) or "-",
+            "mensaje_linea": mensaje_linea,
+        })
+
+    mensaje_ruedos = _armar_mensaje_ruedos(ruedos_items)
+
+    return render(request, "alquileres/ruedos.html", {
+        "hoy": hoy,
+        "semana_inicio": semana_inicio,
+        "semana_fin": semana_fin,
+        "semana_value": _week_value(semana_inicio),
+        "semana_anterior": _week_value(semana_inicio - timedelta(days=7)),
+        "semana_siguiente": _week_value(semana_inicio + timedelta(days=7)),
+        "semana_actual": _week_value(semana_actual),
+        "ruedos_items": ruedos_items,
+        "mensaje_ruedos": mensaje_ruedos,
+        "resumen_ruedos": [
+            {"label": "Prendas con ruedo", "value": len(ruedos_items)},
+            {"label": "Clientes", "value": len({item["cliente_nombre"] for item in ruedos_items})},
+            {"label": "Fechas a hacer", "value": len({item["fecha_a_hacer"] for item in ruedos_items})},
+        ],
+    })
 
 
 def panel(request, alquiler_id, panel_name):

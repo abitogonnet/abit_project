@@ -662,6 +662,23 @@ textarea.ab-inp:focus {
   font: 0.95rem/1.55 "Consolas", "Courier New", monospace;
 }
 
+.ab-copy-preview {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.ab-ruedos-table {
+  min-width: 980px;
+}
+
+.ab-small[data-copy-ruedos-status] {
+  min-height: 1.2rem;
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
 .ab-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);

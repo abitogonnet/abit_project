@@ -9,7 +9,7 @@ from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA
 from prendas.models import Prenda
 
 from .models import Alquiler, AlquilerItem
-from .views import _armar_mensaje_cliente
+from .views import _armar_mensaje_cliente, _armar_mensaje_ruedos
 
 
 class AlquileresViewsTests(TestCase):
@@ -915,3 +915,132 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(form.fields["p1_saco_numero"].widget.attrs["data-prefix"], "SA")
         self.assertEqual(form.fields["p1_saco"].widget.attrs["data-prefix"], "SA")
         self.assertEqual(form.fields["p2_cinturon_numero"].widget.attrs["data-prefix"], "CI")
+
+    def test_mensaje_ruedos_agrupa_por_fecha_y_solo_copia_detalle(self):
+        mensaje = _armar_mensaje_ruedos([
+            {
+                "fecha_a_hacer": date(2026, 7, 16),
+                "mensaje_linea": "PANT NEGRO AIRES 44 IMPORTADO, 5CM",
+            },
+            {
+                "fecha_a_hacer": date(2026, 7, 16),
+                "mensaje_linea": "SACO NEGRO BOILER 40, 2CM",
+            },
+            {
+                "fecha_a_hacer": date(2026, 7, 18),
+                "mensaje_linea": "PANT AZUL OXFORD 42 NACIONAL, 3CM",
+            },
+        ])
+
+        self.assertEqual(
+            mensaje,
+            "FECHA A HACER 16/07/2026\n"
+            "PANT NEGRO AIRES 44 IMPORTADO, 5CM\n"
+            "SACO NEGRO BOILER 40, 2CM\n\n"
+            "FECHA A HACER 18/07/2026\n"
+            "PANT AZUL OXFORD 42 NACIONAL, 3CM",
+        )
+        self.assertNotIn("PA-", mensaje)
+
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 16))
+    def test_ruedos_filtra_por_semana_y_prepara_mensaje_para_copiar(self, _mock_localdate):
+        pantalon_actual = Prenda.objects.create(
+            codigo="PA-070",
+            categoria=Prenda.C_PANTALON,
+            marca="Aires",
+            color="Negro",
+            talle="44",
+            origen=Prenda.O_IMP,
+        )
+        saco_actual = Prenda.objects.create(
+            codigo="SA-070",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="40",
+        )
+        pantalon_pasado = Prenda.objects.create(
+            codigo="PA-071",
+            categoria=Prenda.C_PANTALON,
+            marca="Oxford",
+            color="Azul",
+            talle="42",
+            origen=Prenda.O_NAC,
+        )
+
+        alquiler_actual = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 14),
+            fecha_reserva=date(2026, 7, 14),
+            fecha_entrega=date(2026, 7, 17),
+            fecha_devolucion=date(2026, 7, 20),
+            cliente_nombre="Leandro Centeno",
+            cliente_telefono="1111",
+            persona1_nombre="Leandro",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        AlquilerItem.objects.create(
+            alquiler=alquiler_actual,
+            persona_num=1,
+            prenda=pantalon_actual,
+            ruedo_valor="5",
+            ruedo_tipo=AlquilerItem.RUEDO_CM,
+        )
+        AlquilerItem.objects.create(
+            alquiler=alquiler_actual,
+            persona_num=1,
+            prenda=saco_actual,
+            ruedo_valor="2",
+            ruedo_tipo=AlquilerItem.RUEDO_CM,
+        )
+
+        alquiler_pasado = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 7),
+            fecha_reserva=date(2026, 7, 7),
+            fecha_entrega=date(2026, 7, 10),
+            fecha_devolucion=date(2026, 7, 13),
+            cliente_nombre="Pedro Lara",
+            cliente_telefono="2222",
+            persona1_nombre="Pedro",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+        AlquilerItem.objects.create(
+            alquiler=alquiler_pasado,
+            persona_num=1,
+            prenda=pantalon_pasado,
+            ruedo_valor="3",
+            ruedo_tipo=AlquilerItem.RUEDO_CM,
+        )
+
+        response = self.client.get(reverse("alquileres:ruedos"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Leandro Centeno")
+        self.assertContains(response, "PA-070")
+        self.assertContains(response, "Pantalón Negro Aires talle 44 Importado")
+        self.assertContains(response, "5 cm")
+        self.assertContains(response, "16/07/2026")
+        self.assertNotContains(response, "Pedro Lara")
+        self.assertContains(response, "Copiar mensaje")
+        self.assertEqual(
+            response.context["mensaje_ruedos"],
+            "FECHA A HACER 16/07/2026\n"
+            "PANT NEGRO AIRES 44 IMPORTADO, 5CM\n"
+            "SACO NEGRO BOILER 40, 2CM",
+        )
+
+        response_pasado = self.client.get(reverse("alquileres:ruedos"), {
+            "semana": "2026-W28",
+        })
+
+        self.assertEqual(response_pasado.status_code, 200)
+        self.assertContains(response_pasado, "Pedro Lara")
+        self.assertNotContains(response_pasado, "Leandro Centeno")
+        self.assertEqual(
+            response_pasado.context["mensaje_ruedos"],
+            "FECHA A HACER 09/07/2026\n"
+            "PANT AZUL OXFORD 42 NACIONAL, 3CM",
+        )

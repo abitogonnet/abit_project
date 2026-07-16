@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+{{ mensaje_ruedos|json_script:"ab-ruedos-message" }}
+
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Alquileres</p>
+    <h1 class="ab-title">Ruedos</h1>
+    <div class="ab-chip-row" style="margin-top: 18px;">
+      <span class="ab-chip">Semana {{ semana_inicio|date:"d/m" }} al {{ semana_fin|date:"d/m" }}</span>
+      <span class="ab-chip">{{ ruedos_items|length }} prenda{{ ruedos_items|length|pluralize }}</span>
+    </div>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <div class="ab-summary-list">
+      {% for item in resumen_ruedos %}
+        <div>
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="ab-actions">
+      <button class="ab-btn" type="button" data-copy-ruedos {% if not mensaje_ruedos %}disabled{% endif %}>Copiar mensaje</button>
+      <a class="ab-btn2" href="{% url 'alquileres:ruedos' %}?semana={{ semana_actual }}">Semana actual</a>
+    </div>
+    <div class="ab-small" data-copy-ruedos-status></div>
+  </aside>
+</section>
+
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <form method="get" class="ab-inline-form-grid">
+      <div class="ab-field">
+        <label class="ab-lab" for="id_semana">Semana</label>
+        <input class="ab-inp" type="week" name="semana" id="id_semana" value="{{ semana_value }}">
+      </div>
+      <div class="ab-field">
+        <label class="ab-lab">&nbsp;</label>
+        <div class="ab-actions">
+          <button class="ab-btn" type="submit">Ver semana</button>
+          <a class="ab-btn2" href="{% url 'alquileres:ruedos' %}?semana={{ semana_anterior }}">Semana anterior</a>
+          <a class="ab-btn2" href="{% url 'alquileres:ruedos' %}?semana={{ semana_siguiente }}">Semana siguiente</a>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Mensaje</p>
+        <h2 class="ab-mini-title">Listado para copiar</h2>
+      </div>
+      <button class="ab-btn2" type="button" data-copy-ruedos {% if not mensaje_ruedos %}disabled{% endif %}>Copiar mensaje</button>
+    </div>
+
+    {% if mensaje_ruedos %}
+      <pre class="ab-pre ab-copy-preview">{{ mensaje_ruedos }}</pre>
+    {% else %}
+      <div class="ab-empty">No hay prendas con ruedo cargado en esta semana.</div>
+    {% endif %}
+  </section>
+
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Detalle</p>
+        <h2 class="ab-mini-title">Prendas con ruedo</h2>
+      </div>
+      <span class="ab-pill">{{ ruedos_items|length }} item{{ ruedos_items|length|pluralize }}</span>
+    </div>
+
+    {% if ruedos_items %}
+      <div class="ab-table-wrap">
+        <table class="ab-table ab-ruedos-table">
+          <thead>
+            <tr>
+              <th>Fecha a hacer</th>
+              <th>Retiro</th>
+              <th>Cliente</th>
+              <th>Persona</th>
+              <th>Codigo</th>
+              <th>Prenda</th>
+              <th>Ruedo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in ruedos_items %}
+              <tr>
+                <td class="ab-num">{{ item.fecha_a_hacer|date:"d/m/Y" }}</td>
+                <td class="ab-num">{{ item.fecha_retiro|date:"d/m/Y" }}</td>
+                <td>{{ item.cliente_nombre }}</td>
+                <td>{{ item.persona_nombre }}</td>
+                <td><strong>{{ item.codigo }}</strong></td>
+                <td>{{ item.detalle }}</td>
+                <td><strong>{{ item.ruedo }}</strong></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="ab-empty">No hay ruedos pendientes en la semana elegida.</div>
+    {% endif %}
+  </section>
+</div>
+
+<script>
+  (function () {
+    const payloadNode = document.getElementById("ab-ruedos-message");
+    const copyButtons = Array.from(document.querySelectorAll("[data-copy-ruedos]"));
+    const statusNode = document.querySelector("[data-copy-ruedos-status]");
+    if (!payloadNode || !copyButtons.length) return;
+
+    const text = JSON.parse(payloadNode.textContent || '""');
+
+    async function copyMessage() {
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        if (statusNode) {
+          statusNode.textContent = "Mensaje copiado.";
+        }
+      } catch (_error) {
+        if (statusNode) {
+          statusNode.textContent = "No se pudo copiar.";
+        }
+      }
+    }
+
+    copyButtons.forEach(function (button) {
+      button.addEventListener("click", copyMessage);
+    });
+  })();
+</script>
+{% endblock %}
