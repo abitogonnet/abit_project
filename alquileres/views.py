@@ -33,6 +33,28 @@ RUEDOS_MESSAGE_LABELS = {
 
 
 def home(request):
+    if request.method == "POST":
+        alquiler_id = request.POST.get("alq_id")
+        alquiler = get_object_or_404(Alquiler, id=alquiler_id)
+        accion = request.POST.get("accion", "")
+
+        if accion == "marcar_entregado":
+            changed, error = _actualizar_estado_operativo(
+                alquiler,
+                nuevo_estado=Alquiler.EST_ENTREGADO,
+                auto_pagar_al_entregar=True,
+            )
+            if error:
+                messages.error(request, error)
+            elif changed:
+                alquiler.save()
+                _sync_prendas_por_estado(alquiler)
+                messages.success(request, f"Alquiler #{alquiler.id} marcado como entregado.")
+            else:
+                messages.info(request, "No hubo cambios.")
+
+            return redirect("alquileres:home")
+
     hoy = timezone.localdate()
     proximos_siete = hoy + timedelta(days=7)
 
@@ -660,6 +682,66 @@ def _refresh_prendas_estado_por_ids(prenda_ids):
     _refresh_prendas_estado(prendas)
 
 
+def _actualizar_estado_operativo(
+    alquiler: Alquiler,
+    *,
+    nuevo_estado: str = "",
+    nuevo_saldo: str = "",
+    metodo_saldo: str = "",
+    auto_pagar_al_entregar: bool = False,
+):
+    saldo_editable = alquiler.saldo > 0
+    changed = False
+    auto_pago = False
+
+    if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
+        if auto_pagar_al_entregar and nuevo_estado == Alquiler.EST_ENTREGADO:
+            if saldo_editable and alquiler.estado_saldo != Alquiler.SAL_PAG:
+                nuevo_saldo = Alquiler.SAL_PAG
+                auto_pago = True
+
+        if alquiler.estado_alquiler != nuevo_estado:
+            alquiler.estado_alquiler = nuevo_estado
+            changed = True
+
+    if saldo_editable and nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
+        if nuevo_saldo == Alquiler.SAL_PAG:
+            if metodo_saldo and metodo_saldo not in dict(Alquiler.METODOS_PAGO):
+                return False, "Metodo de pago invalido."
+
+            requires_method = (
+                alquiler.estado_saldo != Alquiler.SAL_PAG
+                and not auto_pago
+                and not metodo_saldo
+            )
+            if requires_method:
+                return False, "Para marcar saldo como pagado tienes que elegir el metodo de pago."
+
+            if alquiler.estado_saldo != Alquiler.SAL_PAG:
+                alquiler.estado_saldo = Alquiler.SAL_PAG
+                changed = True
+
+            if metodo_saldo and alquiler.metodo_saldo != metodo_saldo:
+                alquiler.metodo_saldo = metodo_saldo
+                changed = True
+
+            if alquiler.saldo_pagado_en != timezone.localdate():
+                alquiler.saldo_pagado_en = timezone.localdate()
+                changed = True
+        else:
+            if alquiler.estado_saldo != nuevo_saldo:
+                alquiler.estado_saldo = nuevo_saldo
+                changed = True
+            if alquiler.metodo_saldo:
+                alquiler.metodo_saldo = ""
+                changed = True
+            if alquiler.saldo_pagado_en is not None:
+                alquiler.saldo_pagado_en = None
+                changed = True
+
+    return changed, ""
+
+
 def _crear_items_desde_seleccion(alquiler: Alquiler, selected_prendas):
     touched_prendas = []
     for who, prendas in (selected_prendas or {}).items():
@@ -1071,36 +1153,16 @@ def ver(request):
                 ),
             )
 
-        nuevo_saldo = request.POST.get("estado_saldo")
-        nuevo_estado = request.POST.get("estado_alquiler")
-        metodo_saldo = (request.POST.get("metodo_saldo") or "").strip()
-        saldo_editable = alquiler.saldo > 0
-
-        changed = False
-
-        if saldo_editable and nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
-            if alquiler.estado_saldo != nuevo_saldo:
-                if nuevo_saldo == Alquiler.SAL_PAG:
-                    if not metodo_saldo:
-                        messages.error(request, "Para marcar saldo como pagado tienes que elegir el metodo de pago.")
-                        return _redirect_ver_con_filtros(request)
-                    if metodo_saldo not in dict(Alquiler.METODOS_PAGO):
-                        messages.error(request, "Metodo de pago invalido.")
-                        return _redirect_ver_con_filtros(request)
-
-                    alquiler.metodo_saldo = metodo_saldo
-                    alquiler.saldo_pagado_en = timezone.localdate()
-                else:
-                    alquiler.metodo_saldo = ""
-                    alquiler.saldo_pagado_en = None
-
-                alquiler.estado_saldo = nuevo_saldo
-                changed = True
-
-        if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
-            if alquiler.estado_alquiler != nuevo_estado:
-                alquiler.estado_alquiler = nuevo_estado
-                changed = True
+        changed, error = _actualizar_estado_operativo(
+            alquiler,
+            nuevo_estado=request.POST.get("estado_alquiler", ""),
+            nuevo_saldo=request.POST.get("estado_saldo", ""),
+            metodo_saldo=(request.POST.get("metodo_saldo") or "").strip(),
+            auto_pagar_al_entregar=True,
+        )
+        if error:
+            messages.error(request, error)
+            return _redirect_ver_con_filtros(request)
 
         if changed:
             alquiler.save()
@@ -1159,35 +1221,16 @@ def entregas(request):
             )
 
         if accion == "actualizar":
-            nuevo_saldo = request.POST.get("estado_saldo")
-            nuevo_estado = request.POST.get("estado_alquiler")
-            metodo_saldo = (request.POST.get("metodo_saldo") or "").strip()
-            saldo_editable = alquiler.saldo > 0
-            changed = False
-
-            if saldo_editable and nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
-                if alquiler.estado_saldo != nuevo_saldo:
-                    if nuevo_saldo == Alquiler.SAL_PAG:
-                        if not metodo_saldo:
-                            messages.error(request, "Para marcar saldo como pagado tienes que elegir el metodo de pago.")
-                            return _redirect_entregas_con_filtro(request)
-                        if metodo_saldo not in dict(Alquiler.METODOS_PAGO):
-                            messages.error(request, "Metodo de pago invalido.")
-                            return _redirect_entregas_con_filtro(request)
-
-                        alquiler.metodo_saldo = metodo_saldo
-                        alquiler.saldo_pagado_en = timezone.localdate()
-                    else:
-                        alquiler.metodo_saldo = ""
-                        alquiler.saldo_pagado_en = None
-
-                    alquiler.estado_saldo = nuevo_saldo
-                    changed = True
-
-            if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
-                if alquiler.estado_alquiler != nuevo_estado:
-                    alquiler.estado_alquiler = nuevo_estado
-                    changed = True
+            changed, error = _actualizar_estado_operativo(
+                alquiler,
+                nuevo_estado=request.POST.get("estado_alquiler", ""),
+                nuevo_saldo=request.POST.get("estado_saldo", ""),
+                metodo_saldo=(request.POST.get("metodo_saldo") or "").strip(),
+                auto_pagar_al_entregar=True,
+            )
+            if error:
+                messages.error(request, error)
+                return _redirect_entregas_con_filtro(request)
 
             if changed:
                 alquiler.save()
@@ -1203,6 +1246,27 @@ def entregas(request):
 
 def retrasados(request):
     hoy = timezone.localdate()
+
+    if request.method == "POST":
+        alquiler_id = request.POST.get("alq_id")
+        alquiler = get_object_or_404(Alquiler, id=alquiler_id)
+        accion = request.POST.get("accion", "")
+
+        if accion == "cerrar_alquiler":
+            changed, error = _actualizar_estado_operativo(
+                alquiler,
+                nuevo_estado=Alquiler.EST_CERRADO,
+            )
+            if error:
+                messages.error(request, error)
+            elif changed:
+                alquiler.save()
+                _sync_prendas_por_estado(alquiler)
+                messages.success(request, f"Alquiler #{alquiler.id} cerrado.")
+            else:
+                messages.info(request, "No hubo cambios.")
+
+            return redirect("alquileres:retrasados")
 
     alquileres = list(
         Alquiler.objects

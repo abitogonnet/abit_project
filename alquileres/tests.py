@@ -319,6 +319,44 @@ class AlquileresViewsTests(TestCase):
         self.assertContains(response, "Resta: $0,00")
         self.assertContains(response, "Saldo: Transferencia")
 
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 16))
+    def test_home_permite_marcar_entregado_y_paga_saldo_automaticamente(self, _mock_localdate):
+        saco = Prenda.objects.create(
+            codigo="SA-035",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+            estado=Prenda.E_RES,
+        )
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 16),
+            fecha_reserva=date(2026, 7, 16),
+            fecha_entrega=date(2026, 7, 17),
+            fecha_devolucion=date(2026, 7, 20),
+            cliente_nombre="Cliente Home",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="2000",
+            sena="500",
+            metodo_sena=Alquiler.MP_TRANS,
+            estado_saldo=Alquiler.SAL_PEND,
+        )
+        AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco)
+
+        response = self.client.post(reverse("alquileres:home"), {
+            "alq_id": alquiler.id,
+            "accion": "marcar_entregado",
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.estado_alquiler, Alquiler.EST_ENTREGADO)
+        self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
+        self.assertEqual(alquiler.saldo_pagado_en, date(2026, 7, 16))
+        saco.refresh_from_db()
+        self.assertEqual(saco.estado, Prenda.E_ENT)
+
     def test_entregas_muestra_ver_detallado_en_resultados_filtrados(self):
         hoy = timezone.localdate()
         saco = Prenda.objects.create(
@@ -475,6 +513,42 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(alquiler.cliente_nombre, "Cliente Entrega Editado")
         self.assertEqual(alquiler.persona1_nombre, "Juan Editado")
         self.assertEqual(alquiler.metodo_sena, Alquiler.MP_TRANS)
+
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 16))
+    def test_retrasados_permite_cerrar_alquiler(self, _mock_localdate):
+        saco = Prenda.objects.create(
+            codigo="SA-099",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="6",
+            estado=Prenda.E_ENT,
+        )
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 10),
+            fecha_reserva=date(2026, 7, 10),
+            fecha_entrega=date(2026, 7, 11),
+            fecha_devolucion=date(2026, 7, 14),
+            cliente_nombre="Cliente Retraso",
+            cliente_telefono="1111",
+            persona1_nombre="Pedro",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_alquiler=Alquiler.EST_ENTREGADO,
+        )
+        AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco)
+
+        response = self.client.post(reverse("alquileres:retrasados"), {
+            "alq_id": alquiler.id,
+            "accion": "cerrar_alquiler",
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.estado_alquiler, Alquiler.EST_CERRADO)
+        saco.refresh_from_db()
+        self.assertEqual(saco.estado, Prenda.E_DISP)
 
     def test_ver_alquileres_permite_editar_nombres_pagos_y_fechas(self):
         saco = Prenda.objects.create(

@@ -163,6 +163,14 @@
     </section>
   </div>
 
+  {% if overdue_mode and show_overdue_close_action %}
+    <form method="post" class="ab-actions" style="margin-top: 18px;">
+      {% csrf_token %}
+      <input type="hidden" name="alq_id" value="{{ a.id }}">
+      <button class="ab-btn" type="submit" name="accion" value="cerrar_alquiler">Cerrar alquiler</button>
+    </form>
+  {% endif %}
+
   {% if enable_update_form %}
     <form method="post" class="ab-inline-form-grid">
       {% csrf_token %}

@@ -167,7 +167,15 @@
               <strong>{{ alquiler.cliente_nombre }}</strong>
               <span>{{ alquiler.personas_resumen|default:alquiler.persona1_nombre }}</span>
             </div>
-            <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Entrega</a>
+            {% if alquiler.estado_alquiler == "ENTREGADO" %}
+              <button class="ab-btn2" type="button" disabled>Entregado</button>
+            {% else %}
+              <form method="post" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
+                <button class="ab-btn2" type="submit" name="accion" value="marcar_entregado">Entregado</button>
+              </form>
+            {% endif %}
           </article>
         {% endfor %}
       {% else %}

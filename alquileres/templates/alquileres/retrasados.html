@@ -40,7 +40,7 @@
 
     <div class="ab-entity-list">
       {% for a, dias in retrasos %}
-        {% include "alquileres/_alquiler_card.html" with a=a dias=dias overdue_mode=True %}
+        {% include "alquileres/_alquiler_card.html" with a=a dias=dias overdue_mode=True show_overdue_close_action=True %}
       {% empty %}
         <div class="ab-empty">No hay retrasados.</div>
       {% endfor %}
