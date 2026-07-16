@@ -3,7 +3,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
-from django.db.models import Q, Sum
+from django.db.models import Max, Q, Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -42,6 +42,25 @@ def _month_label(day: date) -> str:
     return f"{MESES_ES[day.month - 1].capitalize()} {day.year}"
 
 
+def _latest_financial_month_start():
+    candidates = [
+        Gasto.objects.aggregate(value=Max("fecha"))["value"],
+        DivisionBienes.objects.aggregate(value=Max("fecha"))["value"],
+        Alquiler.objects.aggregate(value=Max("fecha_reserva"))["value"],
+        (
+            Alquiler.objects
+            .filter(estado_saldo=Alquiler.SAL_PAG, saldo_pagado_en__isnull=False)
+            .aggregate(value=Max("saldo_pagado_en"))["value"]
+        ),
+    ]
+    candidates = [item for item in candidates if item]
+    if not candidates:
+        return None
+
+    latest = max(candidates)
+    return date(latest.year, latest.month, 1)
+
+
 def _resolve_month(request):
     today = timezone.localdate()
     raw = (request.GET.get("ym") or request.POST.get("ym") or "").strip()
@@ -54,7 +73,7 @@ def _resolve_month(request):
         except Exception:
             start = date(today.year, today.month, 1)
     else:
-        start = date(today.year, today.month, 1)
+        start = _latest_financial_month_start() or date(today.year, today.month, 1)
 
     end = _first_day_next_month(start)
     return {

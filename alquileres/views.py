@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlencode
 
@@ -13,9 +14,187 @@ from prendas.models import Prenda
 from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA, VerAlquileresFiltroForm
 from .models import Alquiler, AlquilerItem
 
+try:
+    from visitas.models import Visita
+except Exception:  # pragma: no cover - fallback defensivo si la app no esta disponible
+    Visita = None
+
 
 def home(request):
-    return render(request, "alquileres/home.html")
+    hoy = timezone.localdate()
+    proximos_siete = hoy + timedelta(days=7)
+
+    alquileres_activos = (
+        Alquiler.objects
+        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
+    )
+    entregas_hoy = alquileres_activos.filter(fecha_entrega=hoy).count()
+    devoluciones_retrasadas = alquileres_activos.filter(fecha_devolucion__lt=hoy).count()
+    saldos_pendientes = alquileres_activos.filter(estado_saldo=Alquiler.SAL_PEND, saldo__gt=0).count()
+    alquileres_semana = alquileres_activos.filter(
+        fecha_entrega__gte=hoy,
+        fecha_entrega__lte=proximos_siete,
+    ).count()
+
+    stock_disponible = Prenda.objects.filter(estado=Prenda.E_DISP).count()
+    pendientes_origen = Prenda.objects.filter(
+        categoria__in=[Prenda.C_SACO, Prenda.C_PANTALON],
+        origen="",
+    ).count()
+
+    visitas_hoy = 0
+    visitas_semana = 0
+    if Visita is not None:
+        ahora = timezone.localtime()
+        inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+        fin_dia = inicio_dia + timedelta(days=1)
+        fin_semana = ahora + timedelta(days=7)
+        visitas_base = Visita.objects.exclude(estado=Visita.Estado.CANCELADA)
+        visitas_hoy = visitas_base.filter(inicio__gte=inicio_dia, inicio__lt=fin_dia).count()
+        visitas_semana = visitas_base.filter(inicio__gte=ahora, inicio__lt=fin_semana).count()
+
+    kpis = [
+        {
+            "label": "Entregas de hoy",
+            "value": entregas_hoy,
+            "tone": "warn" if entregas_hoy else "neutral",
+            "helper": "Lo que se retira o entrega hoy.",
+            "href": reverse("alquileres:entregas"),
+        },
+        {
+            "label": "Devoluciones atrasadas",
+            "value": devoluciones_retrasadas,
+            "tone": "danger" if devoluciones_retrasadas else "neutral",
+            "helper": "Alquileres que ya deberian haber vuelto.",
+            "href": reverse("alquileres:retrasados"),
+        },
+        {
+            "label": "Saldos pendientes",
+            "value": saldos_pendientes,
+            "tone": "accent" if saldos_pendientes else "neutral",
+            "helper": "Cobros abiertos sobre alquileres activos.",
+            "href": reverse("alquileres:ver"),
+        },
+        {
+            "label": "Stock disponible",
+            "value": stock_disponible,
+            "tone": "neutral",
+            "helper": "Prendas listas para volver a salir.",
+            "href": reverse("prendas:stock"),
+        },
+    ]
+
+    prioridades = []
+    if entregas_hoy:
+        prioridades.append({
+            "title": "Preparar entregas de hoy",
+            "description": f"{entregas_hoy} alquiler{'es' if entregas_hoy != 1 else ''} necesita{'n' if entregas_hoy != 1 else ''} atencion operativa inmediata.",
+            "href": reverse("alquileres:entregas"),
+            "cta": "Ir a entregas",
+            "tone": "warn",
+        })
+    if devoluciones_retrasadas:
+        prioridades.append({
+            "title": "Resolver devoluciones atrasadas",
+            "description": f"{devoluciones_retrasadas} caso{'s' if devoluciones_retrasadas != 1 else ''} ya esta{'n' if devoluciones_retrasadas != 1 else ''} fuera de fecha.",
+            "href": reverse("alquileres:retrasados"),
+            "cta": "Ver atrasos",
+            "tone": "danger",
+        })
+    if pendientes_origen:
+        prioridades.append({
+            "title": "Completar datos de stock",
+            "description": f"Quedan {pendientes_origen} prenda{'s' if pendientes_origen != 1 else ''} sin origen cargado.",
+            "href": reverse("prendas:stock"),
+            "cta": "Corregir stock",
+            "tone": "accent",
+        })
+    if visitas_hoy or visitas_semana:
+        prioridades.append({
+            "title": "Seguir la agenda de visitas",
+            "description": f"{visitas_hoy} visita{'s' if visitas_hoy != 1 else ''} para hoy y {visitas_semana} dentro de la proxima semana.",
+            "href": reverse("visitas:listar"),
+            "cta": "Abrir agenda",
+            "tone": "neutral",
+        })
+    if not prioridades:
+        prioridades.append({
+            "title": "Todo bajo control",
+            "description": "No hay alertas fuertes. Puedes enfocarte en nuevas reservas, stock y seguimiento fino.",
+            "href": reverse("alquileres:crear"),
+            "cta": "Crear alquiler",
+            "tone": "ok",
+        })
+
+    flujos = [
+        {
+            "eyebrow": "Operacion diaria",
+            "title": "Alquileres y entregas",
+            "description": "Carga nuevas reservas, sigue cobros, prepara entregas y resuelve devoluciones desde un circuito simple.",
+            "primary_href": reverse("alquileres:crear"),
+            "primary_label": "Nuevo alquiler",
+            "secondary_href": reverse("alquileres:ver"),
+            "secondary_label": "Ver alquileres",
+        },
+        {
+            "eyebrow": "Inventario",
+            "title": "Stock vivo y facil de leer",
+            "description": "Filtra, corrige estados y completa datos sin perder tiempo en tablas confusas.",
+            "primary_href": reverse("prendas:stock"),
+            "primary_label": "Abrir stock",
+            "secondary_href": reverse("prendas:buscar_prenda"),
+            "secondary_label": "Buscar prenda",
+        },
+        {
+            "eyebrow": "Agenda",
+            "title": "Visitas y preparacion comercial",
+            "description": "Centraliza las citas y deja visible lo que viene hoy y durante la semana.",
+            "primary_href": reverse("visitas:listar"),
+            "primary_label": "Ver agenda",
+            "secondary_href": reverse("visitas:crear"),
+            "secondary_label": "Crear visita",
+        },
+    ]
+
+    aprendizaje = [
+        {
+            "step": "1",
+            "title": "Empieza por el tablero",
+            "description": "La portada prioriza lo urgente para que cualquiera entienda rapido que hay que atender hoy.",
+        },
+        {
+            "step": "2",
+            "title": "Carga guiada del alquiler",
+            "description": "El alta queda dividida por cliente, prendas y pago en vez de parecer un formulario tecnico.",
+        },
+        {
+            "step": "3",
+            "title": "Controla operacion y stock",
+            "description": "Despues del alta, el trabajo diario se reparte entre entregas, atrasos, agenda y stock.",
+        },
+    ]
+
+    proximos_movimientos = list(
+        alquileres_activos
+        .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=proximos_siete)
+        .order_by("fecha_entrega", "id")[:6]
+    )
+
+    return render(request, "alquileres/home.html", {
+        "hoy": hoy,
+        "kpis": kpis,
+        "prioridades": prioridades,
+        "flujos": flujos,
+        "aprendizaje": aprendizaje,
+        "proximos_movimientos": proximos_movimientos,
+        "resumen_operativo": {
+            "alquileres_activos": alquileres_activos.count(),
+            "alquileres_semana": alquileres_semana,
+            "visitas_hoy": visitas_hoy,
+            "visitas_semana": visitas_semana,
+            "pendientes_origen": pendientes_origen,
+        },
+    })
 
 
 def _fmt_date(d):

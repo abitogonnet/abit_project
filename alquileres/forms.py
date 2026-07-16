@@ -382,6 +382,8 @@ class AlquilerForm(forms.ModelForm):
         disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
         _configurar_campos_prenda(self, disponibles)
+        self.persona1_prenda_rows = _rows_prendas(self, "p1")
+        self.persona2_prenda_rows = _rows_prendas(self, "p2")
 
     def clean(self):
         cleaned = super().clean()

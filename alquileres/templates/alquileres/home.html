@@ -1,74 +1,145 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="ab-card">
-  <div class="ab-body">
-    <div class="ab-hero">
-      <div class="ab-hero-panel">
-        <p class="ab-kicker">Panel principal</p>
-        <h1 class="ab-title">Gestion mas simple para alquileres y stock</h1>
-        <p class="ab-sub">
-          Todo quedo orientado a usar menus desplegables, ver mejor en celular y resolver rapido
-          alquileres, prendas y reportes sin pasar por Excel.
-        </p>
-        <div class="ab-actions" style="margin-top: 20px;">
-          <a class="ab-btn" href="{% url 'alquileres:crear' %}">Nuevo alquiler</a>
-          <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
-          <a class="ab-btn2" href="{% url 'reportes:home' %}">Abrir reportes</a>
-        </div>
-      </div>
+<section class="ab-pagehero">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Tablero operativo</p>
+    <h1 class="ab-title">Una vista clara para mover alquileres, stock y agenda sin friccion</h1>
+    <p class="ab-sub">
+      Hoy es {{ hoy|date:"d/m/Y" }}. La idea de esta portada es simple: mostrar primero lo urgente,
+      despues lo importante y dejar a mano los caminos de trabajo que mas se usan.
+    </p>
+    <div class="ab-actions" style="margin-top: 20px;">
+      <a class="ab-btn" href="{% url 'alquileres:crear' %}">Nuevo alquiler</a>
+      <a class="ab-btn2" href="{% url 'visitas:listar' %}">Abrir agenda</a>
+      <a class="ab-btn2" href="{% url 'prendas:stock' %}">Controlar stock</a>
+    </div>
+  </div>
 
-      <div class="ab-hero-panel">
-        <p class="ab-kicker">Accesos rapidos</p>
-        <div class="ab-chip-row">
-          <span class="ab-chip">Sin visitas</span>
-          <span class="ab-chip">Carga tipo pila</span>
-          <span class="ab-chip">Edicion de prendas</span>
-          <span class="ab-chip">Busqueda por marca y talle</span>
-          <span class="ab-chip">Graficos dentro de la app</span>
-        </div>
-        <p class="ab-note" style="margin-top: 18px;">
-          Usa este inicio como tablero central. Desde aca ya tienes a mano los procesos principales.
-        </p>
+  <aside class="ab-pagehero-panel">
+    <span class="ab-spec-label">Hoy en numeros</span>
+    <div class="ab-summary-grid">
+      <div class="ab-summary-card">
+        <span class="ab-small">Alquileres activos</span>
+        <strong>{{ resumen_operativo.alquileres_activos }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Movimientos 7 dias</span>
+        <strong>{{ resumen_operativo.alquileres_semana }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Visitas hoy</span>
+        <strong>{{ resumen_operativo.visitas_hoy }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Pendientes de origen</span>
+        <strong>{{ resumen_operativo.pendientes_origen }}</strong>
       </div>
     </div>
+  </aside>
+</section>
 
-    <div class="ab-card-grid" style="margin-top: 20px;">
-      <article class="ab-card" style="border-radius: 22px;">
-        <div class="ab-body">
-          <p class="ab-kicker">Alquileres</p>
-          <h2 class="ab-mini-title">Crear, revisar y borrar alquileres</h2>
-          <p class="ab-caption">La lista de alquileres muestra primero lo ultimo cargado y permite eliminar registros si hace falta corregir algo.</p>
-          <div class="ab-actions" style="margin-top: 16px;">
-            <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
-            <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
-          </div>
-        </div>
-      </article>
+<section class="ab-kpi-grid">
+  {% for item in kpis %}
+    <a class="ab-kpi-card tone-{{ item.tone }}" href="{{ item.href }}">
+      <span class="ab-small">{{ item.label }}</span>
+      <strong>{{ item.value }}</strong>
+      <p>{{ item.helper }}</p>
+    </a>
+  {% endfor %}
+</section>
 
-      <article class="ab-card" style="border-radius: 22px;">
-        <div class="ab-body">
-          <p class="ab-kicker">Prendas</p>
-          <h2 class="ab-mini-title">Crear, modificar y buscar stock</h2>
-          <p class="ab-caption">Las prendas ahora se cargan y se corrigen desde menus desplegables, con edicion directa desde stock.</p>
-          <div class="ab-actions" style="margin-top: 16px;">
-            <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
-            <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
+<section class="ab-dashboard-grid">
+  <div class="ab-card">
+    <div class="ab-head">
+      <div>
+        <p class="ab-kicker">Prioridades</p>
+        <h2 class="ab-mini-title">Lo primero que conviene revisar</h2>
+      </div>
+    </div>
+    <div class="ab-body ab-stack">
+      {% for item in prioridades %}
+        <article class="ab-priority-card tone-{{ item.tone }}">
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p class="ab-note">{{ item.description }}</p>
           </div>
-        </div>
-      </article>
+          <a class="ab-btn2" href="{{ item.href }}">{{ item.cta }}</a>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
 
-      <article class="ab-card" style="border-radius: 22px;">
-        <div class="ab-body">
-          <p class="ab-kicker">Seguimiento</p>
-          <h2 class="ab-mini-title">Entregas, retrasos y analisis</h2>
-          <p class="ab-caption">Los reportes tienen visuales nuevos para decidir rapido sin exportar planillas.</p>
-          <div class="ab-actions" style="margin-top: 16px;">
-            <a class="ab-btn" href="{% url 'alquileres:entregas' %}">Entregas</a>
-            <a class="ab-btn2" href="{% url 'alquileres:retrasados' %}">Retrasados</a>
-            <a class="ab-btn2" href="{% url 'reportes:home' %}">Reportes</a>
-          </div>
+  <div class="ab-card">
+    <div class="ab-head">
+      <div>
+        <p class="ab-kicker">Proximos movimientos</p>
+        <h2 class="ab-mini-title">Lo que ya esta entrando en juego</h2>
+      </div>
+    </div>
+    <div class="ab-body">
+      {% if proximos_movimientos %}
+        <div class="ab-stack">
+          {% for alquiler in proximos_movimientos %}
+            <div class="ab-timeline-row">
+              <div class="ab-timeline-day">{{ alquiler.fecha_entrega|date:"d/m" }}</div>
+              <div class="ab-timeline-content">
+                <strong>{{ alquiler.cliente_nombre }}</strong>
+                <div class="ab-small">{{ alquiler.persona1_nombre }}{% if alquiler.persona2_nombre %} + {{ alquiler.persona2_nombre }}{% endif %}</div>
+              </div>
+              <span class="ab-badge {% if alquiler.fecha_entrega == hoy %}warn{% else %}secondary{% endif %}">
+                {% if alquiler.fecha_entrega == hoy %}Hoy{% else %}Entrega{% endif %}
+              </span>
+            </div>
+          {% endfor %}
         </div>
-      </article>
+      {% else %}
+        <div class="ab-empty">No hay entregas programadas para los proximos 7 dias.</div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="ab-card">
+  <div class="ab-head">
+    <div>
+      <p class="ab-kicker">Circuitos de trabajo</p>
+      <h2 class="ab-title" style="font-size: clamp(1.4rem, 2vw, 1.9rem);">Cada area tiene un recorrido claro</h2>
+      <p class="ab-sub">La app gana velocidad cuando las tareas importantes tienen un punto de entrada evidente y pocas decisiones ambiguas.</p>
+    </div>
+  </div>
+  <div class="ab-body">
+    <div class="ab-card-grid">
+      {% for flujo in flujos %}
+        <article class="ab-workstream-card">
+          <span class="ab-kicker" style="margin-bottom: 10px;">{{ flujo.eyebrow }}</span>
+          <h3>{{ flujo.title }}</h3>
+          <p class="ab-note">{{ flujo.description }}</p>
+          <div class="ab-actions" style="margin-top: 18px;">
+            <a class="ab-btn" href="{{ flujo.primary_href }}">{{ flujo.primary_label }}</a>
+            <a class="ab-btn2" href="{{ flujo.secondary_href }}">{{ flujo.secondary_label }}</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="ab-card">
+  <div class="ab-head">
+    <div>
+      <p class="ab-kicker">Aprendizaje rapido</p>
+      <h2 class="ab-mini-title">Pensado para alguien que recien entra</h2>
+    </div>
+  </div>
+  <div class="ab-body">
+    <div class="ab-learning-strip">
+      {% for item in aprendizaje %}
+        <article class="ab-learning-card">
+          <span class="ab-learning-step">{{ item.step }}</span>
+          <h3>{{ item.title }}</h3>
+          <p class="ab-note">{{ item.description }}</p>
+        </article>
+      {% endfor %}
     </div>
   </div>
 </section>

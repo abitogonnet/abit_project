@@ -1,4 +1,16 @@
 {% load static %}
+{% url 'alquileres:home' as home_url %}
+{% url 'alquileres:crear' as alquiler_crear_url %}
+{% url 'alquileres:ver' as alquiler_ver_url %}
+{% url 'alquileres:entregas' as entregas_url %}
+{% url 'alquileres:retrasados' as retrasados_url %}
+{% url 'prendas:stock' as stock_url %}
+{% url 'prendas:crear' as prenda_crear_url %}
+{% url 'prendas:buscar_prenda' as prenda_buscar_url %}
+{% url 'visitas:listar' as visitas_url %}
+{% url 'visitas:crear' as visitas_crear_url %}
+{% url 'gastos:home' as gastos_url %}
+{% url 'reportes:home' as reportes_url %}
 <!doctype html>
 <html lang="es">
 <head>
@@ -8,58 +20,109 @@
   <link rel="stylesheet" href="{% static 'css/abito.css' %}">
 </head>
 <body class="ab-page">
-  <div class="ab-shell">
-    <header class="ab-nav">
-      <div class="ab-brandbox">
-        <a class="ab-brand" href="{% url 'alquileres:home' %}">
+  <div class="ab-app" data-app-shell>
+    <div class="ab-mobilebar">
+      <button class="ab-mobilebar-toggle" type="button" aria-expanded="false" aria-controls="ab-sidebar-nav" data-sidebar-toggle>
+        Menu
+      </button>
+      <a class="ab-mobilebar-brand" href="{{ home_url }}">
+        <span class="ab-dot"></span>
+        <span>ABITO</span>
+      </a>
+      <a class="ab-mobilebar-cta" href="{{ alquiler_crear_url }}">Nuevo</a>
+    </div>
+
+    <div class="ab-sidebar-backdrop" hidden data-sidebar-backdrop></div>
+
+    <aside class="ab-sidebar" id="ab-sidebar-nav">
+      <div class="ab-sidebar-head">
+        <a class="ab-brand" href="{{ home_url }}">
           <span class="ab-dot"></span>
           <span>ABITO</span>
         </a>
-        <p class="ab-tagline">Alquileres, stock y reportes en una sola vista.</p>
+        <p class="ab-tagline">Operacion, inventario y seguimiento en una sola herramienta.</p>
       </div>
 
-      <button class="ab-nav-toggle" type="button" aria-expanded="false" aria-controls="ab-nav-links">
-        Menu
-      </button>
+      <div class="ab-sidebar-quick">
+        <a class="ab-btn" href="{{ alquiler_crear_url }}">Nuevo alquiler</a>
+        <a class="ab-btn2" href="{{ visitas_crear_url }}">Nueva visita</a>
+      </div>
 
-      <nav class="ab-links" id="ab-nav-links">
-        <a class="ab-link" href="{% url 'alquileres:home' %}">Inicio</a>
-        <a class="ab-link" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
-        <a class="ab-link" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
-        <a class="ab-link" href="{% url 'alquileres:entregas' %}">Entregas</a>
-        <a class="ab-link" href="{% url 'alquileres:retrasados' %}">Retrasados</a>
-        <a class="ab-link" href="{% url 'prendas:crear' %}">Crear prenda</a>
-        <a class="ab-link" href="{% url 'prendas:stock' %}">Stock</a>
-        <a class="ab-link" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
-        <a class="ab-link" href="{% url 'gastos:home' %}">Gastos</a>
-        <a class="ab-link" href="{% url 'reportes:home' %}">Reportes</a>
+      <nav class="ab-sidebar-nav">
+        <div class="ab-nav-group">
+          <span class="ab-nav-label">Operacion</span>
+          <a class="ab-nav-link {% if request.path == home_url %}is-active{% endif %}" href="{{ home_url }}">Tablero</a>
+          <a class="ab-nav-link {% if request.path == alquiler_crear_url %}is-active{% endif %}" href="{{ alquiler_crear_url }}">Nuevo alquiler</a>
+          <a class="ab-nav-link {% if request.path == alquiler_ver_url %}is-active{% endif %}" href="{{ alquiler_ver_url }}">Alquileres</a>
+          <a class="ab-nav-link {% if request.path == entregas_url %}is-active{% endif %}" href="{{ entregas_url }}">Entregas</a>
+          <a class="ab-nav-link {% if request.path == retrasados_url %}is-active{% endif %}" href="{{ retrasados_url }}">Atrasos</a>
+        </div>
+
+        <div class="ab-nav-group">
+          <span class="ab-nav-label">Agenda e inventario</span>
+          <a class="ab-nav-link {% if request.path|slice:':9' == '/visitas/' %}is-active{% endif %}" href="{{ visitas_url }}">Agenda de visitas</a>
+          <a class="ab-nav-link {% if request.path == stock_url %}is-active{% endif %}" href="{{ stock_url }}">Stock</a>
+          <a class="ab-nav-link {% if request.path == prenda_crear_url %}is-active{% endif %}" href="{{ prenda_crear_url }}">Nueva prenda</a>
+          <a class="ab-nav-link {% if request.path == prenda_buscar_url %}is-active{% endif %}" href="{{ prenda_buscar_url }}">Buscar prenda</a>
+        </div>
+
+        <div class="ab-nav-group">
+          <span class="ab-nav-label">Gestion</span>
+          <a class="ab-nav-link {% if request.path|slice:':8' == '/gastos/' %}is-active{% endif %}" href="{{ gastos_url }}">Finanzas</a>
+          <a class="ab-nav-link {% if request.path|slice:':10' == '/reportes/' %}is-active{% endif %}" href="{{ reportes_url }}">Reportes</a>
+        </div>
       </nav>
-    </header>
 
-    {% if messages %}
-      <div class="ab-flash-stack">
-        {% for m in messages %}
-          <div class="ab-msg {% if m.tags == 'success' %}ok{% elif m.tags == 'error' %}err{% else %}info{% endif %}">
-            {{ m }}
-          </div>
-        {% endfor %}
+      <div class="ab-sidebar-meta">
+        <span class="ab-chip">Flujo guiado</span>
+        <span class="ab-chip">Operacion diaria</span>
+        <span class="ab-chip">Aprendizaje rapido</span>
       </div>
-    {% endif %}
+    </aside>
 
-    <main>
+    <main class="ab-main">
+      {% if messages %}
+        <div class="ab-flash-stack">
+          {% for m in messages %}
+            <div class="ab-msg {% if m.tags == 'success' %}ok{% elif m.tags == 'error' %}err{% else %}info{% endif %}">
+              {{ m }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
       {% block content %}{% endblock %}
     </main>
   </div>
 
   <script>
     (function () {
-      const button = document.querySelector(".ab-nav-toggle");
-      const nav = document.getElementById("ab-nav-links");
-      if (!button || !nav) return;
+      const app = document.querySelector("[data-app-shell]");
+      const toggle = document.querySelector("[data-sidebar-toggle]");
+      const sidebar = document.getElementById("ab-sidebar-nav");
+      const backdrop = document.querySelector("[data-sidebar-backdrop]");
+      if (!app || !toggle || !sidebar || !backdrop) return;
 
-      button.addEventListener("click", function () {
-        const open = nav.classList.toggle("is-open");
-        button.setAttribute("aria-expanded", open ? "true" : "false");
+      function setOpen(open) {
+        app.classList.toggle("is-sidebar-open", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        backdrop.hidden = !open;
+      }
+
+      toggle.addEventListener("click", function () {
+        setOpen(!app.classList.contains("is-sidebar-open"));
+      });
+
+      backdrop.addEventListener("click", function () {
+        setOpen(false);
+      });
+
+      sidebar.querySelectorAll("a").forEach(function (link) {
+        link.addEventListener("click", function () {
+          if (window.innerWidth <= 1040) {
+            setOpen(false);
+          }
+        });
       });
     })();
   </script>
