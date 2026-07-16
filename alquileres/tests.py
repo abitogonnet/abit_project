@@ -286,7 +286,7 @@ class AlquileresViewsTests(TestCase):
         self.assertContains(response, "Saco 030")
         self.assertContains(response, "Pantalón 030")
         self.assertContains(response, "Saco Negro Boiler talle 4 Nacional")
-        self.assertContains(response, "Pantalón Gris Oxford talle 42 Importado")
+        self.assertContains(response, "Pantalón Gris Topo Oxford talle 42 Importado")
         self.assertContains(response, "Ruedo de saco")
         self.assertContains(response, "Ruedo de pantalon")
         self.assertContains(response, "Boiler")

@@ -65,6 +65,53 @@ class PrendaFormTests(TestCase):
 
         self.assertEqual(prenda.color, "Azul Oscuro")
 
+    def test_model_normaliza_colores_restringidos_por_categoria(self):
+        casos = [
+            (Prenda.C_SACO, "gris perla", "Gris Perla"),
+            (Prenda.C_PANTALON, "AZUL FRANCIA", "Azul Francia"),
+            (Prenda.C_CAMISA, "Blanco", "Blanca"),
+            (Prenda.C_SACO, "gris", "Gris Topo"),
+            (Prenda.C_PANTALON, "gris oscuro", "Gris Topo"),
+            (Prenda.C_CAMISA, "bOrDo", "Bordo"),
+        ]
+
+        for index, (categoria, color, esperado) in enumerate(casos, start=1):
+            prenda = Prenda.objects.create(
+                codigo=f"TC-{index:03d}",
+                categoria=categoria,
+                marca="Boiler",
+                color=color,
+                talle="4" if categoria != Prenda.C_CAMISA else "40",
+                origen=Prenda.O_NAC if categoria in {Prenda.C_SACO, Prenda.C_PANTALON} else "",
+            )
+            self.assertEqual(prenda.color, esperado)
+
+    def test_camisa_exige_color_del_desplegable(self):
+        form = PrendaForm(data={
+            "categoria": Prenda.C_CAMISA,
+            "marca": "Sportfino",
+            "color": "Azul con trama",
+            "talle": "40",
+            "origen": "",
+            "notas": "",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("color", form.errors)
+
+    def test_camisa_normaliza_blanco_a_blanca(self):
+        form = PrendaForm(data={
+            "categoria": Prenda.C_CAMISA,
+            "marca": "Sportfino",
+            "color": "blanco",
+            "talle": "40",
+            "origen": "",
+            "notas": "",
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["color"], "Blanca")
+
     def test_saco_exige_color_del_desplegable(self):
         form = PrendaForm(data={
             "categoria": Prenda.C_SACO,

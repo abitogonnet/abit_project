@@ -258,6 +258,8 @@ def _persona_has_content(name_field, prenda_rows):
         return True
 
     for row in prenda_rows:
+        if (row["numero"].value() or "").strip():
+            return True
         if (row["select"].value() or "").strip():
             return True
         if row["ruedo_valor"] and (row["ruedo_valor"].value() or "").strip():

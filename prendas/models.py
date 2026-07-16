@@ -72,13 +72,13 @@ class Prenda(models.Model):
             if not unicodedata.combining(char)
         )
 
-    @staticmethod
-    def normalize_color_value(value: str) -> str:
+    @classmethod
+    def normalize_color_value(cls, value: str, categoria: str = "") -> str:
         color = " ".join((value or "").split())
         if not color:
             return ""
 
-        color_cf = Prenda._simplify_color(color)
+        color_cf = cls._simplify_color(color)
         alias_map = {
             "azul oscuro": "Azul Oscuro",
             "azul osc": "Azul Oscuro",
@@ -101,10 +101,18 @@ class Prenda(models.Model):
             "marron": "Marron",
             "negro": "Negro",
         }
+        if categoria in {cls.C_SACO, cls.C_PANTALON, cls.C_CAMISA}:
+            alias_map.update({
+                "gris": "Gris Topo",
+                "gris oscuro": "Gris Topo",
+                "gris topo": "Gris Topo",
+                "blanco": "Blanca",
+                "blanca": "Blanca",
+            })
         return alias_map.get(color_cf, color)
 
     def save(self, *args, **kwargs):
-        self.color = self.normalize_color_value(self.color)
+        self.color = self.normalize_color_value(self.color, self.categoria)
         super().save(*args, **kwargs)
 
     def __str__(self):

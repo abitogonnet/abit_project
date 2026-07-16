@@ -236,10 +236,16 @@
       function editPersonaHasData(section) {
         const nameInput = section.querySelector("input[name$='_nombre']");
         const hasName = !!((nameInput || {}).value || "").trim();
+        const hasCodeInput = Array.from(section.querySelectorAll(".js-code-filter")).some(function (input) {
+          return !!(input.value || "").trim();
+        });
         const hasSelection = Array.from(section.querySelectorAll(".js-code-select")).some(function (select) {
           return !!select.value;
         });
-        return hasName || hasSelection;
+        const hasRuedo = Array.from(section.querySelectorAll("input[name*='ruedo_'], select[name*='ruedo_']")).some(function (field) {
+          return !!(field.value || "").trim();
+        });
+        return hasName || hasCodeInput || hasSelection || hasRuedo;
       }
 
       function syncEditPersonaSections(form, requestedCount) {

@@ -22,8 +22,8 @@ BRANDS = [
 COLORES_TRAJE = [
     "Azul Oscuro",
     "Azul Francia",
+    "Blanca",
     "Gris Perla",
-    "Gris Oscuro",
     "Gris Topo",
     "Celeste",
     "Rosa",
@@ -47,6 +47,7 @@ for _color in COLORES_TRAJE + COLORES_ZAPATOS + COLORES_CHALECO:
 COLORES_RESTRINGIDOS_POR_CATEGORIA = {
     Prenda.C_SACO: COLORES_TRAJE,
     Prenda.C_PANTALON: COLORES_TRAJE,
+    Prenda.C_CAMISA: COLORES_TRAJE,
 }
 
 TAM_NINO_ADULTO = ["Niño", "Adulto"]
@@ -207,13 +208,14 @@ class PrendaForm(forms.ModelForm):
         return marca
 
     def clean_color(self):
-        return Prenda.normalize_color_value(_norm(self.cleaned_data.get("color", "")))
+        categoria = self._bound_or_initial("categoria")
+        return Prenda.normalize_color_value(_norm(self.cleaned_data.get("color", "")), categoria)
 
     def clean(self):
         cleaned = super().clean()
         cat = cleaned.get("categoria")
         marca = cleaned.get("marca", "")
-        color = Prenda.normalize_color_value(_norm(cleaned.get("color", "")))
+        color = Prenda.normalize_color_value(_norm(cleaned.get("color", "")), cat)
         talle = _norm(cleaned.get("talle", ""))
         origen = _norm(cleaned.get("origen", ""))
         cleaned["color"] = color
@@ -221,9 +223,9 @@ class PrendaForm(forms.ModelForm):
         if cat in COLORES_RESTRINGIDOS_POR_CATEGORIA:
             colores_validos = set(restricted_color_options_for(cat))
             if not color:
-                self.add_error("color", "Para saco y pantalon, elige un color del desplegable.")
+                self.add_error("color", "Para saco, pantalon y camisa, elige un color del desplegable.")
             elif color not in colores_validos:
-                self.add_error("color", "Para saco y pantalon, elige un color valido del desplegable.")
+                self.add_error("color", "Para saco, pantalon y camisa, elige un color valido del desplegable.")
 
         if cat == Prenda.C_MONO:
             if talle not in TAM_NINO_ADULTO:
@@ -306,4 +308,5 @@ class BuscarPrendaForm(forms.Form):
         return _norm(self.data.get(name, "")) if self.is_bound else ""
 
     def clean_color(self):
-        return Prenda.normalize_color_value(_norm(self.cleaned_data.get("color", "")))
+        categoria = _norm(self.cleaned_data.get("categoria", "")) or _norm(self.data.get("categoria", ""))
+        return Prenda.normalize_color_value(_norm(self.cleaned_data.get("color", "")), categoria)
