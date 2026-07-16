@@ -221,9 +221,10 @@ def home(request):
         alquileres_activos
         .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=proximos_siete)
         .prefetch_related("items__prenda")
-        .order_by("fecha_entrega", "id")[:6]
+        .order_by("fecha_entrega", "id")
     )
     _adjuntar_detalle_alquiler(proximos_movimientos)
+    proximos_movimientos_por_dia = _agrupar_movimientos_por_dia(proximos_movimientos)
 
     return render(request, "alquileres/home.html", {
         "hoy": hoy,
@@ -232,6 +233,7 @@ def home(request):
         "flujos": flujos,
         "aprendizaje": aprendizaje,
         "proximos_movimientos": proximos_movimientos,
+        "proximos_movimientos_por_dia": proximos_movimientos_por_dia,
         "resumen_operativo": {
             "alquileres_activos": alquileres_activos.count(),
             "alquileres_semana": alquileres_semana,
@@ -327,8 +329,32 @@ def _detalle_prenda_ruedo_mensaje(prenda: Prenda) -> str:
     if prenda.talle:
         partes.append(str(prenda.talle).upper())
     if prenda.origen:
-        partes.append(prenda.get_origen_display().upper())
+        partes.append(_origen_ruedo_mensaje(prenda))
     return " ".join(partes)
+
+
+def _origen_ruedo_mensaje(prenda: Prenda) -> str:
+    if prenda.origen == Prenda.O_NAC:
+        return "TELA MECA"
+    if prenda.origen == Prenda.O_IMP:
+        return "IMPORTADO"
+    return prenda.get_origen_display().upper()
+
+
+def _agrupar_movimientos_por_dia(alquileres):
+    grupos = []
+    actual = None
+
+    for alquiler in alquileres:
+        if actual is None or actual["fecha"] != alquiler.fecha_entrega:
+            actual = {
+                "fecha": alquiler.fecha_entrega,
+                "alquileres": [],
+            }
+            grupos.append(actual)
+        actual["alquileres"].append(alquiler)
+
+    return grupos
 
 
 def _armar_mensaje_ruedos(items):

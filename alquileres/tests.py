@@ -384,6 +384,35 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
         self.assertEqual(alquiler.saldo_pagado_en, date(2026, 7, 16))
 
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 16))
+    def test_home_agrupa_proximos_movimientos_por_dia(self, _mock_localdate):
+        primero = self._create_alquiler("Dia1-A")
+        primero.fecha_entrega = date(2026, 7, 17)
+        primero.fecha_devolucion = date(2026, 7, 20)
+        primero.save()
+
+        segundo = self._create_alquiler("Dia1-B")
+        segundo.fecha_entrega = date(2026, 7, 17)
+        segundo.fecha_devolucion = date(2026, 7, 21)
+        segundo.save()
+
+        tercero = self._create_alquiler("Dia2")
+        tercero.fecha_entrega = date(2026, 7, 18)
+        tercero.fecha_devolucion = date(2026, 7, 22)
+        tercero.save()
+
+        response = self.client.get(reverse("alquileres:home"))
+
+        self.assertEqual(response.status_code, 200)
+        grupos = response.context["proximos_movimientos_por_dia"]
+        self.assertEqual(len(grupos), 2)
+        self.assertEqual(grupos[0]["fecha"], date(2026, 7, 17))
+        self.assertEqual(len(grupos[0]["alquileres"]), 2)
+        self.assertEqual(grupos[1]["fecha"], date(2026, 7, 18))
+        self.assertEqual(len(grupos[1]["alquileres"]), 1)
+        self.assertContains(response, "17/07/2026")
+        self.assertContains(response, "2 entregas")
+
     def test_entregas_muestra_ver_detallado_en_resultados_filtrados(self):
         hoy = timezone.localdate()
         saco = Prenda.objects.create(
@@ -1104,7 +1133,7 @@ class AlquileresViewsTests(TestCase):
             },
             {
                 "fecha_a_hacer": date(2026, 7, 18),
-                "mensaje_linea": "PANT AZUL OXFORD 42 NACIONAL, 3CM",
+                "mensaje_linea": "PANT AZUL OXFORD 42 TELA MECA, 3CM",
             },
         ])
 
@@ -1114,7 +1143,7 @@ class AlquileresViewsTests(TestCase):
             "PANT NEGRO AIRES 44 IMPORTADO, 5CM\n"
             "SACO NEGRO BOILER 40, 2CM\n\n"
             "FECHA A HACER 18/07/2026\n"
-            "PANT AZUL OXFORD 42 NACIONAL, 3CM",
+            "PANT AZUL OXFORD 42 TELA MECA, 3CM",
         )
         self.assertNotIn("PA-", mensaje)
 
@@ -1218,5 +1247,5 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(
             response_pasado.context["mensaje_ruedos"],
             "FECHA A HACER 09/07/2026\n"
-            "PANT AZUL OXFORD 42 NACIONAL, 3CM",
+            "PANT AZUL OXFORD 42 TELA MECA, 3CM",
         )
