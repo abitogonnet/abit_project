@@ -59,7 +59,7 @@ class GastosViewsTests(TestCase):
     def _unlock_gastos(self, path_name="gastos:home"):
         return self.client.post(reverse(path_name), {
             "access_action": "unlock",
-            "access_password": "Abito2024",
+            "access_password": "Abito",
         }, follow=True)
 
     def test_home_pide_contrasena(self):
@@ -67,14 +67,14 @@ class GastosViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Contrasena")
-        self.assertContains(response, "Gastos protegidos")
+        self.assertContains(response, "Finanzas protegidas")
 
     def test_home_desbloquea_con_contrasena_correcta(self):
         response = self._unlock_gastos()
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Gastos")
-        self.assertNotContains(response, "Gastos protegidos")
+        self.assertNotContains(response, "Finanzas protegidas")
 
     def test_home_muestra_detallado_de_gastos_y_divisiones(self):
         session = self.client.session

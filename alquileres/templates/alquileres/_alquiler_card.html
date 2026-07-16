@@ -242,12 +242,12 @@
       {% endif %}
 
       {% if show_edit_toggle %}
-        <details class="ab-detail-toggle{% if show_detail_toggle %} ab-detail-toggle-split{% endif %}" {% if edit_open_id == a.id %}open{% endif %}>
+        <details class="ab-detail-toggle ab-detail-toggle-edit{% if show_detail_toggle %} ab-detail-toggle-split{% endif %}" {% if edit_open_id == a.id %}open{% endif %}>
           <summary class="ab-detail-summary">
             <span>Editar</span>
             <span class="ab-small">#{{ a.id }}</span>
           </summary>
-          <div class="ab-detail-panel">
+          <div class="ab-detail-panel ab-detail-panel-edit">
             {% if edit_open_id == a.id and a.edit_form %}
               {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
             {% else %}

@@ -2,6 +2,9 @@
   {% csrf_token %}
   <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
   {{ alquiler.edit_form.personas_visibles }}
+  {{ alquiler.edit_form.fecha_reserva.as_hidden }}
+  {{ alquiler.edit_form.fecha_entrega.as_hidden }}
+  {{ alquiler.edit_form.fecha_devolucion.as_hidden }}
   {% for field_name, field_value in alquiler.edit_hidden_fields %}
     <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
   {% endfor %}
@@ -10,6 +13,11 @@
     <div>
       <p class="ab-kicker">Edicion del alquiler</p>
       <h3 class="ab-mini-title">#{{ alquiler.id }} - {{ alquiler.cliente_nombre }}</h3>
+      <div class="ab-chip-row" style="margin-top: 12px;">
+        <span class="ab-chip">Reserva {{ alquiler.fecha_reserva|date:"d/m/Y" }}</span>
+        <span class="ab-chip">Entrega {{ alquiler.fecha_entrega|date:"d/m/Y" }}</span>
+        <span class="ab-chip">Devolucion {{ alquiler.fecha_devolucion|date:"d/m/Y" }}</span>
+      </div>
     </div>
     <div class="ab-actions">
       <button class="ab-btn" type="submit" name="accion" value="editar">Guardar cambios</button>
@@ -40,32 +48,6 @@
             <label class="ab-lab">Telefono</label>
             {{ alquiler.edit_form.cliente_telefono }}
             {% if alquiler.edit_form.cliente_telefono.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_telefono.errors }}</div>{% endif %}
-          </div>
-        </div>
-      </section>
-
-      <section class="ab-section-card">
-        <div class="ab-section-head">
-          <div>
-            <p class="ab-kicker">Fechas</p>
-            <h4 class="ab-mini-title">Reserva, entrega y devolucion</h4>
-          </div>
-        </div>
-        <div class="ab-grid">
-          <div class="col-4 ab-field">
-            <label class="ab-lab">Reserva</label>
-            {{ alquiler.edit_form.fecha_reserva }}
-            {% if alquiler.edit_form.fecha_reserva.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_reserva.errors }}</div>{% endif %}
-          </div>
-          <div class="col-4 ab-field">
-            <label class="ab-lab">Retiro / entrega</label>
-            {{ alquiler.edit_form.fecha_entrega }}
-            {% if alquiler.edit_form.fecha_entrega.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_entrega.errors }}</div>{% endif %}
-          </div>
-          <div class="col-4 ab-field">
-            <label class="ab-lab">Devolucion</label>
-            {{ alquiler.edit_form.fecha_devolucion }}
-            {% if alquiler.edit_form.fecha_devolucion.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_devolucion.errors }}</div>{% endif %}
           </div>
         </div>
       </section>

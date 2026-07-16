@@ -757,6 +757,30 @@ class AlquileresViewsTests(TestCase):
         self.assertIn('value="2026-04-20"', str(form["fecha_entrega"]))
         self.assertIn('value="2026-04-25"', str(form["fecha_devolucion"]))
 
+    def test_panel_edicion_oculta_fechas_pero_las_conserva_en_hidden(self):
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Cliente Panel",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+        )
+
+        response = self.client.get(reverse("alquileres:panel", args=[alquiler.id, "edit"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'type="hidden"', html=False)
+        self.assertContains(response, 'name="alq-edit-{}-fecha_reserva"'.format(alquiler.id), html=False)
+        self.assertContains(response, 'name="alq-edit-{}-fecha_entrega"'.format(alquiler.id), html=False)
+        self.assertContains(response, 'name="alq-edit-{}-fecha_devolucion"'.format(alquiler.id), html=False)
+        self.assertNotContains(response, '<label class="ab-lab">Reserva</label>', html=False)
+        self.assertNotContains(response, '<label class="ab-lab">Retiro / entrega</label>', html=False)
+
     def test_ver_alquileres_no_deja_editar_fechas_si_pisa_otra_reserva(self):
         saco = Prenda.objects.create(
             codigo="SA-042",

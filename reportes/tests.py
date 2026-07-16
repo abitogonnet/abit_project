@@ -9,7 +9,21 @@ from prendas.models import Prenda
 
 
 class ReportesViewsTests(TestCase):
+    def _unlock_finanzas(self):
+        session = self.client.session
+        session["gastos_access_ok"] = True
+        session.save()
+
+    def test_home_pide_contrasena(self):
+        response = self.client.get(reverse("reportes:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Finanzas protegidas")
+        self.assertContains(response, "Contrasena")
+
     def test_home_muestra_mes_y_barras_con_color_real(self):
+        self._unlock_finanzas()
+
         prenda = Prenda.objects.create(
             codigo="SA-201",
             categoria=Prenda.C_SACO,
@@ -46,6 +60,8 @@ class ReportesViewsTests(TestCase):
         self.assertContains(response, "background: #1d3d63")
 
     def test_home_agrega_seccion_de_gastos_por_categoria(self):
+        self._unlock_finanzas()
+
         Gasto.objects.create(
             fecha=date(2026, 5, 3),
             categoria="PUBLICIDAD",
@@ -71,6 +87,8 @@ class ReportesViewsTests(TestCase):
         self.assertContains(response, "$30.000")
 
     def test_home_regulariza_cerrados_viejos_y_cuenta_el_total_completo(self):
+        self._unlock_finanzas()
+
         alquiler = Alquiler.objects.create(
             fecha_visita=date(2026, 5, 1),
             fecha_reserva=date(2026, 5, 1),
@@ -96,3 +114,9 @@ class ReportesViewsTests(TestCase):
         alquiler.refresh_from_db()
         self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
         self.assertEqual(alquiler.saldo_pagado_en, date(2026, 5, 12))
+
+    def test_exportar_pide_contrasena(self):
+        response = self.client.get(reverse("reportes:exportar_excel"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Finanzas protegidas")

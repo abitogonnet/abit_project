@@ -11,12 +11,10 @@ from django.utils import timezone
 from alquileres.models import Alquiler
 from alquileres.services import regularizar_saldos_de_cerrados
 
+from .access import require_finanzas_access
 from .forms import DivisionBienesForm, GastoForm
 from .models import DivisionBienes, Gasto
 
-
-GASTOS_PASSWORD = "Abito2024"
-GASTOS_SESSION_KEY = "gastos_access_ok"
 MESES_ES = [
     "enero",
     "febrero",
@@ -98,24 +96,6 @@ def _start_of_month(day: date) -> date:
 
 def _end_of_week(day: date) -> date:
     return day + timedelta(days=(6 - day.weekday()))
-
-
-def _require_gastos_access(request):
-    if request.session.get(GASTOS_SESSION_KEY):
-        return None
-
-    error_msg = ""
-    if request.method == "POST" and request.POST.get("access_action") == "unlock":
-        password = (request.POST.get("access_password") or "").strip()
-        if password == GASTOS_PASSWORD:
-            request.session[GASTOS_SESSION_KEY] = True
-            messages.success(request, "Acceso a gastos habilitado.")
-            return redirect(request.path)
-        error_msg = "Contrasena incorrecta."
-
-    return render(request, "gastos/lock.html", {
-        "error_msg": error_msg,
-    })
 
 
 def _decimal_or_zero(value):
@@ -289,7 +269,7 @@ def _division_cards(month_ctx, hoy):
 
 
 def home(request):
-    access_response = _require_gastos_access(request)
+    access_response = require_finanzas_access(request)
     if access_response:
         return access_response
 
@@ -322,7 +302,7 @@ def home(request):
 
 
 def crear(request):
-    access_response = _require_gastos_access(request)
+    access_response = require_finanzas_access(request)
     if access_response:
         return access_response
 
@@ -349,7 +329,7 @@ def crear(request):
 
 
 def division_bienes(request):
-    access_response = _require_gastos_access(request)
+    access_response = require_finanzas_access(request)
     if access_response:
         return access_response
 

@@ -5,13 +5,14 @@
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Acceso protegido</p>
-        <h1 class="ab-title">Gastos protegidos</h1>
+        <h1 class="ab-title">{{ lock_title|default:"Finanzas protegidas" }}</h1>
       </div>
     </div>
 
     <form method="post" class="ab-stack" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="access_action" value="unlock">
+      <input type="hidden" name="next_path" value="{{ next_path|default:request.get_full_path }}">
 
       <div class="ab-field">
         <label class="ab-lab" for="id_access_password">Contrasena</label>

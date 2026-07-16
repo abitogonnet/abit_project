@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from alquileres.models import Alquiler, AlquilerItem
 from alquileres.services import regularizar_saldos_de_cerrados
+from gastos.access import require_finanzas_access
 from gastos.models import Gasto
 from prendas.models import Prenda
 
@@ -188,6 +189,10 @@ def _income_rows(data, metodos, order):
 
 
 def home(request):
+    access_response = require_finanzas_access(request)
+    if access_response:
+        return access_response
+
     regularizar_saldos_de_cerrados()
     period, start, end, weeks_n = _resolve_period(request)
 
@@ -441,6 +446,10 @@ def home(request):
 
 
 def exportar_excel(request):
+    access_response = require_finanzas_access(request)
+    if access_response:
+        return access_response
+
     regularizar_saldos_de_cerrados()
     period, start, end, weeks_n = _resolve_period(request)
     ym_value = f"{start.year:04d}-{start.month:02d}"
