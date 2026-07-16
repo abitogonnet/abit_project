@@ -2032,6 +2032,10 @@ body.ab-page {
   align-items: start;
 }
 
+.ab-edit-grid-modern-full {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ab-inline-form-grid {
   display: grid;
   gap: 16px;

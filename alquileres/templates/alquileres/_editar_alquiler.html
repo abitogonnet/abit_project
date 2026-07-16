@@ -29,7 +29,7 @@
     <div class="ab-msg err">{{ alquiler.edit_form.non_field_errors }}</div>
   {% endif %}
 
-  <div class="ab-edit-grid-modern">
+  <div class="ab-edit-grid-modern ab-edit-grid-modern-full">
     <div class="ab-stack">
       <section class="ab-section-card">
         <div class="ab-section-head">
@@ -163,25 +163,5 @@
         </div>
       </section>
     </div>
-
-    <aside class="ab-edit-sidebar">
-      <section class="ab-summary-panel">
-        <span class="ab-spec-label">Resumen actual</span>
-        <div class="ab-summary-list">
-          <div>
-            <span>Estado alquiler</span>
-            <strong>{{ alquiler.get_estado_alquiler_display }}</strong>
-          </div>
-          <div>
-            <span>Estado saldo</span>
-            <strong>{{ alquiler.get_estado_saldo_display }}</strong>
-          </div>
-          <div>
-            <span>Personas</span>
-            <strong>{{ alquiler.personas_resumen|default:"Sin resumen" }}</strong>
-          </div>
-        </div>
-      </section>
-    </aside>
   </div>
 </form>
