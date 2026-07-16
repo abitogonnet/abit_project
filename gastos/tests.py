@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 
 from django.conf import settings
 from django.test import TestCase
@@ -27,6 +28,14 @@ class GastoFormTests(TestCase):
         form = GastoForm()
 
         self.assertIn("notas", form.fields)
+
+    def test_formulario_expone_categorias_nuevas(self):
+        form = GastoForm()
+        html = str(form["categoria"])
+
+        self.assertIn("PUBLICIDAD", html)
+        self.assertIn("PAGO DE ALQUILER", html)
+        self.assertIn("SERVICIOS", html)
 
 
 class GastosViewsTests(TestCase):
@@ -103,7 +112,7 @@ class GastosViewsTests(TestCase):
         self.assertContains(response, "Semana del evento")
         self.assertContains(response, "Retiro de mitad de mes")
         self.assertContains(response, "Saldo actual en cuenta")
-        self.assertContains(response, "Señas de Mayo 2026")
+        self.assertContains(response, "Mayo 2026")
         self.assertContains(response, "Saldos cobrados en Mayo 2026")
         self.assertContains(response, "Ingresos por alquileres del mes")
         self.assertContains(response, "$75.000")
@@ -156,10 +165,24 @@ class GastosViewsTests(TestCase):
         self.assertContains(response, '<select name="metodo"', html=False)
         self.assertContains(response, 'name="notas"', html=False)
 
-    def test_division_muestra_saldo_actual_en_lugar_de_totales_por_persona(self):
+    @patch("gastos.views.timezone.localdate", return_value=date(2026, 5, 6))
+    def test_division_muestra_resumen_operativo_para_mes_actual(self, _mock_localdate):
         session = self.client.session
         session["gastos_access_ok"] = True
         session.save()
+
+        abril = self._crear_alquiler(
+            total_bruto="50000",
+            sena="20000",
+            estado_saldo=Alquiler.SAL_PAG,
+            metodo_saldo=Alquiler.MP_TRANS,
+            saldo_pagado_en=date(2026, 4, 5),
+        )
+        abril.fecha_visita = date(2026, 4, 1)
+        abril.fecha_reserva = date(2026, 4, 1)
+        abril.fecha_entrega = date(2026, 4, 4)
+        abril.fecha_devolucion = date(2026, 4, 6)
+        abril.save()
 
         self._crear_alquiler(
             total_bruto="95000",
@@ -168,37 +191,92 @@ class GastosViewsTests(TestCase):
             metodo_saldo=Alquiler.MP_TRANS,
             saldo_pagado_en=date(2026, 5, 10),
         )
+        pendiente_semana = self._crear_alquiler(
+            total_bruto="45000",
+            sena="14000",
+            estado_saldo=Alquiler.SAL_PEND,
+        )
+        pendiente_semana.fecha_entrega = date(2026, 5, 9)
+        pendiente_semana.fecha_devolucion = date(2026, 5, 11)
+        pendiente_semana.save(update_fields=["fecha_entrega", "fecha_devolucion"])
+
+        pendiente_fuera = self._crear_alquiler(
+            total_bruto="35000",
+            sena="8000",
+            estado_saldo=Alquiler.SAL_PEND,
+        )
+        pendiente_fuera.fecha_entrega = date(2026, 5, 13)
+        pendiente_fuera.fecha_devolucion = date(2026, 5, 15)
+        pendiente_fuera.save(update_fields=["fecha_entrega", "fecha_devolucion"])
+
         Gasto.objects.create(
-            fecha=date(2026, 5, 10),
+            fecha=date(2026, 5, 4),
             categoria="PAGO BELEN",
             monto="5000",
         )
         DivisionBienes.objects.create(
-            fecha=date(2026, 5, 1),
-            monto_total="10000",
-            para_tade="6000",
-            para_bauti="4000",
+            fecha=date(2026, 5, 5),
+            monto_total="15000",
+            para_tade="7500",
+            para_bauti="7500",
             notas="Primera division",
         )
-        DivisionBienes.objects.create(
-            fecha=date(2026, 5, 2),
-            monto_total="5000",
-            para_tade="2500",
-            para_bauti="2500",
-            notas="Segunda division",
-        )
 
-        response = self.client.get(reverse("gastos:division_bienes"))
+        response = self.client.get(reverse("gastos:division_bienes"), {
+            "ym": "2026-05",
+        })
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Saldo actual en cuenta")
-        self.assertContains(response, "Señas de Mayo 2026")
-        self.assertContains(response, "Saldos cobrados en Mayo 2026")
-        self.assertContains(response, "Dinero ya dividido en Mayo 2026")
-        self.assertContains(response, "$75.000")
-        self.assertNotContains(response, "Total esperado en cuentas")
-        self.assertNotContains(response, "Tade acumulado")
-        self.assertNotContains(response, "Bauti acumulado")
+        self.assertContains(response, "TOTAL EN CUENTA (ACTUAL)")
+        self.assertContains(response, "TOTAL EN LO QUE VA DEL MES")
+        self.assertContains(response, "PLATA A INGRESAR EN LO QUE RESTA DE LA SEMANA")
+        self.assertContains(response, "$127.000")
+        self.assertContains(response, "$77.000")
+        self.assertContains(response, "$31.000")
+
+    @patch("gastos.views.timezone.localdate", return_value=date(2026, 5, 10))
+    def test_division_muestra_resumen_historico_para_mes_cerrado(self, _mock_localdate):
+        session = self.client.session
+        session["gastos_access_ok"] = True
+        session.save()
+
+        abril = self._crear_alquiler(
+            total_bruto="80000",
+            sena="30000",
+            estado_saldo=Alquiler.SAL_PAG,
+            metodo_saldo=Alquiler.MP_TRANS,
+            saldo_pagado_en=date(2026, 4, 10),
+        )
+        abril.fecha_visita = date(2026, 4, 1)
+        abril.fecha_reserva = date(2026, 4, 1)
+        abril.fecha_entrega = date(2026, 4, 8)
+        abril.fecha_devolucion = date(2026, 4, 10)
+        abril.save()
+
+        Gasto.objects.create(
+            fecha=date(2026, 4, 8),
+            categoria="PUBLICIDAD",
+            monto="12000",
+        )
+        DivisionBienes.objects.create(
+            fecha=date(2026, 4, 12),
+            monto_total="18000",
+            para_tade="9000",
+            para_bauti="9000",
+            notas="Cierre abril",
+        )
+
+        response = self.client.get(reverse("gastos:division_bienes"), {
+            "ym": "2026-04",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TOTAL INGRESADO")
+        self.assertContains(response, "TOTAL GASTADO")
+        self.assertContains(response, "BALANCE")
+        self.assertContains(response, "$80.000")
+        self.assertContains(response, "$30.000")
+        self.assertContains(response, "$50.000")
 
     def test_home_filtra_listas_por_mes_elegido(self):
         session = self.client.session

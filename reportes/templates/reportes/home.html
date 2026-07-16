@@ -162,7 +162,7 @@
                       <div class="ab-bar-track">
                         <div class="ab-bar-fill{% if not item.fill_color and item.tone != 'accent' %} {{ item.tone }}{% endif %}" style="width: {{ item.pct }}%;{% if item.fill_color %} background: {{ item.fill_color }};{% endif %}"></div>
                       </div>
-                      <span>{{ item.value }}</span>
+                      <span>{% if section.is_money %}${{ item.value|miles0 }}{% else %}{{ item.value }}{% endif %}</span>
                     </div>
                   {% endfor %}
                 </div>
@@ -176,7 +176,7 @@
                     <div class="ab-stack" style="gap: 8px;">
                       <div class="ab-row" style="justify-content: space-between;">
                         <strong>{{ row.label }}</strong>
-                        <span>{{ row.total }}</span>
+                        <span>{% if section.is_money %}${{ row.total|miles0 }}{% else %}{{ row.total }}{% endif %}</span>
                       </div>
                       <div class="ab-microbars">
                         {% for week in row.weeks %}

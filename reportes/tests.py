@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from alquileres.models import Alquiler, AlquilerItem
+from gastos.models import Gasto
 from prendas.models import Prenda
 
 
@@ -43,3 +44,28 @@ class ReportesViewsTests(TestCase):
         self.assertContains(response, "Mayo 2026")
         self.assertContains(response, "$160.000")
         self.assertContains(response, "background: #1d3d63")
+
+    def test_home_agrega_seccion_de_gastos_por_categoria(self):
+        Gasto.objects.create(
+            fecha=date(2026, 5, 3),
+            categoria="PUBLICIDAD",
+            monto="12000",
+        )
+        Gasto.objects.create(
+            fecha=date(2026, 5, 8),
+            categoria="PAGO DE ALQUILER",
+            monto="30000",
+        )
+
+        response = self.client.get(reverse("reportes:home"), {
+            "ym": "2026-05",
+            "periodo": "mensual",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Gastos")
+        self.assertContains(response, "Por categoria")
+        self.assertContains(response, "PUBLICIDAD")
+        self.assertContains(response, "PAGO DE ALQUILER")
+        self.assertContains(response, "$12.000")
+        self.assertContains(response, "$30.000")

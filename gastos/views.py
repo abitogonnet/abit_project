@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from urllib.parse import urlencode
 
@@ -91,6 +91,14 @@ def _redirect_home_with_month(ym_value):
     return redirect(base_url)
 
 
+def _start_of_month(day: date) -> date:
+    return date(day.year, day.month, 1)
+
+
+def _end_of_week(day: date) -> date:
+    return day + timedelta(days=(6 - day.weekday()))
+
+
 def _require_gastos_access(request):
     if request.session.get(GASTOS_SESSION_KEY):
         return None
@@ -113,13 +121,17 @@ def _decimal_or_zero(value):
     return value or Decimal("0")
 
 
-def _aggregate_period_totals(model, field_name, *, start=None, end=None):
+def _aggregate_period_totals(model, field_name, *, start=None, end=None, account_end=None):
+    total_filter = Q()
+    if account_end:
+        total_filter &= Q(fecha__lt=account_end)
+
     period_filter = Q()
     if start and end:
         period_filter = Q(fecha__gte=start, fecha__lt=end)
 
     totals = model.objects.aggregate(
-        total_cuenta=Sum(field_name),
+        total_cuenta=Sum(field_name, filter=total_filter) if account_end else Sum(field_name),
         total_periodo=Sum(field_name, filter=period_filter) if start and end else Sum(field_name),
     )
     return {
@@ -128,10 +140,16 @@ def _aggregate_period_totals(model, field_name, *, start=None, end=None):
     }
 
 
-def _aggregate_alquiler_totals(*, start=None, end=None):
+def _aggregate_alquiler_totals(*, start=None, end=None, account_end=None):
+    reserva_cuenta_filter = Q()
     saldo_pagado_filter = Q(estado_saldo=Alquiler.SAL_PAG)
+
+    if account_end:
+        reserva_cuenta_filter = Q(fecha_reserva__lt=account_end)
+        saldo_pagado_filter &= Q(saldo_pagado_en__isnull=False, saldo_pagado_en__lt=account_end)
+
     reserva_periodo_filter = Q()
-    saldo_periodo_filter = saldo_pagado_filter
+    saldo_periodo_filter = Q(estado_saldo=Alquiler.SAL_PAG)
 
     if start and end:
         reserva_periodo_filter = Q(fecha_reserva__gte=start, fecha_reserva__lt=end)
@@ -143,7 +161,7 @@ def _aggregate_alquiler_totals(*, start=None, end=None):
         )
 
     totals = Alquiler.objects.aggregate(
-        total_senas_cuenta=Sum("sena"),
+        total_senas_cuenta=Sum("sena", filter=reserva_cuenta_filter) if account_end else Sum("sena"),
         total_saldos_pagados_cuenta=Sum("saldo", filter=saldo_pagado_filter),
         total_senas_periodo=Sum("sena", filter=reserva_periodo_filter) if start and end else Sum("sena"),
         total_saldos_pagados_periodo=Sum("saldo", filter=saldo_periodo_filter),
@@ -157,10 +175,10 @@ def _aggregate_alquiler_totals(*, start=None, end=None):
     }
 
 
-def _resumen_cuenta(*, start=None, end=None):
-    alquiler_totals = _aggregate_alquiler_totals(start=start, end=end)
-    gasto_totals = _aggregate_period_totals(Gasto, "monto", start=start, end=end)
-    division_totals = _aggregate_period_totals(DivisionBienes, "monto_total", start=start, end=end)
+def _resumen_cuenta(*, start=None, end=None, account_end=None):
+    alquiler_totals = _aggregate_alquiler_totals(start=start, end=end, account_end=account_end)
+    gasto_totals = _aggregate_period_totals(Gasto, "monto", start=start, end=end, account_end=account_end)
+    division_totals = _aggregate_period_totals(DivisionBienes, "monto_total", start=start, end=end, account_end=account_end)
 
     total_senas_cuenta = alquiler_totals["total_senas_cuenta"]
     total_saldos_pagados_cuenta = alquiler_totals["total_saldos_pagados_cuenta"]
@@ -195,6 +213,77 @@ def _resumen_cuenta(*, start=None, end=None):
         "total_ingresos_alquileres": total_ingresos_periodo,
         "total_gastos_registrados": total_gastos_periodo,
         "total_dividido": total_dividido_periodo,
+    }
+
+
+def _saldos_pendientes_resto_semana(hoy: date) -> Decimal:
+    hasta = _end_of_week(hoy)
+    total = (
+        Alquiler.objects
+        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
+        .filter(
+            estado_saldo=Alquiler.SAL_PEND,
+            saldo__gt=0,
+            fecha_entrega__gte=hoy,
+            fecha_entrega__lte=hasta,
+        )
+        .aggregate(total=Sum("saldo"))["total"]
+    )
+    return _decimal_or_zero(total)
+
+
+def _division_cards(month_ctx, hoy):
+    is_current_month = month_ctx["start"] == _start_of_month(hoy)
+
+    if is_current_month:
+        account_end = hoy + timedelta(days=1)
+        month_to_date_end = min(month_ctx["end"], account_end)
+        cuenta_actual = _resumen_cuenta(
+            start=month_ctx["start"],
+            end=month_ctx["end"],
+            account_end=account_end,
+        )
+        mes_en_curso = _resumen_cuenta(
+            start=month_ctx["start"],
+            end=month_to_date_end,
+            account_end=account_end,
+        )
+        return {
+            "mode_label": "Mes actual",
+            "cards": [
+                {
+                    "label": "TOTAL EN CUENTA (ACTUAL)",
+                    "value": cuenta_actual["saldo_actual_cuenta"],
+                },
+                {
+                    "label": "TOTAL EN LO QUE VA DEL MES",
+                    "value": mes_en_curso["saldo_neto_periodo"],
+                },
+                {
+                    "label": "PLATA A INGRESAR EN LO QUE RESTA DE LA SEMANA",
+                    "value": _saldos_pendientes_resto_semana(hoy),
+                },
+            ],
+        }
+
+    resumen_historico = _resumen_cuenta(start=month_ctx["start"], end=month_ctx["end"])
+    total_gastado = resumen_historico["total_gastos_periodo"] + resumen_historico["total_dividido_periodo"]
+    return {
+        "mode_label": "Mes historico",
+        "cards": [
+            {
+                "label": "TOTAL INGRESADO",
+                "value": resumen_historico["total_ingresos_alquileres_periodo"],
+            },
+            {
+                "label": "TOTAL GASTADO",
+                "value": total_gastado,
+            },
+            {
+                "label": "BALANCE",
+                "value": resumen_historico["total_ingresos_alquileres_periodo"] - total_gastado,
+            },
+        ],
     }
 
 
@@ -277,9 +366,13 @@ def division_bienes(request):
             initial_date = month_ctx["start"]
         form = DivisionBienesForm(initial={"fecha": initial_date})
 
+    division_summary = _division_cards(month_ctx, timezone.localdate())
+
     return render(request, "gastos/division.html", {
         "form": form,
         "ym_value": month_ctx["ym_value"],
         "month_label": month_ctx["month_label"],
+        "division_cards": division_summary["cards"],
+        "division_mode_label": division_summary["mode_label"],
         **_resumen_cuenta(start=month_ctx["start"], end=month_ctx["end"]),
     })

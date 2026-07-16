@@ -7,19 +7,17 @@
     <h1 class="ab-title">Division de bienes</h1>
     <div class="ab-chip-row" style="margin-top: 18px;">
       <span class="ab-chip">{{ month_label }}</span>
-      <span class="ab-chip">Saldo actual</span>
+      <span class="ab-chip">{{ division_mode_label }}</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
     <div class="ab-summary-list">
-      <div>
-        <span>Mes visible</span>
-        <strong>{{ month_label }}</strong>
-      </div>
-      <div>
-        <span>Saldo actual en cuenta</span>
-        <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
-      </div>
+      {% for item in division_cards %}
+        <div>
+          <span>{{ item.label }}</span>
+          <strong class="ab-num">${{ item.value|miles0 }}</strong>
+        </div>
+      {% endfor %}
     </div>
   </aside>
 </section>
@@ -42,30 +40,12 @@
 
   <section class="ab-section-card">
     <div class="ab-summary-grid">
-      <div class="ab-summary-card">
-        <span class="ab-small">Saldo actual en cuenta</span>
-        <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Señas de {{ month_label }}</span>
-        <strong class="ab-num">${{ total_senas_periodo|miles0 }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Saldos cobrados en {{ month_label }}</span>
-        <strong class="ab-num">${{ total_saldos_pagados_periodo|miles0 }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Ingresos por alquileres del mes</span>
-        <strong class="ab-num">${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Gastos de {{ month_label }}</span>
-        <strong class="ab-num">${{ total_gastos_periodo|miles0 }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Dinero ya dividido en {{ month_label }}</span>
-        <strong class="ab-num">${{ total_dividido_periodo|miles0 }}</strong>
-      </div>
+      {% for item in division_cards %}
+        <div class="ab-summary-card">
+          <span class="ab-small">{{ item.label }}</span>
+          <strong class="ab-num">${{ item.value|miles0 }}</strong>
+        </div>
+      {% endfor %}
     </div>
   </section>
 
@@ -126,10 +106,12 @@
             <span>Mes</span>
             <strong>{{ month_label }}</strong>
           </div>
-          <div>
-            <span>Saldo actual</span>
-            <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
-          </div>
+          {% for item in division_cards %}
+            <div>
+              <span>{{ item.label }}</span>
+              <strong class="ab-num">${{ item.value|miles0 }}</strong>
+            </div>
+          {% endfor %}
         </div>
       </section>
     </aside>

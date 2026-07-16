@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from alquileres.models import Alquiler, AlquilerItem
+from gastos.models import Gasto
 from prendas.models import Prenda
 
 
@@ -204,10 +205,12 @@ def home(request):
     monthly_color = defaultdict(lambda: defaultdict(int))
     monthly_talle = defaultdict(lambda: defaultdict(int))
     monthly_marca = defaultdict(lambda: defaultdict(int))
+    monthly_gastos = defaultdict(float)
 
     weekly_color = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
     weekly_talle = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
     weekly_marca = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+    weekly_gastos = defaultdict(lambda: defaultdict(float))
 
     total_items = 0
     for entrega, categoria, color, talle, marca in item_rows:
@@ -226,7 +229,55 @@ def home(request):
             weekly_talle[categoria][talle][week] += 1
             weekly_marca[categoria][marca][week] += 1
 
+    gastos_rows = (
+        Gasto.objects
+        .filter(fecha__gte=start, fecha__lt=end)
+        .values_list("fecha", "categoria", "monto")
+    )
+    for gasto_fecha, categoria, monto in gastos_rows:
+        categoria = (categoria or "").strip() or "Sin categoria"
+        amount = float(monto or 0)
+        if period == "mensual":
+            monthly_gastos[categoria] += amount
+        else:
+            week = ((gasto_fecha.day - 1) // 7) + 1
+            weekly_gastos[categoria][week] += amount
+
     report = []
+    total_gastos_report = 0.0
+
+    if period == "mensual":
+        total_gastos_report = round(sum(monthly_gastos.values()), 2)
+        report.append({
+            "label": "Gastos",
+            "mode": "mensual",
+            "is_money": True,
+            "cards": [
+                {"title": "Por categoria", "items": _bar_items_from_pairs(_top_k_from_monthly(monthly_gastos), "secondary")},
+            ],
+        })
+    else:
+        gastos_keys = _top_k_from_weekly(weekly_gastos)
+        gastos_rows = []
+        for key in gastos_keys:
+            row = {"key": key, "weeks": [], "total": 0}
+            for week in range(1, weeks_n + 1):
+                value = round(float(weekly_gastos[key].get(week, 0)), 2)
+                row["weeks"].append(value)
+                row["total"] += value
+            gastos_rows.append(row)
+
+        total_gastos_report = round(sum(row["total"] for row in gastos_rows), 2)
+        report.append({
+            "label": "Gastos",
+            "mode": "semanal",
+            "is_money": True,
+            "weeks_labels": list(range(1, weeks_n + 1)),
+            "cards": [
+                {"title": "Por categoria", "rows": _decorate_week_rows(gastos_rows, "secondary")},
+            ],
+        })
+
     for categoria, label in Prenda.CATEGORIAS:
         if period == "mensual":
             colors = _bar_items_from_pairs(_top_k_from_monthly(monthly_color.get(categoria, {})), "accent", color_mode=True)
@@ -235,6 +286,7 @@ def home(request):
             report.append({
                 "label": label,
                 "mode": "mensual",
+                "is_money": False,
                 "cards": [
                     {"title": "Por color", "items": colors},
                     {"title": "Por talle", "items": talles},
@@ -276,6 +328,7 @@ def home(request):
             report.append({
                 "label": label,
                 "mode": "semanal",
+                "is_money": False,
                 "weeks_labels": list(range(1, weeks_n + 1)),
                 "cards": [
                     {"title": "Por color", "rows": _decorate_week_rows(color_rows, "accent", color_mode=True)},
@@ -369,6 +422,7 @@ def home(request):
         {"label": "Prendas alquiladas", "value": total_items},
         {"label": "Semanas del mes", "value": weeks_n},
         {"label": "Ingresos cobrados en el mes", "value": total_general, "money": True},
+        {"label": "Gastos del mes", "value": total_gastos_report, "money": True},
     ]
 
     return render(request, "reportes/home.html", {
@@ -466,6 +520,23 @@ def exportar_excel(request):
                     round(ingresos_semanal[week]["total"].get(method, 0.0), 2),
                 ])
             writer.writerow(["INGRESOS", "", "TOTAL_SEMANA", "", week, "", round(sum(ingresos_semanal[week]["total"].values()), 2)])
+
+    gastos_rows = (
+        Gasto.objects
+        .filter(fecha__gte=start, fecha__lt=end)
+        .values_list("fecha", "categoria", "monto")
+    )
+    for gasto_fecha, categoria, monto in gastos_rows:
+        week = ((gasto_fecha.day - 1) // 7) + 1 if period == "semanal" else ""
+        writer.writerow([
+            "GASTOS",
+            categoria or "Sin categoria",
+            "Categoria",
+            categoria or "Sin categoria",
+            week,
+            "",
+            round(float(monto or 0), 2),
+        ])
 
     items = (
         AlquilerItem.objects
