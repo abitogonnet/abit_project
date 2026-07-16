@@ -69,3 +69,30 @@ class ReportesViewsTests(TestCase):
         self.assertContains(response, "PAGO DE ALQUILER")
         self.assertContains(response, "$12.000")
         self.assertContains(response, "$30.000")
+
+    def test_home_regulariza_cerrados_viejos_y_cuenta_el_total_completo(self):
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 5, 1),
+            fecha_reserva=date(2026, 5, 1),
+            fecha_entrega=date(2026, 5, 10),
+            fecha_devolucion=date(2026, 5, 12),
+            cliente_nombre="Cliente Cerrado",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="160000",
+            sena="80000",
+            metodo_sena=Alquiler.MP_TRANS,
+            estado_saldo=Alquiler.SAL_PEND,
+            estado_alquiler=Alquiler.EST_CERRADO,
+        )
+
+        response = self.client.get(reverse("reportes:home"), {
+            "ym": "2026-05",
+            "periodo": "mensual",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "$160.000")
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
+        self.assertEqual(alquiler.saldo_pagado_en, date(2026, 5, 12))

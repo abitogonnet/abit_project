@@ -574,6 +574,8 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         alquiler.refresh_from_db()
         self.assertEqual(alquiler.estado_alquiler, Alquiler.EST_CERRADO)
+        self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
+        self.assertEqual(alquiler.saldo_pagado_en, date(2026, 7, 16))
         saco.refresh_from_db()
         self.assertEqual(saco.estado, Prenda.E_DISP)
 

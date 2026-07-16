@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from alquileres.models import Alquiler, AlquilerItem
+from alquileres.services import regularizar_saldos_de_cerrados
 from gastos.models import Gasto
 from prendas.models import Prenda
 
@@ -187,6 +188,7 @@ def _income_rows(data, metodos, order):
 
 
 def home(request):
+    regularizar_saldos_de_cerrados()
     period, start, end, weeks_n = _resolve_period(request)
 
     item_rows = (
@@ -439,6 +441,7 @@ def home(request):
 
 
 def exportar_excel(request):
+    regularizar_saldos_de_cerrados()
     period, start, end, weeks_n = _resolve_period(request)
     ym_value = f"{start.year:04d}-{start.month:02d}"
 

@@ -712,6 +712,7 @@ def _actualizar_estado_operativo(
     nuevo_saldo: str = "",
     metodo_saldo: str = "",
     auto_pagar_al_entregar: bool = False,
+    auto_pagar_al_cerrar: bool = False,
     permitir_pago_sin_metodo: bool = False,
 ):
     saldo_editable = alquiler.saldo > 0
@@ -720,6 +721,10 @@ def _actualizar_estado_operativo(
 
     if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
         if auto_pagar_al_entregar and nuevo_estado == Alquiler.EST_ENTREGADO:
+            if saldo_editable and alquiler.estado_saldo != Alquiler.SAL_PAG:
+                nuevo_saldo = Alquiler.SAL_PAG
+                auto_pago = True
+        if auto_pagar_al_cerrar and nuevo_estado == Alquiler.EST_CERRADO:
             if saldo_editable and alquiler.estado_saldo != Alquiler.SAL_PAG:
                 nuevo_saldo = Alquiler.SAL_PAG
                 auto_pago = True
@@ -1184,6 +1189,7 @@ def ver(request):
             nuevo_saldo=request.POST.get("estado_saldo", ""),
             metodo_saldo=(request.POST.get("metodo_saldo") or "").strip(),
             auto_pagar_al_entregar=True,
+            auto_pagar_al_cerrar=True,
         )
         if error:
             messages.error(request, error)
@@ -1252,6 +1258,7 @@ def entregas(request):
                 nuevo_saldo=request.POST.get("estado_saldo", ""),
                 metodo_saldo=(request.POST.get("metodo_saldo") or "").strip(),
                 auto_pagar_al_entregar=True,
+                auto_pagar_al_cerrar=True,
             )
             if error:
                 messages.error(request, error)
@@ -1281,6 +1288,7 @@ def retrasados(request):
             changed, error = _actualizar_estado_operativo(
                 alquiler,
                 nuevo_estado=Alquiler.EST_CERRADO,
+                auto_pagar_al_cerrar=True,
             )
             if error:
                 messages.error(request, error)

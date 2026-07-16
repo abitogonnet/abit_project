@@ -278,6 +278,34 @@ class GastosViewsTests(TestCase):
         self.assertContains(response, "$30.000")
         self.assertContains(response, "$50.000")
 
+    @patch("gastos.views.timezone.localdate", return_value=date(2026, 7, 16))
+    def test_division_regulariza_cerrados_viejos_con_saldo_pendiente(self, _mock_localdate):
+        session = self.client.session
+        session["gastos_access_ok"] = True
+        session.save()
+
+        alquiler = self._crear_alquiler(
+            total_bruto="80000",
+            sena="30000",
+            estado_saldo=Alquiler.SAL_PEND,
+        )
+        alquiler.fecha_visita = date(2026, 4, 1)
+        alquiler.fecha_reserva = date(2026, 4, 1)
+        alquiler.fecha_entrega = date(2026, 4, 8)
+        alquiler.fecha_devolucion = date(2026, 4, 10)
+        alquiler.estado_alquiler = Alquiler.EST_CERRADO
+        alquiler.save()
+
+        response = self.client.get(reverse("gastos:division_bienes"), {
+            "ym": "2026-04",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "$80.000")
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
+        self.assertEqual(alquiler.saldo_pagado_en, date(2026, 4, 10))
+
     def test_home_filtra_listas_por_mes_elegido(self):
         session = self.client.session
         session["gastos_access_ok"] = True

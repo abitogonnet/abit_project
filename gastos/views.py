@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from alquileres.models import Alquiler
+from alquileres.services import regularizar_saldos_de_cerrados
 
 from .forms import DivisionBienesForm, GastoForm
 from .models import DivisionBienes, Gasto
@@ -292,6 +293,7 @@ def home(request):
     if access_response:
         return access_response
 
+    regularizar_saldos_de_cerrados()
     month_ctx = _resolve_month(request)
     gastos = (
         Gasto.objects
@@ -351,6 +353,7 @@ def division_bienes(request):
     if access_response:
         return access_response
 
+    regularizar_saldos_de_cerrados()
     month_ctx = _resolve_month(request)
 
     if request.method == "POST":
