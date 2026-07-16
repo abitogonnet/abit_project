@@ -55,6 +55,23 @@ def home(request):
 
             return redirect("alquileres:home")
 
+        if accion == "marcar_saldo_pagado":
+            changed, error = _actualizar_estado_operativo(
+                alquiler,
+                nuevo_saldo=Alquiler.SAL_PAG,
+                permitir_pago_sin_metodo=True,
+            )
+            if error:
+                messages.error(request, error)
+            elif changed:
+                alquiler.save()
+                _sync_prendas_por_estado(alquiler)
+                messages.success(request, f"Saldo del alquiler #{alquiler.id} marcado como abonado.")
+            else:
+                messages.info(request, "No hubo cambios.")
+
+            return redirect("alquileres:home")
+
     hoy = timezone.localdate()
     proximos_siete = hoy + timedelta(days=7)
 
@@ -437,6 +454,48 @@ def _persona_nombre_alquiler(alquiler: Alquiler, persona_num: int) -> str:
     return alquiler.persona_nombre(persona_num).strip()
 
 
+def _armar_mensaje_cliente_con_items(alq: Alquiler, items) -> str:
+    partes = []
+    partes.append("Hola, te mando el detallado de lo que alquilaste:")
+    partes.append("")
+    partes.append("FECHAS")
+    partes.append(f"- Reserva: {_fmt_date(alq.fecha_reserva)}")
+    partes.append(f"- Entrega: {_fmt_date(alq.fecha_entrega)}")
+    partes.append(f"- Devolucion: {_fmt_date(alq.fecha_devolucion)}")
+    partes.append("")
+
+    for persona_num in range(1, Alquiler.MAX_PERSONAS + 1):
+        items_persona = [item for item in items if item.persona_num == persona_num]
+        persona_nombre = _persona_nombre_alquiler(alq, persona_num)
+        if not (persona_nombre or items_persona):
+            continue
+
+        partes.append(persona_nombre or f"Persona {persona_num}")
+        for item in items_persona:
+            prenda = item.prenda
+            detalle_prenda = _descripcion_prenda(prenda)
+            extra_ruedo = ""
+            if item.ruedo_valor and item.ruedo_tipo:
+                extra_ruedo = f" (Ruedo: {item.ruedo_valor} {item.get_ruedo_tipo_display()})"
+            if detalle_prenda:
+                partes.append(f"- {prenda.get_categoria_display()}: {detalle_prenda}{extra_ruedo}")
+            else:
+                partes.append(f"- {prenda.get_categoria_display()}{extra_ruedo}")
+        partes.append("")
+
+    partes.append("PAGO")
+    partes.append(f"- Total: ${alq.total_bruto}")
+    if alq.descuento_pct and alq.descuento_pct > 0:
+        partes.append(f"- Descuento: {alq.descuento_pct}% (-${alq.descuento_monto})")
+        partes.append(f"- Total final: ${alq.total_final}")
+    else:
+        partes.append(f"- Total final: ${alq.total_final}")
+    partes.append(f"- Sena: ${alq.sena}")
+    partes.append(f"- Resta: ${alq.saldo}")
+
+    return "\n".join(partes)
+
+
 def _adjuntar_detalle_alquiler(alquileres):
     for alquiler in alquileres:
         items = list(alquiler.items.all())
@@ -537,6 +596,7 @@ def _adjuntar_detalle_alquiler(alquileres):
         alquiler.estado_alquiler_badge = _badge_estado_alquiler(alquiler.estado_alquiler)
         alquiler.estado_saldo_badge = _badge_estado_saldo(alquiler.estado_saldo_actual)
         alquiler.saldo_editable = alquiler.saldo > 0
+        alquiler.mensaje_cliente = _armar_mensaje_cliente_con_items(alquiler, items)
 
 
 def _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=None):
@@ -602,45 +662,8 @@ def _disponibles_payload(disponibles):
 
 
 def _armar_mensaje_cliente(alq: Alquiler) -> str:
-    partes = []
-    partes.append("Hola, te mando el detallado de lo que alquilaste:")
-    partes.append("")
-    partes.append("FECHAS")
-    partes.append(f"- Reserva: {_fmt_date(alq.fecha_reserva)}")
-    partes.append(f"- Entrega: {_fmt_date(alq.fecha_entrega)}")
-    partes.append(f"- Devolucion: {_fmt_date(alq.fecha_devolucion)}")
-    partes.append("")
-
-    for persona_num in range(1, Alquiler.MAX_PERSONAS + 1):
-        items_persona = list(alq.items.filter(persona_num=persona_num).select_related("prenda"))
-        persona_nombre = _persona_nombre_alquiler(alq, persona_num)
-        if not (persona_nombre or items_persona):
-            continue
-
-        partes.append(persona_nombre or f"Persona {persona_num}")
-        for item in items_persona:
-            prenda = item.prenda
-            detalle_prenda = _descripcion_prenda(prenda)
-            extra_ruedo = ""
-            if item.ruedo_valor and item.ruedo_tipo:
-                extra_ruedo = f" (Ruedo: {item.ruedo_valor} {item.get_ruedo_tipo_display()})"
-            if detalle_prenda:
-                partes.append(f"- {prenda.get_categoria_display()}: {detalle_prenda}{extra_ruedo}")
-            else:
-                partes.append(f"- {prenda.get_categoria_display()}{extra_ruedo}")
-        partes.append("")
-
-    partes.append("PAGO")
-    partes.append(f"- Total: ${alq.total_bruto}")
-    if alq.descuento_pct and alq.descuento_pct > 0:
-        partes.append(f"- Descuento: {alq.descuento_pct}% (-${alq.descuento_monto})")
-        partes.append(f"- Total final: ${alq.total_final}")
-    else:
-        partes.append(f"- Total final: ${alq.total_final}")
-    partes.append(f"- Sena: ${alq.sena}")
-    partes.append(f"- Resta: ${alq.saldo}")
-
-    return "\n".join(partes)
+    items = list(alq.items.select_related("prenda").all())
+    return _armar_mensaje_cliente_con_items(alq, items)
 
 
 def _refresh_prenda_estado(prenda: Prenda):
@@ -689,6 +712,7 @@ def _actualizar_estado_operativo(
     nuevo_saldo: str = "",
     metodo_saldo: str = "",
     auto_pagar_al_entregar: bool = False,
+    permitir_pago_sin_metodo: bool = False,
 ):
     saldo_editable = alquiler.saldo > 0
     changed = False
@@ -712,6 +736,7 @@ def _actualizar_estado_operativo(
             requires_method = (
                 alquiler.estado_saldo != Alquiler.SAL_PAG
                 and not auto_pago
+                and not permitir_pago_sin_metodo
                 and not metodo_saldo
             )
             if requires_method:

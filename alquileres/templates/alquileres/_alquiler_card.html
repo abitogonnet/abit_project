@@ -220,6 +220,13 @@
     </form>
   {% endif %}
 
+  {% if show_copy_message %}
+    <div class="ab-actions" style="margin-top: 18px;">
+      <button class="ab-btn2" type="button" data-copy-card-message>Copiar mensaje</button>
+      <textarea class="js-copy-card-message-text" hidden>{{ a.mensaje_cliente }}</textarea>
+    </div>
+  {% endif %}
+
   {% if show_detail_toggle or show_edit_toggle %}
     <div class="ab-detail-actions">
       {% if show_detail_toggle %}

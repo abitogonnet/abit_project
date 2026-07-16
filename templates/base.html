@@ -386,6 +386,23 @@
     })();
 
     (function () {
+      const copyButtons = document.querySelectorAll("[data-copy-card-message]");
+      if (!copyButtons.length) return;
+
+      copyButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          const card = button.closest(".ab-rental-card");
+          if (!card) return;
+
+          const messageField = card.querySelector(".js-copy-card-message-text");
+          if (!messageField || !messageField.value) return;
+
+          navigator.clipboard.writeText(messageField.value);
+        });
+      });
+    })();
+
+    (function () {
       const backButtons = document.querySelectorAll("[data-go-back]");
       if (!backButtons.length) return;
 
