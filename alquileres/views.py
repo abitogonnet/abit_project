@@ -109,14 +109,6 @@ def home(request):
             "cta": "Corregir stock",
             "tone": "accent",
         })
-    if visitas_hoy or visitas_semana:
-        prioridades.append({
-            "title": "Seguir la agenda de visitas",
-            "description": f"{visitas_hoy} visita{'s' if visitas_hoy != 1 else ''} para hoy y {visitas_semana} dentro de la proxima semana.",
-            "href": reverse("visitas:listar"),
-            "cta": "Abrir agenda",
-            "tone": "neutral",
-        })
     if not prioridades:
         prioridades.append({
             "title": "Todo bajo control",
@@ -796,6 +788,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         "filtros_form": filtros_form,
         "filtros_activos": filtros_activos,
         "edit_open_id": edit_open_id,
+        "filter_hidden_fields": hidden_fields,
         "disponibles_json": _disponibles_payload(disponibles),
     }
 
@@ -849,7 +842,11 @@ def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
         "hoy": hoy,
         "hasta": hasta,
         "alquileres": alquileres,
+        "estados_alquiler": Alquiler.ESTADOS_ALQUILER,
+        "estados_saldo": Alquiler.ESTADOS_SALDO,
+        "metodos_pago": Alquiler.METODOS_PAGO,
         "edit_open_id": edit_open_id,
+        "filter_hidden_fields": hidden_fields,
         "disponibles_json": _disponibles_payload(disponibles),
     }
 
@@ -1007,6 +1004,46 @@ def entregas(request):
                     edit_open_id=alquiler.id,
                 ),
             )
+
+        if accion == "actualizar":
+            nuevo_saldo = request.POST.get("estado_saldo")
+            nuevo_estado = request.POST.get("estado_alquiler")
+            metodo_saldo = (request.POST.get("metodo_saldo") or "").strip()
+            saldo_editable = alquiler.saldo > 0
+            changed = False
+
+            if saldo_editable and nuevo_saldo in dict(Alquiler.ESTADOS_SALDO):
+                if alquiler.estado_saldo != nuevo_saldo:
+                    if nuevo_saldo == Alquiler.SAL_PAG:
+                        if not metodo_saldo:
+                            messages.error(request, "Para marcar saldo como pagado tienes que elegir el metodo de pago.")
+                            return _redirect_entregas_con_filtro(request)
+                        if metodo_saldo not in dict(Alquiler.METODOS_PAGO):
+                            messages.error(request, "Metodo de pago invalido.")
+                            return _redirect_entregas_con_filtro(request)
+
+                        alquiler.metodo_saldo = metodo_saldo
+                        alquiler.saldo_pagado_en = timezone.localdate()
+                    else:
+                        alquiler.metodo_saldo = ""
+                        alquiler.saldo_pagado_en = None
+
+                    alquiler.estado_saldo = nuevo_saldo
+                    changed = True
+
+            if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
+                if alquiler.estado_alquiler != nuevo_estado:
+                    alquiler.estado_alquiler = nuevo_estado
+                    changed = True
+
+            if changed:
+                alquiler.save()
+                _sync_prendas_por_estado(alquiler)
+                messages.success(request, f"Alquiler #{alquiler.id} actualizado.")
+            else:
+                messages.info(request, "No hubo cambios.")
+
+            return _redirect_entregas_con_filtro(request)
 
     return render(request, "alquileres/entregas.html", _contexto_entregas(request.GET or None))
 

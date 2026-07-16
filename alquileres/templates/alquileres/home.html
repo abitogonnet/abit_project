@@ -34,8 +34,8 @@
   </aside>
 </section>
 
-<section class="ab-dashboard-grid ab-dashboard-grid-home">
-  <div class="ab-section-card" id="menu-alquileres">
+<section class="ab-home-top-grid">
+  <div class="ab-section-card ab-home-primary-card" id="menu-alquileres">
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Alquileres</p>
@@ -63,7 +63,7 @@
     </div>
   </div>
 
-  <div class="ab-section-card" id="menu-stock">
+  <div class="ab-section-card ab-home-primary-card" id="menu-stock">
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Stock</p>
@@ -87,7 +87,7 @@
     </div>
   </div>
 
-  <div class="ab-section-card" id="menu-finanzas">
+  <div class="ab-section-card ab-home-primary-card" id="menu-finanzas">
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Finanzas</p>
@@ -96,12 +96,8 @@
     </div>
 
     <div class="ab-home-button-grid">
-      <a class="ab-home-menu-btn" href="{% url 'gastos:home' %}">
-        <strong>Ver finanzas</strong>
-        <span>Caja</span>
-      </a>
       <a class="ab-home-menu-btn" href="{% url 'gastos:crear' %}">
-        <strong>Crear gasto</strong>
+        <strong>Cargar gastos</strong>
         <span>Nuevo</span>
       </a>
       <a class="ab-home-menu-btn" href="{% url 'gastos:division_bienes' %}">
@@ -120,6 +116,33 @@
         <strong>Reporte semanal</strong>
         <span>Semanal</span>
       </a>
+      <a class="ab-home-menu-btn" href="{% url 'gastos:home' %}">
+        <strong>Ver finanzas</strong>
+        <span>Caja</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="ab-dashboard-grid ab-dashboard-grid-home-lower">
+  <div class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Tareas pendientes</p>
+        <h2 class="ab-mini-title">Tareas pendientes</h2>
+      </div>
+    </div>
+
+    <div class="ab-home-priority-list">
+      {% for item in prioridades %}
+        <article class="ab-priority-card tone-{{ item.tone }}">
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.description }}</p>
+          </div>
+          <a class="ab-btn2" href="{{ item.href }}">{{ item.cta }}</a>
+        </article>
+      {% endfor %}
     </div>
   </div>
 

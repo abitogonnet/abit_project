@@ -40,61 +40,7 @@
 
     <div class="ab-entity-list">
       {% for a, dias in retrasos %}
-        <article class="ab-entity-card ab-rental-card">
-          <div class="ab-entity-card-head">
-            <div>
-              <p class="ab-entity-card-eyebrow">#{{ a.id }} - Vencia {{ a.fecha_devolucion|date:"d/m/Y" }}</p>
-              <h3 class="ab-entity-card-title">{{ a.cliente_nombre }}</h3>
-              <p class="ab-entity-card-subtitle">{{ a.cliente_telefono|default:"Sin telefono" }}</p>
-            </div>
-            <div class="ab-status-stack">
-              <span class="ab-badge danger">{{ dias }} dia{{ dias|pluralize }}</span>
-              {% if a.estado_alquiler == "ENTREGADO" %}
-                <span class="ab-badge danger">ENTREGADO (no volvio)</span>
-              {% elif a.estado_alquiler == "RESERVADO" %}
-                <span class="ab-badge warn">RESERVADO</span>
-              {% else %}
-                <span class="ab-badge {{ a.estado_alquiler_badge }}">{{ a.get_estado_alquiler_display }}</span>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="ab-entity-metrics">
-            <div class="ab-metric-chip">
-              <span>Entrega</span>
-              <strong>{{ a.fecha_entrega|date:"d/m/Y" }}</strong>
-            </div>
-            <div class="ab-metric-chip">
-              <span>Devolucion</span>
-              <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
-            </div>
-            <div class="ab-metric-chip">
-              <span>Saldo</span>
-              <strong>${{ a.saldo_restante_actual }}</strong>
-            </div>
-          </div>
-
-          <div class="ab-persona-summary-list">
-            {% for persona in a.detalle_personas %}
-              <article class="ab-persona-summary-card">
-                <div class="ab-row" style="justify-content: space-between;">
-                  <strong>{{ persona.nombre }}</strong>
-                  <span class="ab-pill">Persona {{ persona.numero }}</span>
-                </div>
-                <div class="ab-inline-item-list">
-                  {% for item in persona.items %}
-                    <div class="ab-inline-item">
-                      <strong>{{ item.codigo }}</strong>
-                      <span>{{ item.categoria }} - {{ item.marca }} - {{ item.color }} - {{ item.ruedo }}</span>
-                    </div>
-                  {% empty %}
-                    <span class="ab-small">Sin prendas</span>
-                  {% endfor %}
-                </div>
-              </article>
-            {% endfor %}
-          </div>
-        </article>
+        {% include "alquileres/_alquiler_card.html" with a=a dias=dias overdue_mode=True %}
       {% empty %}
         <div class="ab-empty">No hay retrasados.</div>
       {% endfor %}

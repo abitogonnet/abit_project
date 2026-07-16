@@ -1291,6 +1291,37 @@ body.ab-page {
   gap: 10px;
 }
 
+.ab-sidebar-quick-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid rgba(109, 91, 76, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.ab-sidebar-quick-link.primary,
+.ab-sidebar-quick-link:hover,
+.ab-sidebar-quick-link:focus-visible,
+.ab-sidebar-quick-link.is-active {
+  border-color: rgba(15, 118, 110, 0.22);
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--accent-strong);
+  transform: translateX(2px);
+}
+
+.ab-sidebar-quick-link.is-soon {
+  border-style: dashed;
+  color: var(--muted);
+  cursor: default;
+}
+
 .ab-global-actions {
   position: sticky;
   top: 0;
@@ -1479,6 +1510,10 @@ body.ab-page {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.ab-dashboard-grid-home-lower {
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+}
+
 .ab-priority-card {
   display: flex;
   justify-content: space-between;
@@ -1577,6 +1612,17 @@ body.ab-page {
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 18px;
   align-items: start;
+}
+
+.ab-home-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.ab-home-primary-card {
+  min-height: 100%;
 }
 
 .ab-create-main,
@@ -1764,6 +1810,11 @@ body.ab-page {
 }
 
 .ab-home-movement-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ab-home-priority-list {
   display: grid;
   gap: 12px;
 }
@@ -2182,7 +2233,9 @@ body.ab-page {
   .ab-split-shell,
   .ab-edit-grid-modern,
   .ab-entity-columns,
-  .ab-dashboard-grid-home {
+  .ab-dashboard-grid-home,
+  .ab-home-top-grid,
+  .ab-dashboard-grid-home-lower {
     grid-template-columns: 1fr;
   }
 }
@@ -2221,5 +2274,42 @@ body.ab-page {
 
   .ab-home-movement-card {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  body,
+  .ab-page {
+    background: #fff;
+  }
+
+  .ab-mobilebar,
+  .ab-sidebar,
+  .ab-sidebar-backdrop,
+  .ab-global-actions,
+  .ab-flash-stack,
+  .ab-pagehero-panel .ab-actions,
+  .ab-section-card form,
+  .ab-detail-toggle,
+  .ab-btn,
+  .ab-btn2,
+  .ab-btn-danger {
+    display: none !important;
+  }
+
+  .ab-app,
+  .ab-main {
+    display: block;
+    height: auto;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .ab-pagehero,
+  .ab-section-card,
+  .ab-list-card {
+    background: #fff !important;
+    box-shadow: none !important;
+    break-inside: avoid;
   }
 }

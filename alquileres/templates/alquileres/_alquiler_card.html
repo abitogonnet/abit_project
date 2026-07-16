@@ -1,0 +1,246 @@
+<article class="ab-entity-card ab-rental-card">
+  <div class="ab-entity-card-head">
+    <div>
+      <p class="ab-entity-card-eyebrow">
+        #{{ a.id }}
+        {% if overdue_mode %}
+          - Vencia {{ a.fecha_devolucion|date:"d/m/Y" }}
+        {% else %}
+          - Reserva {{ a.fecha_reserva|date:"d/m/Y" }}
+        {% endif %}
+      </p>
+      <h3 class="ab-entity-card-title">{{ a.cliente_nombre }}</h3>
+      <p class="ab-entity-card-subtitle">
+        {{ a.cliente_telefono|default:"Sin telefono" }}
+        {% if a.personas_resumen %} - {{ a.personas_resumen }}{% endif %}
+      </p>
+    </div>
+    <div class="ab-status-stack">
+      {% if overdue_mode %}
+        <span class="ab-badge danger">{{ dias }} dia{{ dias|pluralize }}</span>
+        {% if a.estado_alquiler == "ENTREGADO" %}
+          <span class="ab-badge danger">ENTREGADO (no volvio)</span>
+        {% elif a.estado_alquiler == "RESERVADO" %}
+          <span class="ab-badge warn">RESERVADO</span>
+        {% else %}
+          <span class="ab-badge {{ a.estado_alquiler_badge }}">{{ a.get_estado_alquiler_display }}</span>
+        {% endif %}
+      {% else %}
+        <span class="ab-badge {{ a.estado_alquiler_badge }}">{{ a.get_estado_alquiler_display }}</span>
+        <span class="ab-badge {{ a.estado_saldo_badge }}">Saldo {{ a.estado_saldo_actual_label }}</span>
+        <div class="ab-chip-row">
+          {% for estado in a.estado_prendas %}
+            <span class="ab-badge {{ estado.badge_class }}">{{ estado.label }} x{{ estado.count }}</span>
+          {% empty %}
+            <span class="ab-small">Sin prendas</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ab-entity-metrics">
+    <div class="ab-metric-chip">
+      <span>{% if delivery_mode %}Retiro / entrega{% else %}Entrega{% endif %}</span>
+      <strong>{{ a.fecha_entrega|date:"d/m/Y" }}</strong>
+    </div>
+    <div class="ab-metric-chip">
+      <span>Devolucion</span>
+      <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
+    </div>
+    {% if overdue_mode %}
+      <div class="ab-metric-chip">
+        <span>Dias de atraso</span>
+        <strong>{{ dias }}</strong>
+      </div>
+      <div class="ab-metric-chip">
+        <span>Prendas</span>
+        <strong>{{ a.total_prendas_detalle }}</strong>
+      </div>
+    {% else %}
+      <div class="ab-metric-chip">
+        <span>Abonado</span>
+        <strong>${{ a.abono_actual }}</strong>
+      </div>
+      <div class="ab-metric-chip">
+        <span>{% if delivery_mode %}Saldo restante{% else %}Saldo{% endif %}</span>
+        <strong>${{ a.saldo_restante_actual }}</strong>
+      </div>
+      <div class="ab-metric-chip">
+        <span>Total</span>
+        <strong>${{ a.total_final }}</strong>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="ab-entity-columns">
+    <section class="ab-entity-section">
+      <h4>Prendas</h4>
+      <div class="ab-persona-summary-list">
+        {% for prenda in a.prendas_tabla %}
+          <article class="ab-persona-summary-card">
+            <div class="ab-row" style="justify-content: space-between;">
+              <strong>{{ prenda.persona }}</strong>
+              <span class="ab-pill">{{ prenda.items|length }} prenda{{ prenda.items|pluralize }}</span>
+            </div>
+            <div class="ab-inline-item-list">
+              {% for item in prenda.items %}
+                <div class="ab-inline-item">
+                  <strong>{{ item.titulo }}</strong>
+                  <span>{{ item.descripcion }}</span>
+                </div>
+              {% empty %}
+                <span class="ab-small">Sin prendas</span>
+              {% endfor %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="ab-entity-section">
+      {% if overdue_mode %}
+        <h4>Seguimiento</h4>
+        <div class="ab-summary-list">
+          <div>
+            <span>Devolucion prevista</span>
+            <strong>{{ a.fecha_devolucion|date:"d/m/Y" }}</strong>
+          </div>
+          <div>
+            <span>Metodos</span>
+            <strong>
+              {% for metodo in a.metodos_pago_actuales %}
+                {{ metodo }}{% if not forloop.last %} - {% endif %}
+              {% endfor %}
+            </strong>
+          </div>
+          <div>
+            <span>Estado</span>
+            <strong>{{ a.get_estado_alquiler_display }}</strong>
+          </div>
+        </div>
+      {% else %}
+        <h4>Pago</h4>
+        <div class="ab-summary-list">
+          <div>
+            <span>Total</span>
+            <strong>${{ a.total_final }}</strong>
+          </div>
+          <div>
+            <span>Pagos</span>
+            <strong>Abonado: ${{ a.abono_actual }} - Resta: ${{ a.saldo_restante_actual }}</strong>
+          </div>
+          <div>
+            <span>Metodos</span>
+            <strong>
+              {% for metodo in a.metodos_pago_actuales %}
+                {{ metodo }}{% if not forloop.last %} - {% endif %}
+              {% endfor %}
+            </strong>
+          </div>
+          <div>
+            <span>Ruedo de saco</span>
+            <strong>
+              {% for ruedo in a.ruedos_tabla.saco %}
+                {{ ruedo.categoria }}: {{ ruedo.ruedo }}{% if not forloop.last %} - {% endif %}
+              {% empty %}
+                Sin ruedo
+              {% endfor %}
+            </strong>
+          </div>
+          <div>
+            <span>Ruedo de pantalon</span>
+            <strong>
+              {% for ruedo in a.ruedos_tabla.pantalon %}
+                {{ ruedo.categoria }}: {{ ruedo.ruedo }}{% if not forloop.last %} - {% endif %}
+              {% empty %}
+                Sin ruedo
+              {% endfor %}
+            </strong>
+          </div>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if enable_update_form %}
+    <form method="post" class="ab-inline-form-grid">
+      {% csrf_token %}
+      <input type="hidden" name="alq_id" value="{{ a.id }}">
+      {% for key, value in filter_hidden_fields %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+
+      <div class="ab-field">
+        <label class="ab-lab">Saldo</label>
+        <select class="ab-sel" name="estado_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
+          {% for value, label in estados_saldo %}
+            <option value="{{ value }}" {% if a.estado_saldo_actual == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% if not a.saldo_editable %}
+          <span class="ab-small">Pago completo.</span>
+        {% endif %}
+      </div>
+
+      <div class="ab-field">
+        <label class="ab-lab">Metodo saldo</label>
+        <select class="ab-sel" name="metodo_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
+          <option value="">Elegir si esta pagado</option>
+          {% for value, label in metodos_pago %}
+            <option value="{{ value }}" {% if a.metodo_saldo == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="ab-field">
+        <label class="ab-lab">Estado alquiler</label>
+        <select class="ab-sel" name="estado_alquiler">
+          {% for value, label in estados_alquiler %}
+            <option value="{{ value }}" {% if a.estado_alquiler == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="ab-field">
+        <label class="ab-lab">&nbsp;</label>
+        <div class="ab-actions">
+          <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar</button>
+          <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ a.id }}. Continuar?');">Eliminar</button>
+        </div>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if show_detail_toggle or show_edit_toggle %}
+    <div class="ab-detail-actions">
+      {% if show_detail_toggle %}
+        <details class="ab-detail-toggle{% if show_edit_toggle %} ab-detail-toggle-split{% endif %}">
+          <summary class="ab-detail-summary">
+            <span>Ver detallado</span>
+            <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }}</span>
+          </summary>
+          <div class="ab-detail-panel">
+            <div class="js-remote-panel" data-panel-url="{{ a.detail_panel_url }}"></div>
+          </div>
+        </details>
+      {% endif %}
+
+      {% if show_edit_toggle %}
+        <details class="ab-detail-toggle{% if show_detail_toggle %} ab-detail-toggle-split{% endif %}" {% if edit_open_id == a.id %}open{% endif %}>
+          <summary class="ab-detail-summary">
+            <span>Editar</span>
+            <span class="ab-small">#{{ a.id }}</span>
+          </summary>
+          <div class="ab-detail-panel">
+            {% if edit_open_id == a.id and a.edit_form %}
+              {% include "alquileres/_editar_alquiler.html" with alquiler=a %}
+            {% else %}
+              <div class="js-remote-panel" data-panel-url="{{ a.edit_panel_url }}"></div>
+            {% endif %}
+          </div>
+        </details>
+      {% endif %}
+    </div>
+  {% endif %}
+</article>

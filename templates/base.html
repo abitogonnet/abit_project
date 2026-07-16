@@ -43,15 +43,24 @@
       </div>
 
       <div class="ab-sidebar-quick">
-        <a class="ab-btn" href="{{ home_url }}#menu-alquileres">Alquileres</a>
-        <a class="ab-btn2" href="{{ home_url }}#menu-stock">Stock</a>
-        <a class="ab-btn2" href="{{ home_url }}#menu-finanzas">Finanzas</a>
+        <a class="ab-sidebar-quick-link primary {% if request.path == alquiler_crear_url %}is-active{% endif %}" href="{{ alquiler_crear_url }}">Crear alquiler</a>
+        <a class="ab-sidebar-quick-link {% if request.path == alquiler_ver_url %}is-active{% endif %}" href="{{ alquiler_ver_url }}">Ver alquileres</a>
+        <a class="ab-sidebar-quick-link {% if request.path == entregas_url %}is-active{% endif %}" href="{{ entregas_url }}">Entregas</a>
+        <span class="ab-sidebar-quick-link is-soon">Ruedos - Proximo</span>
+        <a class="ab-sidebar-quick-link {% if request.path == gastos_crear_url %}is-active{% endif %}" href="{{ gastos_crear_url }}">Cargar gastos</a>
       </div>
 
       <nav class="ab-sidebar-nav">
         <div class="ab-nav-group">
           <span class="ab-nav-label">Menu</span>
           <a class="ab-nav-link {% if request.path == home_url %}is-active{% endif %}" href="{{ home_url }}">Inicio</a>
+        </div>
+
+        <div class="ab-nav-group">
+          <span class="ab-nav-label">Secciones</span>
+          <a class="ab-nav-link {% if request.path == home_url %}is-active{% endif %}" href="{{ home_url }}#menu-alquileres">Alquileres</a>
+          <a class="ab-nav-link {% if request.path == stock_url %}is-active{% endif %}" href="{{ home_url }}#menu-stock">Stock</a>
+          <a class="ab-nav-link {% if request.path|slice:':8' == '/gastos/' or request.path|slice:':10' == '/reportes/' %}is-active{% endif %}" href="{{ home_url }}#menu-finanzas">Finanzas</a>
         </div>
 
         <div class="ab-nav-group">

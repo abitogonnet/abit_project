@@ -23,7 +23,7 @@
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'reportes:home' %}?periodo=mensual">Mensual</a>
       <a class="ab-btn2" href="{% url 'reportes:home' %}?periodo=semanal">Semanal</a>
-      <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
+      <button class="ab-btn" type="button" onclick="window.print()">Exportar graficos</button>
     </div>
   </aside>
 </section>
@@ -46,7 +46,7 @@
         <label class="ab-lab">&nbsp;</label>
         <div class="ab-actions">
           <button class="ab-btn" type="submit">Aplicar</button>
-          <a class="ab-btn2" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
+          <button class="ab-btn2" type="button" onclick="window.print()">Exportar graficos</button>
         </div>
       </div>
     </form>

@@ -44,7 +44,7 @@
   </section>
 {% endif %}
 
-<form method="post" id="alqForm" class="ab-create-layout">
+<form method="post" id="alqForm" class="ab-create-layout" data-draft-clear="{% if mensaje_cliente %}1{% else %}0{% endif %}">
   {% csrf_token %}
   {{ form.tiene_persona2 }}
 
@@ -102,9 +102,12 @@
             <h2>Personas y prendas</h2>
           </div>
         </div>
-        <button class="ab-btn2" type="button" data-toggle-persona2>
-          <span data-persona2-label>Agregar 2da persona</span>
-        </button>
+        <div class="ab-actions">
+          <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}" target="_blank" rel="noopener">Buscar prenda</a>
+          <button class="ab-btn2" type="button" data-toggle-persona2>
+            <span data-persona2-label>Agregar 2da persona</span>
+          </button>
+        </div>
       </div>
 
       <div class="ab-person-grid-modern">
@@ -305,7 +308,7 @@
       <span class="ab-spec-label">Atajos</span>
       <div class="ab-stack">
         <a class="ab-btn2" href="{% url 'prendas:stock' %}">Revisar stock</a>
-        <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
+        <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}" target="_blank" rel="noopener">Buscar prenda</a>
         <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Entregas</a>
       </div>
     </div>
@@ -317,6 +320,7 @@
     const form = document.getElementById("alqForm");
     if (!form) return;
 
+    const draftKey = "abito:alquiler:create-draft";
     const hiddenPersona2 = document.getElementById("id_tiene_persona2");
     const persona2Box = document.querySelector("[data-persona2-box]");
     const persona2Toggle = document.querySelector("[data-toggle-persona2]");
@@ -325,6 +329,53 @@
     const messageBox = document.getElementById("msgBox");
     const stepButtons = Array.from(document.querySelectorAll("[data-step-target]"));
     const stepCards = Array.from(document.querySelectorAll("[data-step-card]"));
+
+    function restoreDraft() {
+      if (form.dataset.draftClear === "1") {
+        sessionStorage.removeItem(draftKey);
+        return;
+      }
+
+      const raw = sessionStorage.getItem(draftKey);
+      if (!raw) return;
+
+      let draft = {};
+      try {
+        draft = JSON.parse(raw);
+      } catch (_error) {
+        sessionStorage.removeItem(draftKey);
+        return;
+      }
+
+      Array.from(form.elements).forEach(function (field) {
+        if (!field.name || field.name === "csrfmiddlewaretoken") return;
+        if (field.type === "submit" || field.type === "button") return;
+        if (!(field.name in draft)) return;
+
+        if (field.type === "checkbox" || field.type === "radio") {
+          field.checked = !!draft[field.name];
+          return;
+        }
+
+        field.value = draft[field.name];
+      });
+    }
+
+    function saveDraft() {
+      const draft = {};
+      Array.from(form.elements).forEach(function (field) {
+        if (!field.name || field.name === "csrfmiddlewaretoken") return;
+        if (field.type === "submit" || field.type === "button") return;
+
+        if (field.type === "checkbox" || field.type === "radio") {
+          draft[field.name] = field.checked;
+          return;
+        }
+
+        draft[field.name] = field.value;
+      });
+      sessionStorage.setItem(draftKey, JSON.stringify(draft));
+    }
 
     function num(value) {
       const text = (value || "").toString().replace(",", ".").trim();
@@ -520,6 +571,10 @@
       });
     }
 
+    restoreDraft();
+    document.querySelectorAll(".js-code-filter").forEach(function (input) {
+      filterCodeSelect(input);
+    });
     const persona2Nombre = (document.getElementById("id_persona2_nombre") || {}).value || "";
     const hasPersona2Selection = Array.from(form.querySelectorAll("[name^='p2_']"))
       .some(function (node) {
@@ -527,6 +582,9 @@
       });
     setPersona2(hiddenPersona2 && hiddenPersona2.value === "1" || !!persona2Nombre || hasPersona2Selection);
     updateSummary();
+
+    form.addEventListener("input", saveDraft);
+    form.addEventListener("change", saveDraft);
   })();
 </script>
 {% endblock %}
