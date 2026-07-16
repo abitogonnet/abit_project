@@ -81,7 +81,7 @@ class GastosViewsTests(TestCase):
         )
         Gasto.objects.create(
             fecha=date(2026, 5, 10),
-            categoria="Publicidad",
+            categoria="COMPRA DE PRODUCTOS",
             metodo="Transferencia",
             descripcion="Campana de Instagram",
             notas="Semana del evento",
@@ -132,7 +132,7 @@ class GastosViewsTests(TestCase):
         )
         Gasto.objects.create(
             fecha=date(2026, 5, 10),
-            categoria="Arreglo",
+            categoria="PAGO RUEDOS",
             monto="5000",
         )
         DivisionBienes.objects.create(
@@ -170,7 +170,7 @@ class GastosViewsTests(TestCase):
         )
         Gasto.objects.create(
             fecha=date(2026, 5, 10),
-            categoria="Publicidad",
+            categoria="PAGO BELEN",
             monto="5000",
         )
         DivisionBienes.objects.create(
@@ -207,13 +207,13 @@ class GastosViewsTests(TestCase):
 
         Gasto.objects.create(
             fecha=date(2026, 5, 10),
-            categoria="Publicidad",
+            categoria="PAGO NANO/LUCAS",
             monto="5000",
             descripcion="Mayo",
         )
         Gasto.objects.create(
             fecha=date(2026, 4, 10),
-            categoria="Publicidad",
+            categoria="PAGO NANO/LUCAS",
             monto="3000",
             descripcion="Abril",
         )

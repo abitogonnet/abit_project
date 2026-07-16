@@ -7,13 +7,11 @@ HTML_DATE_FORMAT = "%Y-%m-%d"
 
 
 CATEGORIAS = [
-    "Lavandería",
-    "Arreglos",
-    "Compras",
-    "Publicidad",
-    "Servicios",
-    "Transporte",
-    "Otros",
+    "PAGO NANO/LUCAS",
+    "PAGO RUEDOS",
+    "PAGO BELEN",
+    "COMPRA DE PRODUCTOS",
+    "GASTOS TADE Y BAUTI",
 ]
 
 METODOS = [
