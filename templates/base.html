@@ -7,9 +7,9 @@
 {% url 'prendas:stock' as stock_url %}
 {% url 'prendas:crear' as prenda_crear_url %}
 {% url 'prendas:buscar_prenda' as prenda_buscar_url %}
-{% url 'visitas:listar' as visitas_url %}
-{% url 'visitas:crear' as visitas_crear_url %}
 {% url 'gastos:home' as gastos_url %}
+{% url 'gastos:crear' as gastos_crear_url %}
+{% url 'gastos:division_bienes' as division_url %}
 {% url 'reportes:home' as reportes_url %}
 <!doctype html>
 <html lang="es">
@@ -29,7 +29,7 @@
         <span class="ab-dot"></span>
         <span>ABITO</span>
       </a>
-      <a class="ab-mobilebar-cta" href="{{ alquiler_crear_url }}">Nuevo alquiler</a>
+      <a class="ab-mobilebar-cta" href="{{ home_url }}">Menu</a>
     </div>
 
     <div class="ab-sidebar-backdrop" hidden data-sidebar-backdrop></div>
@@ -40,44 +40,45 @@
           <span class="ab-dot"></span>
           <span>ABITO</span>
         </a>
-        <p class="ab-tagline">Operacion, inventario y seguimiento en una sola herramienta.</p>
       </div>
 
       <div class="ab-sidebar-quick">
-        <a class="ab-btn" href="{{ alquiler_crear_url }}">Nuevo alquiler</a>
-        <a class="ab-btn2" href="{{ visitas_crear_url }}">Nueva visita</a>
+        <a class="ab-btn" href="{{ home_url }}#menu-alquileres">Alquileres</a>
+        <a class="ab-btn2" href="{{ home_url }}#menu-stock">Stock</a>
+        <a class="ab-btn2" href="{{ home_url }}#menu-finanzas">Finanzas</a>
       </div>
 
       <nav class="ab-sidebar-nav">
         <div class="ab-nav-group">
-          <span class="ab-nav-label">Operacion</span>
-          <a class="ab-nav-link {% if request.path == home_url %}is-active{% endif %}" href="{{ home_url }}">Tablero</a>
-          <a class="ab-nav-link {% if request.path == alquiler_crear_url %}is-active{% endif %}" href="{{ alquiler_crear_url }}">Nuevo alquiler</a>
-          <a class="ab-nav-link {% if request.path == alquiler_ver_url %}is-active{% endif %}" href="{{ alquiler_ver_url }}">Alquileres</a>
+          <span class="ab-nav-label">Menu</span>
+          <a class="ab-nav-link {% if request.path == home_url %}is-active{% endif %}" href="{{ home_url }}">Inicio</a>
+        </div>
+
+        <div class="ab-nav-group">
+          <span class="ab-nav-label">Alquileres</span>
+          <a class="ab-nav-link {% if request.path == alquiler_ver_url %}is-active{% endif %}" href="{{ alquiler_ver_url }}">Ver alquileres</a>
+          <a class="ab-nav-link {% if request.path == alquiler_crear_url %}is-active{% endif %}" href="{{ alquiler_crear_url }}">Crear alquiler</a>
           <a class="ab-nav-link {% if request.path == entregas_url %}is-active{% endif %}" href="{{ entregas_url }}">Entregas</a>
           <a class="ab-nav-link {% if request.path == retrasados_url %}is-active{% endif %}" href="{{ retrasados_url }}">Atrasos</a>
         </div>
 
         <div class="ab-nav-group">
-          <span class="ab-nav-label">Agenda e inventario</span>
-          <a class="ab-nav-link {% if request.path|slice:':9' == '/visitas/' %}is-active{% endif %}" href="{{ visitas_url }}">Agenda de visitas</a>
-          <a class="ab-nav-link {% if request.path == stock_url %}is-active{% endif %}" href="{{ stock_url }}">Stock</a>
-          <a class="ab-nav-link {% if request.path == prenda_crear_url %}is-active{% endif %}" href="{{ prenda_crear_url }}">Nueva prenda</a>
+          <span class="ab-nav-label">Stock</span>
+          <a class="ab-nav-link {% if request.path == stock_url %}is-active{% endif %}" href="{{ stock_url }}">Ver stock</a>
           <a class="ab-nav-link {% if request.path == prenda_buscar_url %}is-active{% endif %}" href="{{ prenda_buscar_url }}">Buscar prenda</a>
+          <a class="ab-nav-link {% if request.path == prenda_crear_url %}is-active{% endif %}" href="{{ prenda_crear_url }}">Crear prenda</a>
         </div>
 
         <div class="ab-nav-group">
-          <span class="ab-nav-label">Gestion</span>
-          <a class="ab-nav-link {% if request.path|slice:':8' == '/gastos/' %}is-active{% endif %}" href="{{ gastos_url }}">Finanzas</a>
-          <a class="ab-nav-link {% if request.path|slice:':10' == '/reportes/' %}is-active{% endif %}" href="{{ reportes_url }}">Reportes</a>
+          <span class="ab-nav-label">Finanzas</span>
+          <a class="ab-nav-link {% if request.path|slice:':8' == '/gastos/' %}is-active{% endif %}" href="{{ gastos_url }}">Ver finanzas</a>
+          <a class="ab-nav-link {% if request.path == gastos_crear_url %}is-active{% endif %}" href="{{ gastos_crear_url }}">Crear gasto</a>
+          <a class="ab-nav-link {% if request.path == division_url %}is-active{% endif %}" href="{{ division_url }}">Division de bienes</a>
+          <a class="ab-nav-link {% if request.path|slice:':10' == '/reportes/' %}is-active{% endif %}" href="{{ reportes_url }}">Ver reportes</a>
+          <a class="ab-nav-link {% if request.path|slice:':10' == '/reportes/' %}is-active{% endif %}" href="{{ reportes_url }}?periodo=mensual">Reporte mensual</a>
+          <a class="ab-nav-link {% if request.path|slice:':10' == '/reportes/' %}is-active{% endif %}" href="{{ reportes_url }}?periodo=semanal">Reporte semanal</a>
         </div>
       </nav>
-
-      <div class="ab-sidebar-meta">
-        <span class="ab-chip">Flujo guiado</span>
-        <span class="ab-chip">Operacion diaria</span>
-        <span class="ab-chip">Aprendizaje rapido</span>
-      </div>
     </aside>
 
     <main class="ab-main">
@@ -90,6 +91,11 @@
           {% endfor %}
         </div>
       {% endif %}
+
+      <div class="ab-global-actions">
+        <a class="ab-global-btn" href="{{ home_url }}">Volver al menu</a>
+        <button class="ab-global-btn secondary" type="button" data-go-back>Atras</button>
+      </div>
 
       {% block content %}{% endblock %}
     </main>
@@ -338,6 +344,21 @@
         bindDetailPanel(details);
       });
       enhanceEditForms(document);
+    })();
+
+    (function () {
+      const backButtons = document.querySelectorAll("[data-go-back]");
+      if (!backButtons.length) return;
+
+      backButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          if (window.history.length > 1) {
+            window.history.back();
+            return;
+          }
+          window.location.href = "{{ home_url }}";
+        });
+      });
     })();
   </script>
 </body>

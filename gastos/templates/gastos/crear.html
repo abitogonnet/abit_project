@@ -2,20 +2,18 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Gestion</p>
-    <h1 class="ab-title">Cargar gasto</h1>
-    <p class="ab-sub">Registra fecha, monto y detalle dentro del mes que estas revisando para que la caja quede trazable.</p>
+    <p class="ab-kicker">Finanzas</p>
+    <h1 class="ab-title">Crear gasto</h1>
+    <div class="ab-chip-row" style="margin-top: 18px;">
+      <span class="ab-chip">{{ month_label }}</span>
+    </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Mes de trabajo</span>
     <div class="ab-summary-list">
       <div>
         <span>Se guarda en</span>
         <strong>{{ month_label }}</strong>
       </div>
-    </div>
-    <div class="ab-actions">
-      <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Volver</a>
     </div>
   </aside>
 </section>
@@ -29,7 +27,7 @@
       <div class="ab-section-head">
         <div>
           <p class="ab-kicker">Formulario</p>
-          <h2 class="ab-mini-title">Datos del gasto</h2>
+          <h2 class="ab-mini-title">Gasto</h2>
         </div>
       </div>
 
@@ -55,7 +53,7 @@
           {% if form.monto.errors %}<div class="ab-field-errors">{{ form.monto.errors }}</div>{% endif %}
         </div>
         <div class="col-6 ab-field">
-          <label class="ab-lab" for="{{ form.descripcion.id_for_label }}">En que fue gastado</label>
+          <label class="ab-lab" for="{{ form.descripcion.id_for_label }}">Detalle</label>
           {{ form.descripcion }}
           {% if form.descripcion.errors %}<div class="ab-field-errors">{{ form.descripcion.errors }}</div>{% endif %}
         </div>
@@ -78,11 +76,12 @@
 
     <aside class="ab-create-aside">
       <section class="ab-summary-panel">
-        <span class="ab-spec-label">Consejo</span>
-        <ul class="ab-checklist">
-          <li>Describe el gasto con el mayor contexto posible para entender despues por que salio ese dinero.</li>
-          <li>Usa notas para dejar referencia del evento, proveedor o motivo.</li>
-        </ul>
+        <div class="ab-summary-list">
+          <div>
+            <span>Mes</span>
+            <strong>{{ month_label }}</strong>
+          </div>
+        </div>
       </section>
     </aside>
   </form>

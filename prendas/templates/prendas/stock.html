@@ -2,34 +2,14 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Inventario</p>
-    <h1 class="ab-title">Stock vivo</h1>
-    <p class="ab-sub">
-      Esta pantalla separa tres tareas concretas: completar origen, filtrar rapido y corregir estado o datos
-      de cada prenda sin perder contexto.
-    </p>
-    <div class="ab-chip-row">
+    <p class="ab-kicker">Stock</p>
+    <h1 class="ab-title">Ver stock</h1>
+    <div class="ab-chip-row" style="margin-top: 18px;">
       <span class="ab-chip">{{ prendas|length }} prendas</span>
       <span class="ab-chip">{{ prendas_sin_origen|length }} sin origen</span>
-      <span class="ab-chip">Edicion rapida</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Accesos utiles</span>
-    <div class="ab-summary-list">
-      <div>
-        <span>Carga</span>
-        <strong>Crear una prenda nueva con codigo guiado</strong>
-      </div>
-      <div>
-        <span>Busqueda</span>
-        <strong>Encontrar una prenda puntual por codigo o atributos</strong>
-      </div>
-      <div>
-        <span>Control</span>
-        <strong>Ver si una prenda ya esta comprometida en un alquiler</strong>
-      </div>
-    </div>
     <div class="ab-actions">
       <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
       <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
@@ -39,12 +19,6 @@
 
 <div class="ab-page-stack">
   <section class="ab-section-card">
-    <div class="ab-section-head">
-      <div>
-        <p class="ab-kicker">Resumen</p>
-        <h2 class="ab-mini-title">Lectura rapida del inventario</h2>
-      </div>
-    </div>
     <div class="ab-summary-grid">
       {% for item in resumen %}
         <div class="ab-summary-card">
@@ -58,9 +32,8 @@
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Backlog</p>
-        <h2 class="ab-mini-title">Carga rapida de origen</h2>
-        <p class="ab-sub">Solo aparecen sacos y pantalones pendientes para completar varios de una sola vez.</p>
+        <p class="ab-kicker">Origen</p>
+        <h2 class="ab-mini-title">Pendientes</h2>
       </div>
       <span class="ab-pill" id="pendingOriginCount">{{ prendas_sin_origen|length }} pendiente{{ prendas_sin_origen|length|pluralize }}</span>
     </div>
@@ -82,10 +55,10 @@
           <div class="ab-field">
             <label class="ab-lab">&nbsp;</label>
             <div class="ab-actions">
-              <button class="ab-btn2" type="button" data-fill-origin="NACIONAL">Visibles como Nacional</button>
-              <button class="ab-btn2" type="button" data-fill-origin="IMPORTADO">Visibles como Importado</button>
-              <button class="ab-btn2" type="button" id="pendingOriginClear">Limpiar visibles</button>
-              <button class="ab-btn" type="submit">Guardar origenes</button>
+              <button class="ab-btn2" type="button" data-fill-origin="NACIONAL">Nacional</button>
+              <button class="ab-btn2" type="button" data-fill-origin="IMPORTADO">Importado</button>
+              <button class="ab-btn2" type="button" id="pendingOriginClear">Limpiar</button>
+              <button class="ab-btn" type="submit">Guardar</button>
             </div>
           </div>
         </div>
@@ -119,7 +92,7 @@
         </div>
       </form>
     {% else %}
-      <div class="ab-msg ok">No hay sacos o pantalones pendientes de origen.</div>
+      <div class="ab-msg ok">No hay pendientes.</div>
     {% endif %}
   </section>
 
@@ -127,7 +100,7 @@
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Filtro</p>
-        <h2 class="ab-mini-title">Encontrar prendas rapido</h2>
+        <h2 class="ab-mini-title">Buscar</h2>
       </div>
     </div>
 
@@ -153,7 +126,7 @@
       <div class="ab-field">
         <label class="ab-lab">&nbsp;</label>
         <div class="ab-actions">
-          <button class="ab-btn2" type="button" id="stockClear">Limpiar filtros</button>
+          <button class="ab-btn2" type="button" id="stockClear">Limpiar</button>
         </div>
       </div>
     </div>
@@ -163,7 +136,7 @@
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Listado</p>
-        <h2 class="ab-mini-title">Prendas disponibles y comprometidas</h2>
+        <h2 class="ab-mini-title">Prendas</h2>
       </div>
       <span class="ab-pill" id="stockCount">0 prendas</span>
     </div>
@@ -206,7 +179,7 @@
           {% if p.alquiler_activo %}
             <div class="ab-inline-note">
               Comprometida del {{ p.alquiler_activo.fecha_entrega|date:"d/m/Y" }} al {{ p.alquiler_activo.fecha_devolucion|date:"d/m/Y" }}
-              {% if p.alquiler_activo.cliente_nombre %} · {{ p.alquiler_activo.cliente_nombre }}{% endif %}
+              {% if p.alquiler_activo.cliente_nombre %} - {{ p.alquiler_activo.cliente_nombre }}{% endif %}
             </div>
           {% endif %}
 

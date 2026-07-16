@@ -8,8 +8,7 @@
   <div class="ab-edit-banner">
     <div>
       <p class="ab-kicker">Edicion del alquiler</p>
-      <h3 class="ab-mini-title">#{{ alquiler.id }} · {{ alquiler.cliente_nombre }}</h3>
-      <p class="ab-sub">Corrige nombres, fechas, prendas y pago sin salir de la lista.</p>
+      <h3 class="ab-mini-title">#{{ alquiler.id }} - {{ alquiler.cliente_nombre }}</h3>
     </div>
     <div class="ab-actions">
       <button class="ab-btn" type="submit" name="accion" value="editar">Guardar cambios</button>
@@ -85,7 +84,6 @@
           <div>
             <p class="ab-kicker">Prendas</p>
             <h4 class="ab-mini-title">Seleccion y ruedos</h4>
-            <p class="ab-sub">Puedes cambiar el numero del codigo y luego elegir la opcion final del desplegable.</p>
           </div>
         </div>
 
@@ -94,7 +92,7 @@
             <div class="ab-person-section-head">
               <div>
                 <strong>Persona 1</strong>
-                <p class="ab-sub">{{ alquiler.edit_form.persona1_nombre.value|default:"Sin nombre" }}</p>
+                <span class="ab-small">{{ alquiler.edit_form.persona1_nombre.value|default:"Sin nombre" }}</span>
               </div>
             </div>
 
@@ -137,7 +135,7 @@
             <div class="ab-person-section-head">
               <div>
                 <strong>Persona 2</strong>
-                <p class="ab-sub">{{ alquiler.edit_form.persona2_nombre.value|default:"Opcional" }}</p>
+                <span class="ab-small">{{ alquiler.edit_form.persona2_nombre.value|default:"Opcional" }}</span>
               </div>
             </div>
 

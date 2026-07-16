@@ -4,7 +4,6 @@
   <div class="ab-pagehero-copy">
     <p class="ab-kicker">Agenda comercial</p>
     <h1 class="ab-title">Visitas</h1>
-    <p class="ab-sub">La agenda muestra lo que viene hoy, esta semana o en todo el historial sin mezclar estados y acciones.</p>
     <div class="ab-chip-row">
       <span class="ab-chip">{{ range_label }}</span>
       {% if show_canceladas %}
@@ -32,7 +31,7 @@
       {% else %}
         <div>
           <span>Estado</span>
-          <strong>No hay visitas para este filtro.</strong>
+          <strong>Sin visitas.</strong>
         </div>
       {% endif %}
     </div>
@@ -58,7 +57,7 @@
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Filtros</p>
-        <h2 class="ab-mini-title">Elegir rango de agenda</h2>
+        <h2 class="ab-mini-title">Rango</h2>
       </div>
     </div>
     <div class="ab-actions">
@@ -77,7 +76,7 @@
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Agenda</p>
-        <h2 class="ab-mini-title">Visitas ordenadas por inicio</h2>
+        <h2 class="ab-mini-title">Visitas</h2>
       </div>
     </div>
 
@@ -90,7 +89,7 @@
         <article class="ab-entity-card">
           <div class="ab-entity-card-head">
             <div>
-              <p class="ab-entity-card-eyebrow">{{ v.inicio|date:"H:i" }} · {{ v.duracion_min }}m · {{ v.personas }} persona{{ v.personas|pluralize }}</p>
+              <p class="ab-entity-card-eyebrow">{{ v.inicio|date:"H:i" }} - {{ v.duracion_min }}m - {{ v.personas }} persona{{ v.personas|pluralize }}</p>
               <h3 class="ab-entity-card-title">{{ v.nombre|default:"Sin nombre cargado" }}</h3>
               <p class="ab-entity-card-subtitle">{{ v.telefono }}</p>
             </div>

@@ -4,51 +4,16 @@
 
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Operacion diaria</p>
-    <h1 class="ab-title">Centro de alquileres</h1>
-    <p class="ab-sub">
-      La lista queda ordenada por la entrega mas cercana para que cualquiera vea primero lo importante,
-      sin tener que descifrar una tabla pesada.
-    </p>
-    <div class="ab-chip-row">
+    <p class="ab-kicker">Alquileres</p>
+    <h1 class="ab-title">Ver alquileres</h1>
+    <div class="ab-chip-row" style="margin-top: 18px;">
       {% if filtros_activos %}
         <span class="ab-chip">Filtro activo</span>
       {% endif %}
       <span class="ab-chip">{{ alquileres|length }} alquiler{{ alquileres|length|pluralize }}</span>
-      <span class="ab-chip">Edicion directa</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Que puedes resolver aqui</span>
-    <div class="ab-summary-list">
-      <div>
-        <span>Seguimiento</span>
-        <strong>Estado, saldo y fechas sin salir de la lista</strong>
-      </div>
-      <div>
-        <span>Contexto</span>
-        <strong>Prendas, ruedos y personas visibles antes de editar</strong>
-      </div>
-      <div>
-        <span>Accion</span>
-        <strong>Nuevo alquiler o correccion inmediata</strong>
-      </div>
-    </div>
-    <div class="ab-actions">
-      <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
-      <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Ver entregas</a>
-    </div>
-  </aside>
-</section>
-
-<div class="ab-page-stack">
-  <section class="ab-section-card">
-    <div class="ab-section-head">
-      <div>
-        <p class="ab-kicker">Lectura rapida</p>
-        <h2 class="ab-mini-title">Estado general</h2>
-      </div>
-    </div>
     <div class="ab-summary-grid">
       {% for item in resumen %}
         <div class="ab-summary-card">
@@ -57,14 +22,19 @@
         </div>
       {% endfor %}
     </div>
-  </section>
+    <div class="ab-actions">
+      <a class="ab-btn" href="{% url 'alquileres:crear' %}">Crear alquiler</a>
+      <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Entregas</a>
+    </div>
+  </aside>
+</section>
 
+<div class="ab-page-stack">
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Filtro</p>
-        <h2 class="ab-mini-title">Buscar por fecha de entrega</h2>
-        <p class="ab-sub">Sirve para limpiar la vista cuando estas trabajando sobre una semana o una tanda puntual.</p>
+        <h2 class="ab-mini-title">Fecha de entrega</h2>
       </div>
     </div>
 
@@ -94,23 +64,22 @@
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Cola operativa</p>
-        <h2 class="ab-mini-title">Listado completo</h2>
-        <p class="ab-sub">Cada tarjeta resume cliente, pago, prendas y acciones de seguimiento.</p>
+        <p class="ab-kicker">Listado</p>
+        <h2 class="ab-mini-title">Alquileres</h2>
       </div>
       <span class="ab-pill">{{ alquileres|length }} registro{{ alquileres|length|pluralize }}</span>
     </div>
 
     <div class="ab-entity-list">
       {% for a in alquileres %}
-        <article class="ab-entity-card">
+        <article class="ab-entity-card ab-rental-card">
           <div class="ab-entity-card-head">
             <div>
-              <p class="ab-entity-card-eyebrow">#{{ a.id }} · Reserva {{ a.fecha_reserva|date:"d/m/Y" }}</p>
+              <p class="ab-entity-card-eyebrow">#{{ a.id }} - Reserva {{ a.fecha_reserva|date:"d/m/Y" }}</p>
               <h3 class="ab-entity-card-title">{{ a.cliente_nombre }}</h3>
               <p class="ab-entity-card-subtitle">
                 {{ a.cliente_telefono|default:"Sin telefono" }}
-                {% if a.personas_resumen %} · {{ a.personas_resumen }}{% endif %}
+                {% if a.personas_resumen %} - {{ a.personas_resumen }}{% endif %}
               </p>
             </div>
             <div class="ab-status-stack">
@@ -137,21 +106,21 @@
             </div>
             <div class="ab-metric-chip">
               <span>Abonado</span>
-              <strong>Abonado: ${{ a.abono_actual }}</strong>
+              <strong>${{ a.abono_actual }}</strong>
             </div>
             <div class="ab-metric-chip">
               <span>Saldo</span>
-              <strong>Resta: ${{ a.saldo_restante_actual }}</strong>
+              <strong>${{ a.saldo_restante_actual }}</strong>
             </div>
             <div class="ab-metric-chip">
-              <span>Total final</span>
+              <span>Total</span>
               <strong>${{ a.total_final }}</strong>
             </div>
           </div>
 
           <div class="ab-entity-columns">
             <section class="ab-entity-section">
-              <h4>Prendas por persona</h4>
+              <h4>Prendas</h4>
               <div class="ab-persona-summary-list">
                 {% for prenda in a.prendas_tabla %}
                   <article class="ab-persona-summary-card">
@@ -175,17 +144,21 @@
             </section>
 
             <section class="ab-entity-section">
-              <h4>Pago y ajustes</h4>
+              <h4>Pago</h4>
               <div class="ab-summary-list">
                 <div>
-                  <span>Pago registrado</span>
-                  <strong>Total: ${{ a.total_final }}</strong>
+                  <span>Total</span>
+                  <strong>${{ a.total_final }}</strong>
+                </div>
+                <div>
+                  <span>Pagos</span>
+                  <strong>Abonado: ${{ a.abono_actual }} - Resta: ${{ a.saldo_restante_actual }}</strong>
                 </div>
                 <div>
                   <span>Metodos</span>
                   <strong>
                     {% for metodo in a.metodos_pago_actuales %}
-                      {{ metodo }}{% if not forloop.last %} · {% endif %}
+                      {{ metodo }}{% if not forloop.last %} - {% endif %}
                     {% endfor %}
                   </strong>
                 </div>
@@ -193,7 +166,7 @@
                   <span>Ruedo de saco</span>
                   <strong>
                     {% for ruedo in a.ruedos_tabla.saco %}
-                      {{ ruedo.categoria }}: {{ ruedo.ruedo }}{% if not forloop.last %} · {% endif %}
+                      {{ ruedo.categoria }}: {{ ruedo.ruedo }}{% if not forloop.last %} - {% endif %}
                     {% empty %}
                       Sin ruedo
                     {% endfor %}
@@ -203,7 +176,7 @@
                   <span>Ruedo de pantalon</span>
                   <strong>
                     {% for ruedo in a.ruedos_tabla.pantalon %}
-                      {{ ruedo.categoria }}: {{ ruedo.ruedo }}{% if not forloop.last %} · {% endif %}
+                      {{ ruedo.categoria }}: {{ ruedo.ruedo }}{% if not forloop.last %} - {% endif %}
                     {% empty %}
                       Sin ruedo
                     {% endfor %}
@@ -227,7 +200,7 @@
                 {% endfor %}
               </select>
               {% if not a.saldo_editable %}
-                <span class="ab-small">Quedo pago completo desde el alta.</span>
+                <span class="ab-small">Pago completo.</span>
               {% endif %}
             </div>
 

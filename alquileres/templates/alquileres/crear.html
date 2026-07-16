@@ -3,15 +3,11 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Nuevo alquiler</p>
-    <h1 class="ab-title">Carga guiada para reservar, preparar y cobrar sin perderse en el proceso</h1>
-    <p class="ab-sub">
-      La idea es que el alta se lea como un recorrido natural: primero cliente y fechas,
-      despues prendas, y al final pago y confirmacion.
-    </p>
+    <p class="ab-kicker">Alquileres</p>
+    <h1 class="ab-title">Crear alquiler</h1>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Recorrido sugerido</span>
+    <span class="ab-spec-label">Pasos</span>
     <div class="ab-stepper">
       <button class="ab-step is-active" type="button" data-step-target="paso-cliente">
         <span>1</span>
@@ -37,8 +33,8 @@
   <section class="ab-card ab-card-accent">
     <div class="ab-head">
       <div>
-        <p class="ab-kicker">Confirmacion lista</p>
-        <h2 class="ab-mini-title">Mensaje preparado para compartir con el cliente</h2>
+        <p class="ab-kicker">Confirmacion</p>
+        <h2 class="ab-mini-title">Mensaje listo</h2>
       </div>
       <button class="ab-btn2" type="button" data-copy-message>Copiar mensaje</button>
     </div>
@@ -63,10 +59,8 @@
           <span class="ab-section-number">1</span>
           <div>
             <h2>Cliente y fechas</h2>
-            <p class="ab-note">Empieza por el contexto del alquiler para que despues todo el resto tenga sentido.</p>
           </div>
         </div>
-        <a class="ab-btn2" href="{% url 'visitas:listar' %}">Ver agenda</a>
       </div>
 
       <div class="ab-grid">
@@ -98,9 +92,6 @@
         </div>
       </div>
 
-      <div class="ab-inline-note" style="margin-top: 18px;">
-        Si primero tomas la cita en agenda, luego el alta del alquiler queda mucho mas ordenada para cualquier persona nueva en el equipo.
-      </div>
     </section>
 
     <section class="ab-section-card" id="paso-look" data-step-card>
@@ -109,7 +100,6 @@
           <span class="ab-section-number">2</span>
           <div>
             <h2>Personas y prendas</h2>
-            <p class="ab-note">Cada persona tiene su nombre, sus prendas y sus ruedos en un bloque separado para que se lea rapido.</p>
           </div>
         </div>
         <button class="ab-btn2" type="button" data-toggle-persona2>
@@ -221,8 +211,7 @@
         <div>
           <span class="ab-section-number">3</span>
           <div>
-            <h2>Pago y cierre comercial</h2>
-            <p class="ab-note">Calcula en el momento el total final y el saldo restante para evitar errores de carga.</p>
+            <h2>Pago</h2>
           </div>
         </div>
       </div>
@@ -265,8 +254,7 @@
         <div>
           <span class="ab-section-number">4</span>
           <div>
-            <h2>Guardar y seguir</h2>
-            <p class="ab-note">Cuando guardas, puedes copiar el mensaje del cliente y seguir con control de alquileres o agenda.</p>
+            <h2>Guardar</h2>
           </div>
         </div>
       </div>
@@ -274,7 +262,6 @@
       <div class="ab-actions">
         <button class="ab-btn" type="submit">Guardar alquiler</button>
         <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
-        <a class="ab-btn2" href="{% url 'visitas:listar' %}">Abrir agenda</a>
       </div>
     </section>
   </div>
@@ -315,22 +302,12 @@
     </div>
 
     <div class="ab-summary-panel">
-      <span class="ab-spec-label">Atajos utiles</span>
+      <span class="ab-spec-label">Atajos</span>
       <div class="ab-stack">
         <a class="ab-btn2" href="{% url 'prendas:stock' %}">Revisar stock</a>
         <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
-        <a class="ab-btn2" href="{% url 'visitas:crear' %}">Crear visita</a>
+        <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Entregas</a>
       </div>
-    </div>
-
-    <div class="ab-summary-panel">
-      <span class="ab-spec-label">Buenas practicas</span>
-      <ul class="ab-checklist">
-        <li>Primero confirma fechas y telefono.</li>
-        <li>Selecciona las prendas exactas antes de hablar de pago.</li>
-        <li>Si hay dos personas, separa claramente cada look.</li>
-        <li>Verifica el total final antes de guardar.</li>
-      </ul>
     </div>
   </aside>
 </form>

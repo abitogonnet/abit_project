@@ -3,12 +3,14 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Gestion</p>
+    <p class="ab-kicker">Finanzas</p>
     <h1 class="ab-title">Division de bienes</h1>
-    <p class="ab-sub">Registra cuando se saca dinero de la cuenta y como se reparte dentro del mes que estas mirando.</p>
+    <div class="ab-chip-row" style="margin-top: 18px;">
+      <span class="ab-chip">{{ month_label }}</span>
+      <span class="ab-chip">Saldo actual</span>
+    </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Marco financiero</span>
     <div class="ab-summary-list">
       <div>
         <span>Mes visible</span>
@@ -18,9 +20,6 @@
         <span>Saldo actual en cuenta</span>
         <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
       </div>
-    </div>
-    <div class="ab-actions">
-      <a class="ab-btn2" href="{% url 'gastos:home' %}?ym={{ ym_value }}">Volver</a>
     </div>
   </aside>
 </section>
@@ -70,10 +69,6 @@
     </div>
   </section>
 
-  <div class="ab-form-note">
-    Estas cargando una salida dentro de <strong>{{ month_label }}</strong>. El saldo actual siempre toma toda la historia real de la cuenta.
-  </div>
-
   <form method="post" autocomplete="off" class="ab-split-shell">
     {% csrf_token %}
     <input type="hidden" name="ym" value="{{ ym_value }}">
@@ -82,7 +77,7 @@
       <div class="ab-section-head">
         <div>
           <p class="ab-kicker">Formulario</p>
-          <h2 class="ab-mini-title">Reparto del dinero</h2>
+          <h2 class="ab-mini-title">Reparto</h2>
         </div>
       </div>
 
@@ -126,11 +121,16 @@
 
     <aside class="ab-create-aside">
       <section class="ab-summary-panel">
-        <span class="ab-spec-label">Recordatorio</span>
-        <ul class="ab-checklist">
-          <li>El total retirado debe quedar justificado por la suma de ambos repartos.</li>
-          <li>Usa notas para registrar el motivo o contexto de esa salida.</li>
-        </ul>
+        <div class="ab-summary-list">
+          <div>
+            <span>Mes</span>
+            <strong>{{ month_label }}</strong>
+          </div>
+          <div>
+            <span>Saldo actual</span>
+            <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
+          </div>
+        </div>
       </section>
     </aside>
   </form>

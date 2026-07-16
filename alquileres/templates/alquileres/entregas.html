@@ -4,29 +4,27 @@
 
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Operacion de salida</p>
+    <p class="ab-kicker">Alquileres</p>
     <h1 class="ab-title">Entregas</h1>
-    <p class="ab-sub">Desde hoy {{ hoy|date:"d/m/Y" }} hasta {{ hasta|date:"d/m/Y" }}. Esta vista sirve para preparar lo que sale y no perder contexto al momento de entregar.</p>
     <div class="ab-chip-row">
       <span class="ab-chip">{{ alquileres|length }} entrega{{ alquileres|length|pluralize }}</span>
-      <span class="ab-chip">Detalle remoto</span>
-      <span class="ab-chip">Edicion rapida</span>
+      <span class="ab-chip">{{ hoy|date:"d/m/Y" }} a {{ hasta|date:"d/m/Y" }}</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Uso recomendado</span>
+    <span class="ab-spec-label">Resumen</span>
     <div class="ab-summary-list">
       <div>
-        <span>1. Preparar</span>
-        <strong>Ver detallado para revisar prendas, talle y ruedos</strong>
+        <span>Desde</span>
+        <strong>{{ hoy|date:"d/m/Y" }}</strong>
       </div>
       <div>
-        <span>2. Corregir</span>
-        <strong>Editar si hubo cambio de fecha, nombres o pago</strong>
+        <span>Hasta</span>
+        <strong>{{ hasta|date:"d/m/Y" }}</strong>
       </div>
       <div>
-        <span>3. Seguir</span>
-        <strong>Volver a alquileres para cerrar saldos y estados</strong>
+        <span>Casos</span>
+        <strong>{{ alquileres|length }}</strong>
       </div>
     </div>
     <div class="ab-actions">
@@ -40,8 +38,8 @@
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Ventana visible</p>
-        <h2 class="ab-mini-title">Filtrar hasta una fecha</h2>
+        <p class="ab-kicker">Filtro</p>
+        <h2 class="ab-mini-title">Hasta</h2>
       </div>
     </div>
 
@@ -54,7 +52,7 @@
         <label class="ab-lab">&nbsp;</label>
         <div class="ab-actions">
           <button class="ab-btn" type="submit">Filtrar</button>
-          <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Volver a 7 dias</a>
+          <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">7 dias</a>
         </div>
       </div>
     </form>
@@ -63,21 +61,20 @@
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Preparacion</p>
-        <h2 class="ab-mini-title">Alquileres por entregar</h2>
-        <p class="ab-sub">La tarjeta deja visibles cliente, fechas, saldo y personas antes de abrir el detalle.</p>
+        <p class="ab-kicker">Listado</p>
+        <h2 class="ab-mini-title">Alquileres</h2>
       </div>
       <span class="ab-pill">{{ alquileres|length }} alquiler{{ alquileres|length|pluralize }}</span>
     </div>
 
     <div class="ab-entity-list">
       {% for a in alquileres %}
-        <article class="ab-entity-card">
+        <article class="ab-entity-card ab-rental-card">
           <div class="ab-entity-card-head">
             <div>
-              <p class="ab-entity-card-eyebrow">#{{ a.id }} · {{ a.fecha_entrega|date:"d/m/Y" }}</p>
+              <p class="ab-entity-card-eyebrow">#{{ a.id }} - {{ a.fecha_entrega|date:"d/m/Y" }}</p>
               <h3 class="ab-entity-card-title">{{ a.cliente_nombre }}</h3>
-              <p class="ab-entity-card-subtitle">{{ a.cliente_telefono|default:"Sin telefono" }} · {{ a.personas_resumen }}</p>
+              <p class="ab-entity-card-subtitle">{{ a.cliente_telefono|default:"Sin telefono" }} - {{ a.personas_resumen }}</p>
             </div>
             <div class="ab-status-stack">
               {% if a.estado_alquiler == "CERRADO" %}
@@ -123,7 +120,7 @@
                       {% for item in persona.items %}
                         <div class="ab-inline-item">
                           <strong>{{ item.codigo }}</strong>
-                          <span>{{ item.categoria }} · {{ item.marca }} · {{ item.color }}</span>
+                          <span>{{ item.categoria }} - {{ item.marca }} - {{ item.color }}</span>
                         </div>
                       {% empty %}
                         <span class="ab-small">Sin prendas</span>
@@ -135,7 +132,7 @@
             </section>
 
             <section class="ab-entity-section">
-              <h4>Seguimiento rapido</h4>
+              <h4>Seguimiento</h4>
               <div class="ab-summary-list">
                 <div>
                   <span>Personas</span>
@@ -145,12 +142,12 @@
                   <span>Pago</span>
                   <strong>
                     {% for metodo in a.metodos_pago_actuales %}
-                      {{ metodo }}{% if not forloop.last %} · {% endif %}
+                      {{ metodo }}{% if not forloop.last %} - {% endif %}
                     {% endfor %}
                   </strong>
                 </div>
                 <div>
-                  <span>Estado actual</span>
+                  <span>Estado</span>
                   <strong>{{ a.get_estado_alquiler_display }}</strong>
                 </div>
               </div>
@@ -161,7 +158,7 @@
             <details class="ab-detail-toggle ab-detail-toggle-split">
               <summary class="ab-detail-summary">
                 <span>Ver detallado</span>
-                <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }} para preparar</span>
+                <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }}</span>
               </summary>
               <div class="ab-detail-panel">
                 <div class="js-remote-panel" data-panel-url="{{ a.detail_panel_url }}"></div>
@@ -171,7 +168,7 @@
             <details class="ab-detail-toggle ab-detail-toggle-split" {% if edit_open_id == a.id %}open{% endif %}>
               <summary class="ab-detail-summary">
                 <span>Editar</span>
-                <span class="ab-small">Nombres, fechas, pagos y prendas</span>
+                <span class="ab-small">#{{ a.id }}</span>
               </summary>
               <div class="ab-detail-panel">
                 {% if edit_open_id == a.id and a.edit_form %}

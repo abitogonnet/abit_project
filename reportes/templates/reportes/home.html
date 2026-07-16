@@ -3,17 +3,15 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Analitica</p>
-    <h1 class="ab-title">Reportes visuales</h1>
-    <p class="ab-sub">Lectura del mes para ver ingresos, prendas alquiladas y preferencias por color, talle y marca sin exportar nada.</p>
-    <div class="ab-chip-row">
+    <p class="ab-kicker">Reportes</p>
+    <h1 class="ab-title">Reportes</h1>
+    <div class="ab-chip-row" style="margin-top: 18px;">
       <span class="ab-chip">{{ month_label }}</span>
       <span class="ab-chip">{{ periodo|title }}</span>
       <span class="ab-chip">{{ total_items }} prendas</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Interpretacion rapida</span>
     <div class="ab-summary-list">
       {% for item in summary %}
         <div>
@@ -23,6 +21,8 @@
       {% endfor %}
     </div>
     <div class="ab-actions">
+      <a class="ab-btn2" href="{% url 'reportes:home' %}?periodo=mensual">Mensual</a>
+      <a class="ab-btn2" href="{% url 'reportes:home' %}?periodo=semanal">Semanal</a>
       <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
     </div>
   </aside>
@@ -30,19 +30,12 @@
 
 <div class="ab-page-stack">
   <section class="ab-section-card">
-    <div class="ab-section-head">
-      <div>
-        <p class="ab-kicker">Configuracion</p>
-        <h2 class="ab-mini-title">Como leer el periodo</h2>
-      </div>
-    </div>
-
     <form method="get" class="ab-inline-form-grid">
       <div class="ab-field">
-        <label class="ab-lab" for="id_periodo">Como leer el mes</label>
+        <label class="ab-lab" for="id_periodo">Periodo</label>
         <select class="ab-sel" name="periodo" id="id_periodo">
-          <option value="mensual" {% if periodo == "mensual" %}selected{% endif %}>Mes completo</option>
-          <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semana por semana</option>
+          <option value="mensual" {% if periodo == "mensual" %}selected{% endif %}>Mensual</option>
+          <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semanal</option>
         </select>
       </div>
       <div class="ab-field">
@@ -52,16 +45,11 @@
       <div class="ab-field">
         <label class="ab-lab">&nbsp;</label>
         <div class="ab-actions">
-          <button class="ab-btn2" type="submit">Aplicar</button>
-          <a class="ab-btn" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
+          <button class="ab-btn" type="submit">Aplicar</button>
+          <a class="ab-btn2" href="{% url 'reportes:exportar_excel' %}?periodo={{ periodo }}&ym={{ ym_value }}">Exportar</a>
         </div>
       </div>
     </form>
-
-    <div class="ab-form-note" style="margin-top: 16px;">
-      Estas mirando <strong>{{ month_label }}</strong>.
-      En ingresos, las señas cuentan por fecha de reserva y los saldos por el dia en que fueron marcados como pagados.
-    </div>
   </section>
 
   <section class="ab-section-card">
@@ -96,7 +84,7 @@
 
               <div class="ab-dual-meter" style="margin-top: 14px;">
                 <div class="ab-dual-meter-line">
-                  <span>Señas</span>
+                  <span>Senas</span>
                   <div class="ab-bar-track"><div class="ab-bar-fill" style="width: {{ row.pct_sena }}%;"></div></div>
                   <strong>${{ row.sena|miles0 }}</strong>
                 </div>
@@ -113,14 +101,6 @@
               </div>
             </article>
           {% endfor %}
-        </div>
-
-        <div class="ab-section-card" style="margin-top: 18px;">
-          <div class="ab-actions">
-            <span class="ab-chip">Señas: ${{ ingresos.total_sena|miles0 }}</span>
-            <span class="ab-chip">Saldos: ${{ ingresos.total_saldo|miles0 }}</span>
-            <span class="ab-chip">Total: ${{ ingresos.total_general|miles0 }}</span>
-          </div>
         </div>
       {% else %}
         <div class="ab-empty">No hubo ingresos registrados en este periodo.</div>
@@ -162,7 +142,7 @@
     <section class="ab-section-card">
       <div class="ab-section-head">
         <div>
-          <p class="ab-kicker">Preferencias</p>
+          <p class="ab-kicker">Reporte</p>
           <h2 class="ab-mini-title">{{ section.label }}</h2>
         </div>
         <span class="ab-chip">{{ section.mode|title }}</span>

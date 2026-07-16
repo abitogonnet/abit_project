@@ -2,28 +2,23 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Alertas</p>
+    <p class="ab-kicker">Alquileres</p>
     <h1 class="ab-title">Retrasados</h1>
-    <p class="ab-sub">Hoy: {{ hoy|date:"d/m/Y" }}. Aqui quedan visibles los alquileres con devolucion vencida y que todavia no fueron cerrados.</p>
     <div class="ab-chip-row">
       <span class="ab-chip">{{ retrasos|length }} caso{{ retrasos|length|pluralize }}</span>
-      <span class="ab-chip">Seguimiento prioritario</span>
+      <span class="ab-chip">{{ hoy|date:"d/m/Y" }}</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Objetivo de esta vista</span>
+    <span class="ab-spec-label">Resumen</span>
     <div class="ab-summary-list">
       <div>
-        <span>Detectar</span>
-        <strong>Quien ya vencio y cuantos dias acumula</strong>
+        <span>Hoy</span>
+        <strong>{{ hoy|date:"d/m/Y" }}</strong>
       </div>
       <div>
-        <span>Recordar</span>
-        <strong>Que prendas y personas estan comprometidas</strong>
-      </div>
-      <div>
-        <span>Actuar</span>
-        <strong>Contactar y luego volver a alquileres para cerrar</strong>
+        <span>Casos</span>
+        <strong>{{ retrasos|length }}</strong>
       </div>
     </div>
     <div class="ab-actions">
@@ -37,23 +32,23 @@
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Casos abiertos</p>
-        <h2 class="ab-mini-title">Devoluciones vencidas</h2>
+        <p class="ab-kicker">Casos</p>
+        <h2 class="ab-mini-title">Alquileres</h2>
       </div>
       <span class="ab-pill">{{ retrasos|length }} seguimiento{{ retrasos|length|pluralize }}</span>
     </div>
 
     <div class="ab-entity-list">
       {% for a, dias in retrasos %}
-        <article class="ab-entity-card">
+        <article class="ab-entity-card ab-rental-card">
           <div class="ab-entity-card-head">
             <div>
-              <p class="ab-entity-card-eyebrow">#{{ a.id }} · Vencia {{ a.fecha_devolucion|date:"d/m/Y" }}</p>
+              <p class="ab-entity-card-eyebrow">#{{ a.id }} - Vencia {{ a.fecha_devolucion|date:"d/m/Y" }}</p>
               <h3 class="ab-entity-card-title">{{ a.cliente_nombre }}</h3>
               <p class="ab-entity-card-subtitle">{{ a.cliente_telefono|default:"Sin telefono" }}</p>
             </div>
             <div class="ab-status-stack">
-              <span class="ab-badge danger">{{ dias }} dia(s)</span>
+              <span class="ab-badge danger">{{ dias }} dia{{ dias|pluralize }}</span>
               {% if a.estado_alquiler == "ENTREGADO" %}
                 <span class="ab-badge danger">ENTREGADO (no volvio)</span>
               {% elif a.estado_alquiler == "RESERVADO" %}
@@ -90,7 +85,7 @@
                   {% for item in persona.items %}
                     <div class="ab-inline-item">
                       <strong>{{ item.codigo }}</strong>
-                      <span>{{ item.categoria }} · {{ item.marca }} · {{ item.color }} · {{ item.ruedo }}</span>
+                      <span>{{ item.categoria }} - {{ item.marca }} - {{ item.color }} - {{ item.ruedo }}</span>
                     </div>
                   {% empty %}
                     <span class="ab-small">Sin prendas</span>

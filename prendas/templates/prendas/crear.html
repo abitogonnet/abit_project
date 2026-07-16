@@ -6,15 +6,9 @@
   <div class="ab-pagehero-copy">
     <p class="ab-kicker">Inventario</p>
     <h1 class="ab-title">{{ titulo }}</h1>
-    <p class="ab-sub">{{ subtitulo }}</p>
-    <div class="ab-chip-row">
-      <span class="ab-chip">Codigo guiado</span>
-      <span class="ab-chip">Campos consistentes</span>
-      <span class="ab-chip">Carga rapida</span>
-    </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Codigo visible</span>
+    <span class="ab-spec-label">Codigo</span>
     <div class="ab-summary-list">
       <div>
         <span>Preview</span>
@@ -27,10 +21,6 @@
             Se genera automaticamente
           {% endif %}
         </strong>
-      </div>
-      <div>
-        <span>Regla</span>
-        <strong>Sacos y pantalones piden origen. El color restringido mantiene el stock ordenado.</strong>
       </div>
     </div>
     <div class="ab-actions">
@@ -48,7 +38,7 @@
       <div class="ab-section-head">
         <div>
           <p class="ab-kicker">Formulario</p>
-          <h2 class="ab-mini-title">Datos de la prenda</h2>
+          <h2 class="ab-mini-title">Prenda</h2>
         </div>
       </div>
 
@@ -108,7 +98,7 @@
 
       {% if codigo_preview and show_generate %}
         <div class="ab-msg ok" style="margin-top: 16px;">
-          Codigo sugerido: <strong>{{ codigo_preview }}</strong>. Si esta bien, presiona <strong>Guardar prenda</strong>.
+          Codigo sugerido: <strong>{{ codigo_preview }}</strong>
         </div>
       {% endif %}
 
@@ -124,12 +114,11 @@
 
     <aside class="ab-create-aside">
       <section class="ab-summary-panel">
-        <span class="ab-spec-label">Buenas practicas</span>
-        <ul class="ab-checklist">
-          <li>Usa el desplegable cuando el color esta restringido para no duplicar variantes.</li>
-          <li>En sacos y pantalones completa origen para que reportes y stock queden consistentes.</li>
-          <li>Si dudas del siguiente codigo, presiona primero "Ver codigo".</li>
-        </ul>
+        <span class="ab-spec-label">Acciones</span>
+        <div class="ab-stack">
+          <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
+          <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
+        </div>
       </section>
     </aside>
   </form>

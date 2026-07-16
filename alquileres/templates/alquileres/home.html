@@ -1,145 +1,151 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="ab-pagehero">
+<section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Tablero operativo</p>
-    <h1 class="ab-title">Una vista clara para mover alquileres, stock y agenda sin friccion</h1>
-    <p class="ab-sub">
-      Hoy es {{ hoy|date:"d/m/Y" }}. La idea de esta portada es simple: mostrar primero lo urgente,
-      despues lo importante y dejar a mano los caminos de trabajo que mas se usan.
-    </p>
-    <div class="ab-actions" style="margin-top: 20px;">
-      <a class="ab-btn" href="{% url 'alquileres:crear' %}">Nuevo alquiler</a>
-      <a class="ab-btn2" href="{% url 'visitas:listar' %}">Abrir agenda</a>
-      <a class="ab-btn2" href="{% url 'prendas:stock' %}">Controlar stock</a>
+    <p class="ab-kicker">Tablero</p>
+    <h1 class="ab-title">Menu principal</h1>
+    <div class="ab-chip-row" style="margin-top: 18px;">
+      <span class="ab-chip">{{ hoy|date:"d/m/Y" }}</span>
+      <span class="ab-chip">Activos {{ resumen_operativo.alquileres_activos }}</span>
+      <span class="ab-chip">Atrasos {{ kpis.1.value }}</span>
+      <span class="ab-chip">Sin origen {{ resumen_operativo.pendientes_origen }}</span>
     </div>
   </div>
 
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Hoy en numeros</span>
     <div class="ab-summary-grid">
       <div class="ab-summary-card">
-        <span class="ab-small">Alquileres activos</span>
+        <span class="ab-small">Activos</span>
         <strong>{{ resumen_operativo.alquileres_activos }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Movimientos 7 dias</span>
+        <span class="ab-small">Entregas hoy</span>
+        <strong>{{ kpis.0.value }}</strong>
+      </div>
+      <div class="ab-summary-card">
+        <span class="ab-small">Semana</span>
         <strong>{{ resumen_operativo.alquileres_semana }}</strong>
       </div>
       <div class="ab-summary-card">
-        <span class="ab-small">Visitas hoy</span>
-        <strong>{{ resumen_operativo.visitas_hoy }}</strong>
-      </div>
-      <div class="ab-summary-card">
-        <span class="ab-small">Pendientes de origen</span>
-        <strong>{{ resumen_operativo.pendientes_origen }}</strong>
+        <span class="ab-small">Stock</span>
+        <strong>{{ kpis.3.value }}</strong>
       </div>
     </div>
   </aside>
 </section>
 
-<section class="ab-kpi-grid">
-  {% for item in kpis %}
-    <a class="ab-kpi-card tone-{{ item.tone }}" href="{{ item.href }}">
-      <span class="ab-small">{{ item.label }}</span>
-      <strong>{{ item.value }}</strong>
-      <p>{{ item.helper }}</p>
-    </a>
-  {% endfor %}
-</section>
-
-<section class="ab-dashboard-grid">
-  <div class="ab-card">
-    <div class="ab-head">
+<section class="ab-dashboard-grid ab-dashboard-grid-home">
+  <div class="ab-section-card" id="menu-alquileres">
+    <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Prioridades</p>
-        <h2 class="ab-mini-title">Lo primero que conviene revisar</h2>
+        <p class="ab-kicker">Alquileres</p>
+        <h2 class="ab-mini-title">Alquileres</h2>
       </div>
     </div>
-    <div class="ab-body ab-stack">
-      {% for item in prioridades %}
-        <article class="ab-priority-card tone-{{ item.tone }}">
-          <div>
-            <h3>{{ item.title }}</h3>
-            <p class="ab-note">{{ item.description }}</p>
-          </div>
-          <a class="ab-btn2" href="{{ item.href }}">{{ item.cta }}</a>
-        </article>
-      {% endfor %}
+
+    <div class="ab-home-button-grid">
+      <a class="ab-home-menu-btn" href="{% url 'alquileres:ver' %}">
+        <strong>Ver alquileres</strong>
+        <span>{{ resumen_operativo.alquileres_activos }} activos</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'alquileres:crear' %}">
+        <strong>Crear alquiler</strong>
+        <span>Nuevo</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'alquileres:entregas' %}">
+        <strong>Entregas</strong>
+        <span>{{ kpis.0.value }} hoy</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'alquileres:retrasados' %}">
+        <strong>Atrasados</strong>
+        <span>{{ kpis.1.value }} abiertos</span>
+      </a>
     </div>
   </div>
 
-  <div class="ab-card">
-    <div class="ab-head">
+  <div class="ab-section-card" id="menu-stock">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Stock</p>
+        <h2 class="ab-mini-title">Stock</h2>
+      </div>
+    </div>
+
+    <div class="ab-home-button-grid ab-home-button-grid-left">
+      <a class="ab-home-menu-btn large" href="{% url 'prendas:stock' %}">
+        <strong>Ver stock</strong>
+        <span>{{ kpis.3.value }} disponibles</span>
+      </a>
+      <a class="ab-home-menu-btn large" href="{% url 'prendas:buscar_prenda' %}">
+        <strong>Buscar prenda</strong>
+        <span>Busqueda</span>
+      </a>
+      <a class="ab-home-menu-btn large" href="{% url 'prendas:crear' %}">
+        <strong>Crear prenda</strong>
+        <span>Alta</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="ab-section-card" id="menu-finanzas">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Finanzas</p>
+        <h2 class="ab-mini-title">Finanzas</h2>
+      </div>
+    </div>
+
+    <div class="ab-home-button-grid">
+      <a class="ab-home-menu-btn" href="{% url 'gastos:home' %}">
+        <strong>Ver finanzas</strong>
+        <span>Caja</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'gastos:crear' %}">
+        <strong>Crear gasto</strong>
+        <span>Nuevo</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'gastos:division_bienes' %}">
+        <strong>Division de bienes</strong>
+        <span>Salida</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'reportes:home' %}">
+        <strong>Ver reportes</strong>
+        <span>General</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'reportes:home' %}?periodo=mensual">
+        <strong>Reporte mensual</strong>
+        <span>Mensual</span>
+      </a>
+      <a class="ab-home-menu-btn" href="{% url 'reportes:home' %}?periodo=semanal">
+        <strong>Reporte semanal</strong>
+        <span>Semanal</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="ab-section-card">
+    <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Proximos movimientos</p>
-        <h2 class="ab-mini-title">Lo que ya esta entrando en juego</h2>
+        <h2 class="ab-mini-title">Proximos movimientos</h2>
       </div>
     </div>
-    <div class="ab-body">
+
+    <div class="ab-home-movement-list">
       {% if proximos_movimientos %}
-        <div class="ab-stack">
-          {% for alquiler in proximos_movimientos %}
-            <div class="ab-timeline-row">
-              <div class="ab-timeline-day">{{ alquiler.fecha_entrega|date:"d/m" }}</div>
-              <div class="ab-timeline-content">
-                <strong>{{ alquiler.cliente_nombre }}</strong>
-                <div class="ab-small">{{ alquiler.persona1_nombre }}{% if alquiler.persona2_nombre %} + {{ alquiler.persona2_nombre }}{% endif %}</div>
-              </div>
-              <span class="ab-badge {% if alquiler.fecha_entrega == hoy %}warn{% else %}secondary{% endif %}">
-                {% if alquiler.fecha_entrega == hoy %}Hoy{% else %}Entrega{% endif %}
-              </span>
+        {% for alquiler in proximos_movimientos %}
+          <article class="ab-home-movement-card">
+            <div class="ab-timeline-day">{{ alquiler.fecha_entrega|date:"d/m" }}</div>
+            <div class="ab-home-movement-content">
+              <strong>{{ alquiler.cliente_nombre }}</strong>
+              <span>{{ alquiler.persona1_nombre }}{% if alquiler.persona2_nombre %} + {{ alquiler.persona2_nombre }}{% endif %}</span>
             </div>
-          {% endfor %}
-        </div>
+            <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Entrega</a>
+          </article>
+        {% endfor %}
       {% else %}
-        <div class="ab-empty">No hay entregas programadas para los proximos 7 dias.</div>
+        <div class="ab-empty">Sin movimientos.</div>
       {% endif %}
-    </div>
-  </div>
-</section>
-
-<section class="ab-card">
-  <div class="ab-head">
-    <div>
-      <p class="ab-kicker">Circuitos de trabajo</p>
-      <h2 class="ab-title" style="font-size: clamp(1.4rem, 2vw, 1.9rem);">Cada area tiene un recorrido claro</h2>
-      <p class="ab-sub">La app gana velocidad cuando las tareas importantes tienen un punto de entrada evidente y pocas decisiones ambiguas.</p>
-    </div>
-  </div>
-  <div class="ab-body">
-    <div class="ab-card-grid">
-      {% for flujo in flujos %}
-        <article class="ab-workstream-card">
-          <span class="ab-kicker" style="margin-bottom: 10px;">{{ flujo.eyebrow }}</span>
-          <h3>{{ flujo.title }}</h3>
-          <p class="ab-note">{{ flujo.description }}</p>
-          <div class="ab-actions" style="margin-top: 18px;">
-            <a class="ab-btn" href="{{ flujo.primary_href }}">{{ flujo.primary_label }}</a>
-            <a class="ab-btn2" href="{{ flujo.secondary_href }}">{{ flujo.secondary_label }}</a>
-          </div>
-        </article>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<section class="ab-card">
-  <div class="ab-head">
-    <div>
-      <p class="ab-kicker">Aprendizaje rapido</p>
-      <h2 class="ab-mini-title">Pensado para alguien que recien entra</h2>
-    </div>
-  </div>
-  <div class="ab-body">
-    <div class="ab-learning-strip">
-      {% for item in aprendizaje %}
-        <article class="ab-learning-card">
-          <span class="ab-learning-step">{{ item.step }}</span>
-          <h3>{{ item.title }}</h3>
-          <p class="ab-note">{{ item.description }}</p>
-        </article>
-      {% endfor %}
     </div>
   </div>
 </section>

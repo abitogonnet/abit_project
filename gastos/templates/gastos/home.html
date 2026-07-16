@@ -3,17 +3,14 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
   <div class="ab-pagehero-copy">
-    <p class="ab-kicker">Gestion</p>
+    <p class="ab-kicker">Finanzas</p>
     <h1 class="ab-title">Gastos</h1>
-    <p class="ab-sub">Lectura mensual para entender rapido cuanto entro por alquileres, cuanto salio y que resultado deja el mes sin exportar nada.</p>
-    <div class="ab-chip-row">
+    <div class="ab-chip-row" style="margin-top: 18px;">
       <span class="ab-chip">{{ month_label }}</span>
-      <span class="ab-chip">Saldo actual en cuenta</span>
-      <span class="ab-chip">Movimientos detallados</span>
+      <span class="ab-chip">Saldo actual</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Situacion del mes</span>
     <div class="ab-summary-list">
       <div>
         <span>Saldo actual en cuenta</span>
@@ -24,25 +21,19 @@
         <strong class="ab-num">${{ saldo_neto_periodo|miles0 }}</strong>
       </div>
       <div>
-        <span>Ingresos por alquileres del mes</span>
+        <span>Ingresos del mes</span>
         <strong class="ab-num">${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
       </div>
     </div>
     <div class="ab-actions">
-      <a class="ab-btn2" href="{% url 'gastos:crear' %}?ym={{ ym_value }}">+ Cargar gasto</a>
-      <a class="ab-btn" href="{% url 'gastos:division_bienes' %}?ym={{ ym_value }}">+ Division de bienes</a>
+      <a class="ab-btn2" href="{% url 'gastos:crear' %}?ym={{ ym_value }}">Crear gasto</a>
+      <a class="ab-btn" href="{% url 'gastos:division_bienes' %}?ym={{ ym_value }}">Division de bienes</a>
     </div>
   </aside>
 </section>
 
 <div class="ab-page-stack">
   <section class="ab-section-card">
-    <div class="ab-section-head">
-      <div>
-        <p class="ab-kicker">Mes visible</p>
-        <h2 class="ab-mini-title">Cambiar el periodo</h2>
-      </div>
-    </div>
     <form method="get" class="ab-inline-form-grid">
       <div class="ab-field">
         <label class="ab-lab" for="id_ym">Mes visible</label>
@@ -55,10 +46,6 @@
         </div>
       </div>
     </form>
-    <div class="ab-form-note" style="margin-top: 16px;">
-      Estas viendo <strong>{{ month_label }}</strong>. Las listas muestran solo lo guardado en ese mes,
-      pero el <strong>saldo actual en cuenta</strong> sigue tomando toda la historia real.
-    </div>
   </section>
 
   <section class="ab-section-card">
@@ -94,14 +81,10 @@
     </div>
   </section>
 
-  <div class="ab-form-note">
-    La lectura es simple: entro por <strong>señas</strong> y <strong>saldos cobrados</strong>, salio por <strong>gastos</strong> y <strong>divisiones</strong>.
-  </div>
-
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Egresos</p>
+        <p class="ab-kicker">Gastos</p>
         <h2 class="ab-mini-title">Gastos de {{ month_label }}</h2>
       </div>
       <span class="ab-pill">{{ gastos|length }} gasto{{ gastos|length|pluralize }}</span>
@@ -121,7 +104,7 @@
 
           <div class="ab-summary-list">
             <div>
-              <span>En que fue gastado</span>
+              <span>Detalle</span>
               <strong>{% if g.descripcion %}{{ g.descripcion }}{% else %}-{% endif %}</strong>
             </div>
           </div>
@@ -134,7 +117,7 @@
             <div class="ab-detail-panel">
               <div class="ab-detail-summary-grid">
                 <div class="ab-detail-summary-card">
-                  <span class="ab-spec-label">En que fue gastado</span>
+                  <span class="ab-spec-label">Detalle</span>
                   <strong>{% if g.descripcion %}{{ g.descripcion }}{% else %}-{% endif %}</strong>
                 </div>
                 <div class="ab-detail-summary-card">
@@ -158,7 +141,7 @@
   <section class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Retiros</p>
+        <p class="ab-kicker">Divisiones</p>
         <h2 class="ab-mini-title">Divisiones de {{ month_label }}</h2>
       </div>
       <span class="ab-pill">{{ divisiones|length }} division{{ divisiones|length|pluralize }}</span>
@@ -171,7 +154,6 @@
             <div>
               <p class="ab-entity-card-eyebrow">{{ d.fecha|date:"d/m/Y" }}</p>
               <h3 class="ab-entity-card-title">Division de bienes</h3>
-              <p class="ab-entity-card-subtitle">Tade y Bauti</p>
             </div>
             <span class="ab-pill ab-num">${{ d.monto_total|miles0 }}</span>
           </div>
@@ -195,11 +177,11 @@
             <div class="ab-detail-panel">
               <div class="ab-detail-summary-grid">
                 <div class="ab-detail-summary-card">
-                  <span class="ab-spec-label">Cuando</span>
+                  <span class="ab-spec-label">Fecha</span>
                   <strong>{{ d.fecha|date:"d/m/Y" }}</strong>
                 </div>
                 <div class="ab-detail-summary-card">
-                  <span class="ab-spec-label">Cuanto</span>
+                  <span class="ab-spec-label">Total</span>
                   <strong class="ab-num">${{ d.monto_total|miles0 }}</strong>
                 </div>
                 <div class="ab-detail-summary-card">

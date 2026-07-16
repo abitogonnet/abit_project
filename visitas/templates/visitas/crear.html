@@ -4,17 +4,10 @@
   <div class="ab-pagehero-copy">
     <p class="ab-kicker">Agenda comercial</p>
     <h1 class="ab-title">Crear visita</h1>
-    <p class="ab-sub">La carga queda ordenada por cliente, evento y horario para que cualquier persona del equipo pueda agendar sin dudas.</p>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Antes de guardar</span>
-    <ul class="ab-checklist">
-      <li>Confirma el telefono para poder retomar la conversacion despues.</li>
-      <li>Usa la fecha del evento para dar contexto comercial a la visita.</li>
-      <li>El horario de inicio es la base para ordenar toda la agenda.</li>
-    </ul>
     <div class="ab-actions">
-      <a class="ab-btn2" href="{% url 'visitas:listar' %}">Volver</a>
+      <a class="ab-btn2" href="{% url 'visitas:listar' %}">Ver visitas</a>
     </div>
   </aside>
 </section>
@@ -27,7 +20,7 @@
       <div class="ab-section-head">
         <div>
           <p class="ab-kicker">Formulario</p>
-          <h2 class="ab-mini-title">Datos de la visita</h2>
+          <h2 class="ab-mini-title">Visita</h2>
         </div>
       </div>
 
@@ -70,12 +63,9 @@
 
     <aside class="ab-create-aside">
       <section class="ab-summary-panel">
-        <span class="ab-spec-label">Objetivo</span>
-        <div class="ab-summary-list">
-          <div>
-            <span>Agenda clara</span>
-            <strong>Que el equipo vea rapido quien viene, cuando y para que evento.</strong>
-          </div>
+        <span class="ab-spec-label">Acciones</span>
+        <div class="ab-stack">
+          <a class="ab-btn2" href="{% url 'visitas:listar' %}">Ver visitas</a>
         </div>
       </section>
     </aside>

@@ -4,29 +4,12 @@
   <div class="ab-pagehero-copy">
     <p class="ab-kicker">Busqueda</p>
     <h1 class="ab-title">Buscar prenda</h1>
-    <p class="ab-sub">La pantalla separa busqueda directa por codigo y exploracion por filtros para que el recorrido sea simple incluso si no conoces el sistema.</p>
     <div class="ab-chip-row">
-      <span class="ab-chip">Codigo rapido</span>
-      <span class="ab-chip">Filtros cruzados</span>
-      <span class="ab-chip">Reservas visibles</span>
+      <span class="ab-chip">Codigo</span>
+      <span class="ab-chip">Filtros</span>
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Cuando usar cada bloque</span>
-    <div class="ab-summary-list">
-      <div>
-        <span>Codigo</span>
-        <strong>Si ya sabes que buscas y quieres llegar en un paso</strong>
-      </div>
-      <div>
-        <span>Filtros</span>
-        <strong>Si recuerdas marca, color, talle u origen, pero no el codigo</strong>
-      </div>
-      <div>
-        <span>Resultado</span>
-        <strong>Tambien muestra reservas activas para no prometer una prenda ocupada</strong>
-      </div>
-    </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'prendas:stock' %}">Ver stock</a>
       <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
@@ -39,8 +22,8 @@
     <article class="ab-section-card">
       <div class="ab-section-head">
         <div>
-          <p class="ab-kicker">Atajo</p>
-          <h2 class="ab-mini-title">Buscar solo por codigo</h2>
+          <p class="ab-kicker">Codigo</p>
+          <h2 class="ab-mini-title">Buscar por codigo</h2>
         </div>
       </div>
 
@@ -59,8 +42,8 @@
     <article class="ab-section-card">
       <div class="ab-section-head">
         <div>
-          <p class="ab-kicker">Explorar</p>
-          <h2 class="ab-mini-title">Buscar con filtros</h2>
+          <p class="ab-kicker">Filtros</p>
+          <h2 class="ab-mini-title">Buscar</h2>
         </div>
       </div>
 
@@ -151,7 +134,7 @@
                     {% for alquiler in prenda.alquileres_activos %}
                       <div class="ab-inline-item">
                         <strong>{{ alquiler.get_estado_alquiler_display }}</strong>
-                        <span>{{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}{% if alquiler.cliente_nombre %} · {{ alquiler.cliente_nombre }}{% endif %}</span>
+                        <span>{{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}{% if alquiler.cliente_nombre %} - {{ alquiler.cliente_nombre }}{% endif %}</span>
                       </div>
                     {% endfor %}
                   </div>
@@ -219,7 +202,7 @@
                     {% for alquiler in prenda.alquileres_activos %}
                       <div class="ab-inline-item">
                         <strong>{{ alquiler.get_estado_alquiler_display }}</strong>
-                        <span>{{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}{% if alquiler.cliente_nombre %} · {{ alquiler.cliente_nombre }}{% endif %}</span>
+                        <span>{{ alquiler.fecha_entrega|date:"d/m/Y" }} al {{ alquiler.fecha_devolucion|date:"d/m/Y" }}{% if alquiler.cliente_nombre %} - {{ alquiler.cliente_nombre }}{% endif %}</span>
                       </div>
                     {% endfor %}
                   </div>
@@ -236,11 +219,6 @@
         <div class="ab-empty">No hay prendas con esos filtros.</div>
       {% endif %}
     </section>
-  {% else %}
-    <div class="ab-form-note">
-      Si ya conoces el codigo, usa el bloque superior.
-      Si no, combina prenda, marca, color, talle y origen para ir cerrando el resultado.
-    </div>
   {% endif %}
 </div>
 {% endblock %}
