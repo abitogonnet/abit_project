@@ -522,12 +522,16 @@ class AlquileresViewsTests(TestCase):
         }, follow=True)
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.redirect_chain[-1][0], f"{reverse('alquileres:home')}?cerrado={alquiler.id}")
         alquiler.refresh_from_db()
         self.assertEqual(alquiler.estado_alquiler, Alquiler.EST_CERRADO)
         self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
         self.assertEqual(alquiler.saldo_pagado_en, date(2026, 7, 21))
         saco.refresh_from_db()
         self.assertEqual(saco.estado, Prenda.E_DISP)
+        self.assertContains(response, "Cliente Cierre Hoy")
+        self.assertContains(response, "Alquiler cerrado correctamente")
+        self.assertContains(response, "ab-priority-card-complete tone-ok")
 
     def test_entregas_muestra_ver_detallado_en_resultados_filtrados(self):
         hoy = timezone.localdate()

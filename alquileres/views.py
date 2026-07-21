@@ -39,6 +39,8 @@ def home(request):
         accion = request.POST.get("accion", "")
 
         if _procesar_accion_operativa(request, alquiler, accion):
+            if accion == "cerrar_alquiler" and alquiler.estado_alquiler == Alquiler.EST_CERRADO:
+                return redirect(f"{reverse('alquileres:home')}?cerrado={alquiler.id}")
             return redirect("alquileres:home")
 
     hoy = timezone.localdate()
@@ -118,10 +120,24 @@ def home(request):
             prioridades.append({
                 "kind": "close_today",
                 "title": alquiler.cliente_nombre,
-                "description": alquiler.personas_resumen or alquiler.persona1_nombre or "Devolucion prevista hoy.",
+                "description": f"A devolver hoy - {alquiler.personas_resumen or alquiler.persona1_nombre or 'Sin detalle de personas'}",
                 "cta": "Cerrar alquiler",
                 "tone": "warn",
                 "alquiler_id": alquiler.id,
+            })
+
+    cerrado_id = request.GET.get("cerrado", "")
+    if cerrado_id.isdigit():
+        alquiler_cerrado = Alquiler.objects.filter(
+            id=int(cerrado_id),
+            estado_alquiler=Alquiler.EST_CERRADO,
+        ).first()
+        if alquiler_cerrado:
+            prioridades.insert(0, {
+                "kind": "closed_today",
+                "title": alquiler_cerrado.cliente_nombre,
+                "description": "Alquiler cerrado correctamente",
+                "tone": "ok",
             })
     if entregas_hoy:
         prioridades.append({

@@ -1636,7 +1636,8 @@ body.ab-page {
 }
 
 .ab-priority-card.tone-ok {
-  background: rgba(244, 251, 248, 0.94);
+  border-color: rgba(22, 101, 52, 0.28);
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.98), rgba(187, 247, 208, 0.96));
 }
 
 .ab-timeline-row {
@@ -1964,6 +1965,37 @@ body.ab-page {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
+}
+
+.ab-priority-card-complete {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  animation: ab-priority-complete 320ms ease-out;
+}
+
+.ab-priority-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #15803d;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+@keyframes ab-priority-complete {
+  from {
+    transform: scale(0.98);
+    opacity: 0.65;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .ab-priority-action-form {

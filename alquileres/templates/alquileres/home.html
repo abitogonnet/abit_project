@@ -135,7 +135,15 @@
 
     <div class="ab-home-priority-list">
       {% for item in prioridades %}
-        {% if item.kind == "close_today" %}
+        {% if item.kind == "closed_today" %}
+          <article class="ab-priority-card ab-priority-card-complete tone-{{ item.tone }}">
+            <span class="ab-priority-check" aria-hidden="true">✓</span>
+            <div class="ab-priority-copy">
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.description }}</p>
+            </div>
+          </article>
+        {% elif item.kind == "close_today" %}
           <article class="ab-priority-card ab-priority-card-action tone-{{ item.tone }}">
             <form method="post" class="ab-priority-action-form">
               {% csrf_token %}
