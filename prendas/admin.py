@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Prenda
+from .models import Color, Prenda
+
+admin.site.register(Color)
 
 @admin.register(Prenda)
 class PrendaAdmin(admin.ModelAdmin):

@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Prenda
+from .models import Color, Prenda
 
 
 BRANDS = [
@@ -48,6 +48,8 @@ COLORES_RESTRINGIDOS_POR_CATEGORIA = {
     Prenda.C_SACO: COLORES_TRAJE,
     Prenda.C_PANTALON: COLORES_TRAJE,
     Prenda.C_CAMISA: COLORES_TRAJE,
+    Prenda.C_ZAPATOS: COLORES_ZAPATOS,
+    Prenda.C_CINTURON: COLORES_ZAPATOS,
 }
 
 TAM_NINO_ADULTO = ["Niño", "Adulto"]
@@ -86,18 +88,21 @@ LETRAS_XS_4XL = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
 AIRES_SACO_NUM = _nums(22, 76, 2)
 AIRES_CHAL_NUM = _nums(22, 70, 2)
 
-PANTALON_NUM = _nums(0, 70, 1)
-ZAPATOS_NUM = _nums(36, 46, 1)
+CAMISA_SACO_TALLES = _nums(2, 16, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(50, 74, 2)
+PANTALON_NUM = _nums(2, 74, 2)
+ZAPATOS_NUM = _nums(30, 50, 2)
 
 GENERIC_NUM = _nums(0, 76, 1)
 GENERIC_TALLES = GENERIC_NUM + LETRAS_XS_5XL
 
 
 def color_options_for(categoria: str):
-    if categoria in COLORES_RESTRINGIDOS_POR_CATEGORIA:
-        return COLORES_RESTRINGIDOS_POR_CATEGORIA[categoria]
-    if categoria in {Prenda.C_ZAPATOS, Prenda.C_CINTURON}:
-        return COLORES_ZAPATOS
+    if categoria in {
+        Prenda.C_SACO, Prenda.C_PANTALON, Prenda.C_CAMISA,
+        Prenda.C_ZAPATOS, Prenda.C_CINTURON,
+    }:
+        catalogo = list(Color.objects.values_list("nombre", flat=True))
+        return catalogo or COLORES_GENERALES
     if categoria == Prenda.C_CHALECO:
         return COLORES_CHALECO
     if categoria == Prenda.C_CAMISA:
@@ -108,7 +113,10 @@ def color_options_for(categoria: str):
 
 
 def restricted_color_options_for(categoria: str):
-    return COLORES_RESTRINGIDOS_POR_CATEGORIA.get(categoria, [])
+    return color_options_for(categoria) if categoria in {
+        Prenda.C_SACO, Prenda.C_PANTALON, Prenda.C_CAMISA,
+        Prenda.C_ZAPATOS, Prenda.C_CINTURON,
+    } else []
 
 
 def talle_options_for(categoria: str, marca: str):
@@ -127,18 +135,14 @@ def talle_options_for(categoria: str, marca: str):
             return AIRES_CHAL_NUM
         return _unique(GENERIC_TALLES + LETRAS_XS_4XL)
     if categoria == Prenda.C_SACO:
-        if marca_cf == "boiler":
-            return _unique(BOILER_SACO_NUM + LETRAS_XS_5XL + LETRAS_XS_4XL)
-        if marca_cf == "aires modernos":
-            return AIRES_SACO_NUM
-        return _unique(GENERIC_TALLES + LETRAS_XS_4XL)
+        return CAMISA_SACO_TALLES
     if categoria == Prenda.C_CAMISA:
-        return GENERIC_TALLES
+        return CAMISA_SACO_TALLES
     return []
 
 
 def requiere_origen(categoria: str, marca: str) -> bool:
-    return categoria in {Prenda.C_SACO, Prenda.C_PANTALON}
+    return bool(categoria)
 
 
 class PrendaForm(forms.ModelForm):
@@ -209,76 +213,94 @@ class PrendaForm(forms.ModelForm):
 
     def clean_color(self):
         categoria = self._bound_or_initial("categoria")
-        return Prenda.normalize_color_value(_norm(self.cleaned_data.get("color", "")), categoria)
+        color = _norm(self.cleaned_data.get("color", ""))
+        if categoria in COLORES_RESTRINGIDOS_POR_CATEGORIA:
+            normalized = Prenda.normalize_color_value(color, categoria)
+            catalogado = Color.objects.filter(clave_normalizada=Color.normalizar_clave(normalized)).first()
+            return catalogado.nombre if catalogado else color
+        return Prenda.normalize_color_value(color, categoria)
 
     def clean(self):
         cleaned = super().clean()
         cat = cleaned.get("categoria")
         marca = cleaned.get("marca", "")
-        color = Prenda.normalize_color_value(_norm(cleaned.get("color", "")), cat)
+        color = _norm(cleaned.get("color", ""))
+        if cat in COLORES_RESTRINGIDOS_POR_CATEGORIA:
+            normalized = Prenda.normalize_color_value(color, cat)
+            catalogado = Color.objects.filter(clave_normalizada=Color.normalizar_clave(normalized)).first()
+            color = catalogado.nombre if catalogado else color
+        else:
+            color = Prenda.normalize_color_value(color, cat)
         talle = _norm(cleaned.get("talle", ""))
         origen = _norm(cleaned.get("origen", ""))
         cleaned["color"] = color
 
-        if cat in COLORES_RESTRINGIDOS_POR_CATEGORIA:
+        if cat in {Prenda.C_SACO, Prenda.C_PANTALON, Prenda.C_CAMISA, Prenda.C_ZAPATOS, Prenda.C_CINTURON}:
             colores_validos = set(restricted_color_options_for(cat))
             if not color:
-                self.add_error("color", "Para saco, pantalon y camisa, elige un color del desplegable.")
+                self.add_error("color", "Elegí un color del catálogo.")
             elif color not in colores_validos:
-                self.add_error("color", "Para saco, pantalon y camisa, elige un color valido del desplegable.")
+                self.add_error("color", "Elegí un color válido del catálogo.")
+
+        if origen not in dict(Prenda.ORIGENES):
+            self.add_error("origen", "Elegí si la prenda es nacional o importada.")
 
         if cat == Prenda.C_MONO:
             if talle not in TAM_NINO_ADULTO:
                 self.add_error("talle", "Para mono/corbata, elegi Niño o Adulto.")
-            cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_CORBATA:
             if talle not in TAM_NINO_ADULTO:
                 self.add_error("talle", "Para mono/corbata, elegi Niño o Adulto.")
-            cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_CINTURON:
             if talle not in TAM_NINO_ADULTO:
                 self.add_error("talle", "Para cinturon, elegi Niño o Adulto.")
-            cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_ZAPATOS:
             if talle not in ZAPATOS_NUM:
-                self.add_error("talle", "Para zapatos, elegi un talle entre 36 y 46.")
-            cleaned["origen"] = ""
+                self.add_error("talle", "Para zapatos, elegí un talle par entre 30 y 50.")
             return cleaned
 
         if cat == Prenda.C_PANTALON:
             if talle not in PANTALON_NUM:
-                self.add_error("talle", "Para pantalon, elegi un talle entre 0 y 70.")
-            if origen not in dict(Prenda.ORIGENES):
-                self.add_error("origen", "Para pantalon, elegi si es nacional o importado.")
+                self.add_error("talle", "Para pantalón, elegí un talle par entre 2 y 74.")
             return cleaned
 
         if cat == Prenda.C_CHALECO:
             if talle not in talle_options_for(cat, marca):
                 self.add_error("talle", "Para chaleco, elegi un talle valido del desplegable.")
-            cleaned["origen"] = ""
             return cleaned
 
         if cat == Prenda.C_SACO:
             if talle not in talle_options_for(cat, marca):
                 self.add_error("talle", "Para saco, elegi un talle valido del desplegable.")
-            if origen not in dict(Prenda.ORIGENES):
-                self.add_error("origen", "Para saco, elegi si es nacional o importado.")
             return cleaned
 
         if cat == Prenda.C_CAMISA:
-            if talle not in GENERIC_TALLES:
+            if talle not in CAMISA_SACO_TALLES:
                 self.add_error("talle", "Para camisa, elegi un talle valido del desplegable.")
-            cleaned["origen"] = ""
             return cleaned
 
-        cleaned["origen"] = ""
         return cleaned
+
+
+class ColorForm(forms.ModelForm):
+    class Meta:
+        model = Color
+        fields = ["nombre"]
+
+    def clean_nombre(self):
+        nombre = " ".join((self.cleaned_data.get("nombre") or "").split())
+        if not nombre:
+            raise forms.ValidationError("Ingresá un nombre de color.")
+        clave = Color.normalizar_clave(nombre)
+        if Color.objects.filter(clave_normalizada=clave).exists():
+            raise forms.ValidationError("Ese color ya existe.")
+        return nombre
 
 
 class BuscarPrendaForm(forms.Form):

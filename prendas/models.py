@@ -3,6 +3,31 @@ import unicodedata
 from django.db import models
 
 
+class Color(models.Model):
+    nombre = models.CharField(max_length=40)
+    clave_normalizada = models.CharField(max_length=40, unique=True, editable=False)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    @staticmethod
+    def normalizar_clave(value):
+        clean = " ".join((value or "").split()).casefold()
+        return "".join(
+            char for char in unicodedata.normalize("NFKD", clean)
+            if not unicodedata.combining(char)
+        )
+
+    def save(self, *args, **kwargs):
+        self.nombre = " ".join((self.nombre or "").split())
+        self.clave_normalizada = self.normalizar_clave(self.nombre)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        ordering = ["nombre"]
+
+
 class Prenda(models.Model):
     # Categorías (2 letras para el código)
     C_SACO = "SACO"
@@ -42,7 +67,7 @@ class Prenda(models.Model):
     O_IMP = "IMPORTADO"
     ORIGENES = [
         (O_NAC, "Nacional"),
-        (O_IMP, "Importado"),
+        (O_IMP, "Importada"),
     ]
 
     codigo = models.CharField(max_length=10, unique=True, db_index=True)
@@ -109,7 +134,12 @@ class Prenda(models.Model):
                 "blanco": "Blanca",
                 "blanca": "Blanca",
             })
-        return alias_map.get(color_cf, color)
+        normalized = alias_map.get(color_cf, color)
+        if categoria in {cls.C_SACO, cls.C_PANTALON, cls.C_CAMISA, cls.C_ZAPATOS, cls.C_CINTURON}:
+            catalogado = Color.objects.filter(clave_normalizada=Color.normalizar_clave(normalized)).first()
+            if catalogado:
+                return catalogado.nombre
+        return normalized
 
     def save(self, *args, **kwargs):
         self.color = self.normalize_color_value(self.color, self.categoria)

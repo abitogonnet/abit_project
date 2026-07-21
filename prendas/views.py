@@ -17,13 +17,14 @@ from .forms import (
     LETRAS_XS_4XL,
     LETRAS_XS_5XL,
     PrendaForm,
+    ColorForm,
     TAM_NINO_ADULTO,
     color_options_for,
     requiere_origen,
     restricted_color_options_for,
     talle_options_for,
 )
-from .models import Prenda
+from .models import Color, Prenda
 from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
 
@@ -133,13 +134,13 @@ def _prenda_form_context(form, *, titulo, subtitulo, accion_label, cancel_url, s
 
 
 def _categorias_con_origen():
-    return [Prenda.C_SACO, Prenda.C_PANTALON]
+    return [value for value, _label in Prenda.CATEGORIAS]
 
 
 def _prendas_sin_origen():
     return (
         Prenda.objects
-        .filter(categoria__in=_categorias_con_origen(), origen="")
+        .filter(origen="")
         .order_by("categoria", "marca", "talle", "codigo")
     )
 
@@ -271,6 +272,16 @@ def stock(request):
     if request.method == "POST":
         accion = request.POST.get("accion", "actualizar")
 
+        if accion == "agregar_color":
+            color_form = ColorForm(request.POST)
+            if color_form.is_valid():
+                color = color_form.save()
+                registrar_actividad(request, "Agregó color", Actividad.STOCK, objeto=color, referencia=color.nombre)
+                messages.success(request, f'Color agregado: {color.nombre}.')
+            else:
+                messages.error(request, " ".join(error for errors in color_form.errors.values() for error in errors))
+            return redirect("prendas:stock")
+
         if accion == "guardar_origenes":
             origenes_validos = {value for value, _label in Prenda.ORIGENES}
             cambios = {}
@@ -361,6 +372,7 @@ def stock(request):
         "origenes": Prenda.ORIGENES,
         "resumen": resumen,
         "categorias": Prenda.CATEGORIAS,
+        "color_form": ColorForm(),
     })
 
 

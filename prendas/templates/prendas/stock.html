@@ -13,6 +13,14 @@
     <div class="ab-actions">
       <a class="ab-btn" href="{% url 'prendas:crear' %}">Crear prenda</a>
       <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}">Buscar prenda</a>
+      <details>
+        <summary class="ab-btn2">+ Agregar color</summary>
+        <form method="post" class="ab-row" style="margin-top: 12px;">{% csrf_token %}
+          <input type="hidden" name="accion" value="agregar_color">
+          {{ color_form.nombre }}
+          <button class="ab-btn" type="submit">Guardar color</button>
+        </form>
+      </details>
     </div>
   </aside>
 </section>
@@ -48,8 +56,7 @@
             <label class="ab-lab" for="pendingOriginCategory">Categoria</label>
             <select class="ab-sel" id="pendingOriginCategory">
               <option value="">Todas</option>
-              <option value="SACO">Sacos</option>
-              <option value="PANTALON">Pantalones</option>
+              {% for value, label in categorias %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
             </select>
           </div>
           <div class="ab-field">

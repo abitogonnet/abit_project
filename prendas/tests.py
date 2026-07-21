@@ -29,7 +29,7 @@ class PrendaFormTests(TestCase):
             "marca": "Boiler",
             "color": "Azul con flores bordadas",
             "talle": "Adulto",
-            "origen": "",
+            "origen": Prenda.O_NAC,
             "notas": "",
         })
 
@@ -82,7 +82,7 @@ class PrendaFormTests(TestCase):
                 marca="Boiler",
                 color=color,
                 talle="4" if categoria != Prenda.C_CAMISA else "40",
-                origen=Prenda.O_NAC if categoria in {Prenda.C_SACO, Prenda.C_PANTALON} else "",
+                origen=Prenda.O_NAC,
             )
             self.assertEqual(prenda.color, esperado)
 
@@ -91,8 +91,8 @@ class PrendaFormTests(TestCase):
             "categoria": Prenda.C_CAMISA,
             "marca": "Sportfino",
             "color": "Azul con trama",
-            "talle": "40",
-            "origen": "",
+            "talle": "50",
+            "origen": Prenda.O_NAC,
             "notas": "",
         })
 
@@ -104,8 +104,8 @@ class PrendaFormTests(TestCase):
             "categoria": Prenda.C_CAMISA,
             "marca": "Sportfino",
             "color": "blanco",
-            "talle": "40",
-            "origen": "",
+            "talle": "50",
+            "origen": Prenda.O_NAC,
             "notas": "",
         })
 
