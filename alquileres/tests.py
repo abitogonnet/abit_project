@@ -413,6 +413,86 @@ class AlquileresViewsTests(TestCase):
         self.assertContains(response, "17/07/2026")
         self.assertContains(response, "2 entregas")
 
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 21))
+    def test_home_muestra_cierres_de_hoy_como_paso_previo_a_retrasados(self, _mock_localdate):
+        alquiler_hoy = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 18),
+            fecha_reserva=date(2026, 7, 18),
+            fecha_entrega=date(2026, 7, 19),
+            fecha_devolucion=date(2026, 7, 21),
+            cliente_nombre="Cerrar Hoy",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="2000",
+            sena="500",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_alquiler=Alquiler.EST_ENTREGADO,
+        )
+        alquiler_retrasado = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 17),
+            fecha_reserva=date(2026, 7, 17),
+            fecha_entrega=date(2026, 7, 18),
+            fecha_devolucion=date(2026, 7, 20),
+            cliente_nombre="Ya Retrasado",
+            cliente_telefono="2222",
+            persona1_nombre="Pedro",
+            total_bruto="2000",
+            sena="500",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_alquiler=Alquiler.EST_ENTREGADO,
+        )
+
+        response = self.client.get(reverse("alquileres:home"))
+
+        self.assertEqual(response.status_code, 200)
+        prioridades = response.context["prioridades"]
+        self.assertEqual(prioridades[0]["kind"], "close_today")
+        self.assertEqual(prioridades[0]["title"], alquiler_hoy.cliente_nombre)
+        self.assertEqual(prioridades[1]["kind"], "link")
+        self.assertEqual(prioridades[1]["title"], "Resolver devoluciones atrasadas")
+        self.assertContains(response, "Cerrar Hoy")
+        self.assertContains(response, "Cerrar alquiler")
+        self.assertContains(response, "Ver atrasos")
+        self.assertLess(response.content.decode().index("Cerrar Hoy"), response.content.decode().index("Ver atrasos"))
+
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 21))
+    def test_home_permite_cerrar_alquiler_que_devuelve_hoy(self, _mock_localdate):
+        saco = Prenda.objects.create(
+            codigo="SA-120",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="6",
+            estado=Prenda.E_ENT,
+        )
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 18),
+            fecha_reserva=date(2026, 7, 18),
+            fecha_entrega=date(2026, 7, 19),
+            fecha_devolucion=date(2026, 7, 21),
+            cliente_nombre="Cliente Cierre Hoy",
+            cliente_telefono="1111",
+            persona1_nombre="Pedro",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_alquiler=Alquiler.EST_ENTREGADO,
+        )
+        AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco)
+
+        response = self.client.post(reverse("alquileres:home"), {
+            "alq_id": alquiler.id,
+            "accion": "cerrar_alquiler",
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.estado_alquiler, Alquiler.EST_CERRADO)
+        self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
+        self.assertEqual(alquiler.saldo_pagado_en, date(2026, 7, 21))
+        saco.refresh_from_db()
+        self.assertEqual(saco.estado, Prenda.E_DISP)
+
     def test_entregas_muestra_ver_detallado_en_resultados_filtrados(self):
         hoy = timezone.localdate()
         saco = Prenda.objects.create(

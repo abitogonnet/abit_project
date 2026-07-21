@@ -38,6 +38,23 @@ def home(request):
         alquiler = get_object_or_404(Alquiler, id=alquiler_id)
         accion = request.POST.get("accion", "")
 
+        if accion == "cerrar_alquiler":
+            changed, error = _actualizar_estado_operativo(
+                alquiler,
+                nuevo_estado=Alquiler.EST_CERRADO,
+                auto_pagar_al_cerrar=True,
+            )
+            if error:
+                messages.error(request, error)
+            elif changed:
+                alquiler.save()
+                _sync_prendas_por_estado(alquiler)
+                messages.success(request, f"Alquiler #{alquiler.id} cerrado.")
+            else:
+                messages.info(request, "No hubo cambios.")
+
+            return redirect("alquileres:home")
+
         if accion == "marcar_entregado":
             changed, error = _actualizar_estado_operativo(
                 alquiler,
@@ -80,6 +97,14 @@ def home(request):
         .exclude(estado_alquiler=Alquiler.EST_CERRADO)
     )
     entregas_hoy = alquileres_activos.filter(fecha_entrega=hoy).count()
+    devoluciones_hoy_qs = (
+        alquileres_activos
+        .filter(fecha_devolucion=hoy)
+        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
+        .prefetch_related("items__prenda")
+        .order_by("fecha_entrega", "id")
+    )
+    devoluciones_hoy = list(devoluciones_hoy_qs)
     devoluciones_retrasadas = alquileres_activos.filter(fecha_devolucion__lt=hoy).count()
     saldos_pendientes = alquileres_activos.filter(estado_saldo=Alquiler.SAL_PEND, saldo__gt=0).count()
     alquileres_semana = alquileres_activos.filter(
@@ -136,8 +161,20 @@ def home(request):
     ]
 
     prioridades = []
+    if devoluciones_hoy:
+        _adjuntar_detalle_alquiler(devoluciones_hoy)
+        for alquiler in devoluciones_hoy:
+            prioridades.append({
+                "kind": "close_today",
+                "title": alquiler.cliente_nombre,
+                "description": alquiler.personas_resumen or alquiler.persona1_nombre or "Devolucion prevista hoy.",
+                "cta": "Cerrar alquiler",
+                "tone": "warn",
+                "alquiler_id": alquiler.id,
+            })
     if entregas_hoy:
         prioridades.append({
+            "kind": "link",
             "title": "Preparar entregas de hoy",
             "description": f"{entregas_hoy} alquiler{'es' if entregas_hoy != 1 else ''} necesita{'n' if entregas_hoy != 1 else ''} atencion operativa inmediata.",
             "href": reverse("alquileres:entregas"),
@@ -146,6 +183,7 @@ def home(request):
         })
     if devoluciones_retrasadas:
         prioridades.append({
+            "kind": "link",
             "title": "Resolver devoluciones atrasadas",
             "description": f"{devoluciones_retrasadas} caso{'s' if devoluciones_retrasadas != 1 else ''} ya esta{'n' if devoluciones_retrasadas != 1 else ''} fuera de fecha.",
             "href": reverse("alquileres:retrasados"),
@@ -154,6 +192,7 @@ def home(request):
         })
     if pendientes_origen:
         prioridades.append({
+            "kind": "link",
             "title": "Completar datos de stock",
             "description": f"Quedan {pendientes_origen} prenda{'s' if pendientes_origen != 1 else ''} sin origen cargado.",
             "href": reverse("prendas:stock"),
@@ -162,6 +201,7 @@ def home(request):
         })
     if not prioridades:
         prioridades.append({
+            "kind": "link",
             "title": "Todo bajo control",
             "description": "No hay alertas fuertes. Puedes enfocarte en nuevas reservas, stock y seguimiento fino.",
             "href": reverse("alquileres:crear"),

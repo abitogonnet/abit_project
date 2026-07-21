@@ -1436,6 +1436,19 @@ body.ab-page {
   margin-bottom: 20px;
 }
 
+.ab-pagehero-home {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.ab-pagehero-home .ab-pagehero-copy {
+  grid-column: span 2;
+}
+
+.ab-pagehero-home .ab-pagehero-panel {
+  grid-column: span 1;
+}
+
 .ab-pagehero-tight {
   align-items: start;
 }
@@ -1465,6 +1478,10 @@ body.ab-page {
   display: grid;
   gap: 18px;
   padding: 24px;
+}
+
+.ab-pagehero-panel-home {
+  align-content: start;
 }
 
 .ab-kpi-grid {
@@ -1638,8 +1655,30 @@ body.ab-page {
   margin-bottom: 20px;
 }
 
+.ab-home-hero-chips {
+  margin-top: 12px;
+}
+
 .ab-home-primary-card {
   min-height: 100%;
+}
+
+.ab-home-primary-card-rentals {
+  background:
+    radial-gradient(circle at top right, rgba(139, 94, 52, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 252, 247, 0.95), rgba(248, 241, 232, 0.95));
+}
+
+.ab-home-primary-card-stock {
+  background:
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(252, 255, 252, 0.95), rgba(241, 247, 243, 0.95));
+}
+
+.ab-home-primary-card-finance {
+  background:
+    radial-gradient(circle at top right, rgba(183, 122, 24, 0.09), transparent 34%),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.95), rgba(249, 242, 231, 0.95));
 }
 
 .ab-create-main,
@@ -1834,6 +1873,40 @@ body.ab-page {
 .ab-home-priority-list {
   display: grid;
   gap: 12px;
+}
+
+.ab-home-summary-grid {
+  gap: 10px;
+}
+
+.ab-home-summary-card.tone-1 {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 242, 235, 0.9));
+}
+
+.ab-home-summary-card.tone-2 {
+  background: linear-gradient(180deg, rgba(255, 250, 241, 0.92), rgba(249, 238, 220, 0.92));
+}
+
+.ab-home-summary-card.tone-3 {
+  background: linear-gradient(180deg, rgba(245, 252, 250, 0.92), rgba(234, 246, 242, 0.92));
+}
+
+.ab-home-summary-card.tone-4 {
+  background: linear-gradient(180deg, rgba(252, 251, 255, 0.92), rgba(244, 241, 249, 0.92));
+}
+
+.ab-priority-card-action {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.ab-priority-action-form {
+  margin: 0;
+}
+
+.ab-priority-copy {
+  min-width: 0;
 }
 
 .ab-home-movement-card {
@@ -2272,6 +2345,15 @@ body.ab-page {
 }
 
 @media (max-width: 1220px) {
+  .ab-pagehero-home {
+    grid-template-columns: 1fr;
+  }
+
+  .ab-pagehero-home .ab-pagehero-copy,
+  .ab-pagehero-home .ab-pagehero-panel {
+    grid-column: auto;
+  }
+
   .ab-search-layout,
   .ab-split-shell,
   .ab-edit-grid-modern,
@@ -2312,6 +2394,10 @@ body.ab-page {
   }
 
   .ab-inline-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ab-priority-card-action {
     grid-template-columns: 1fr;
   }
 

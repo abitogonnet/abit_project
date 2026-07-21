@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="ab-pagehero ab-pagehero-tight">
+<section class="ab-pagehero ab-pagehero-tight ab-pagehero-home">
   <div class="ab-pagehero-copy">
     <p class="ab-kicker">Tablero</p>
     <h1 class="ab-title">Menu principal</h1>
-    <div class="ab-chip-row" style="margin-top: 18px;">
+    <div class="ab-chip-row ab-home-hero-chips">
       <span class="ab-chip">{{ hoy|date:"d/m/Y" }}</span>
       <span class="ab-chip">Activos {{ resumen_operativo.alquileres_activos }}</span>
       <span class="ab-chip">Atrasos {{ kpis.1.value }}</span>
@@ -12,21 +12,21 @@
     </div>
   </div>
 
-  <aside class="ab-pagehero-panel">
-    <div class="ab-summary-grid">
-      <div class="ab-summary-card">
+  <aside class="ab-pagehero-panel ab-pagehero-panel-home">
+    <div class="ab-summary-grid ab-home-summary-grid">
+      <div class="ab-summary-card ab-home-summary-card tone-1">
         <span class="ab-small">Activos</span>
         <strong>{{ resumen_operativo.alquileres_activos }}</strong>
       </div>
-      <div class="ab-summary-card">
+      <div class="ab-summary-card ab-home-summary-card tone-2">
         <span class="ab-small">Entregas hoy</span>
         <strong>{{ kpis.0.value }}</strong>
       </div>
-      <div class="ab-summary-card">
+      <div class="ab-summary-card ab-home-summary-card tone-3">
         <span class="ab-small">Semana</span>
         <strong>{{ resumen_operativo.alquileres_semana }}</strong>
       </div>
-      <div class="ab-summary-card">
+      <div class="ab-summary-card ab-home-summary-card tone-4">
         <span class="ab-small">Stock</span>
         <strong>{{ kpis.3.value }}</strong>
       </div>
@@ -35,10 +35,9 @@
 </section>
 
 <section class="ab-home-top-grid">
-  <div class="ab-section-card ab-home-primary-card" id="menu-alquileres">
+  <div class="ab-section-card ab-home-primary-card ab-home-primary-card-rentals" id="menu-alquileres">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Alquileres</p>
         <h2 class="ab-mini-title">Alquileres</h2>
       </div>
     </div>
@@ -67,10 +66,9 @@
     </div>
   </div>
 
-  <div class="ab-section-card ab-home-primary-card" id="menu-stock">
+  <div class="ab-section-card ab-home-primary-card ab-home-primary-card-stock" id="menu-stock">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Stock</p>
         <h2 class="ab-mini-title">Stock</h2>
       </div>
     </div>
@@ -91,10 +89,9 @@
     </div>
   </div>
 
-  <div class="ab-section-card ab-home-primary-card" id="menu-finanzas">
+  <div class="ab-section-card ab-home-primary-card ab-home-primary-card-finance" id="menu-finanzas">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Finanzas</p>
         <h2 class="ab-mini-title">Finanzas</h2>
       </div>
     </div>
@@ -132,20 +129,33 @@
   <div class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Tareas pendientes</p>
         <h2 class="ab-mini-title">Tareas pendientes</h2>
       </div>
     </div>
 
     <div class="ab-home-priority-list">
       {% for item in prioridades %}
-        <article class="ab-priority-card tone-{{ item.tone }}">
-          <div>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.description }}</p>
-          </div>
-          <a class="ab-btn2" href="{{ item.href }}">{{ item.cta }}</a>
-        </article>
+        {% if item.kind == "close_today" %}
+          <article class="ab-priority-card ab-priority-card-action tone-{{ item.tone }}">
+            <form method="post" class="ab-priority-action-form">
+              {% csrf_token %}
+              <input type="hidden" name="alq_id" value="{{ item.alquiler_id }}">
+              <button class="ab-btn2" type="submit" name="accion" value="cerrar_alquiler">{{ item.cta }}</button>
+            </form>
+            <div class="ab-priority-copy">
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.description }}</p>
+            </div>
+          </article>
+        {% else %}
+          <article class="ab-priority-card tone-{{ item.tone }}">
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.description }}</p>
+            </div>
+            <a class="ab-btn2" href="{{ item.href }}">{{ item.cta }}</a>
+          </article>
+        {% endif %}
       {% endfor %}
     </div>
   </div>
@@ -153,7 +163,6 @@
   <div class="ab-section-card">
     <div class="ab-section-head">
       <div>
-        <p class="ab-kicker">Proximos movimientos</p>
         <h2 class="ab-mini-title">Proximos movimientos</h2>
       </div>
     </div>
