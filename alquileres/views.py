@@ -639,10 +639,7 @@ def _adjuntar_detalle_alquiler(alquileres):
             alquiler.accion_entrega_clase = "neutral"
             alquiler.accion_entrega_deshabilitada = False
 
-        if alquiler.estado_alquiler == Alquiler.EST_CANCELADO:
-            alquiler.accion_saldo_clase = "danger"
-            alquiler.accion_saldo_deshabilitada = True
-        elif alquiler.estado_saldo_actual == Alquiler.SAL_PAG or alquiler.saldo <= 0:
+        if alquiler.estado_saldo_actual == Alquiler.SAL_PAG or alquiler.saldo <= 0:
             alquiler.accion_saldo_clase = "ok"
             alquiler.accion_saldo_deshabilitada = not alquiler.puede_toggle_saldo
         else:

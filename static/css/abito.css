@@ -5,14 +5,14 @@
   --card: rgba(255, 249, 240, 0.93);
   --card-strong: #fffdf8;
   --ink: #2a2119;
-  --muted: #6d5b4c;
-  --line: rgba(109, 91, 76, 0.18);
-  --line-strong: rgba(109, 91, 76, 0.34);
+  --muted: #5f6d69;
+  --line: rgba(95, 109, 105, 0.18);
+  --line-strong: rgba(95, 109, 105, 0.34);
   --accent: #0f766e;
   --accent-strong: #115e59;
   --accent-soft: rgba(15, 118, 110, 0.12);
-  --secondary: #8b5e34;
-  --secondary-soft: rgba(139, 94, 52, 0.1);
+  --secondary: #2d5e5a;
+  --secondary-soft: rgba(45, 94, 90, 0.1);
   --danger: #b42318;
   --danger-soft: rgba(180, 35, 24, 0.09);
   --warn: #b77a18;
@@ -38,7 +38,7 @@ body {
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 28%),
-    radial-gradient(circle at top right, rgba(139, 94, 52, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(17, 94, 89, 0.09), transparent 24%),
     linear-gradient(180deg, #f9f3ea 0%, #f1e4d2 100%);
 }
 
@@ -193,7 +193,7 @@ main {
 
 .ab-kicker {
   margin: 0 0 8px;
-  color: var(--secondary);
+  color: var(--accent-strong);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -1150,9 +1150,9 @@ textarea.ab-inp:focus {
 }
 
 .ab-chip {
-  padding: 6px 10px;
+  padding: 7px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
   font-size: 0.84rem;
   color: var(--muted);
@@ -1324,12 +1324,14 @@ body.ab-page {
 
 .ab-app {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
 }
 
 .ab-main {
+  width: min(100%, 1500px);
+  margin: 0 auto;
   min-width: 0;
   padding: 26px 28px 42px;
   overflow: auto;
@@ -1529,7 +1531,7 @@ body.ab-page {
   padding: 24px 26px;
   background:
     radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 34%),
-    linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(246, 237, 224, 0.96));
+    linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(241, 247, 244, 0.96));
 }
 
 .ab-pagehero-panel {
@@ -1719,24 +1721,26 @@ body.ab-page {
 
 .ab-home-primary-card {
   min-height: 100%;
+  border-color: rgba(15, 118, 110, 0.16);
+  box-shadow: 0 20px 44px rgba(30, 47, 42, 0.08);
 }
 
 .ab-home-primary-card-rentals {
   background:
-    radial-gradient(circle at top right, rgba(139, 94, 52, 0.08), transparent 34%),
-    linear-gradient(180deg, rgba(255, 252, 247, 0.95), rgba(248, 241, 232, 0.95));
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(255, 253, 249, 0.98), rgba(237, 247, 243, 0.98));
 }
 
 .ab-home-primary-card-stock {
   background:
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.08), transparent 34%),
-    linear-gradient(180deg, rgba(252, 255, 252, 0.95), rgba(241, 247, 243, 0.95));
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(251, 255, 253, 0.98), rgba(232, 245, 240, 0.98));
 }
 
 .ab-home-primary-card-finance {
   background:
-    radial-gradient(circle at top right, rgba(183, 122, 24, 0.09), transparent 34%),
-    linear-gradient(180deg, rgba(255, 253, 248, 0.95), rgba(249, 242, 231, 0.95));
+    radial-gradient(circle at top right, rgba(17, 94, 89, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(255, 254, 250, 0.98), rgba(238, 245, 242, 0.98));
 }
 
 .ab-create-main,
@@ -1890,21 +1894,21 @@ body.ab-page {
   align-content: center;
   min-height: 96px;
   padding: 16px 18px;
-  border: 1px solid rgba(109, 91, 76, 0.14);
+  border: 1px solid rgba(15, 118, 110, 0.14);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.97);
   color: var(--ink);
   text-decoration: none;
   text-align: left;
-  box-shadow: 0 14px 34px rgba(47, 35, 21, 0.05);
+  box-shadow: 0 16px 30px rgba(25, 49, 42, 0.06);
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .ab-home-menu-btn:hover,
 .ab-home-menu-btn:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(15, 118, 110, 0.24);
-  box-shadow: 0 20px 40px rgba(47, 35, 21, 0.08);
+  border-color: rgba(15, 118, 110, 0.28);
+  box-shadow: 0 20px 40px rgba(25, 49, 42, 0.1);
 }
 
 .ab-home-menu-btn strong {

@@ -22,35 +22,6 @@
 </head>
 <body class="ab-page">
   <div class="ab-app" data-app-shell>
-    <div class="ab-mobilebar">
-      <button class="ab-mobilebar-toggle" type="button" aria-expanded="false" aria-controls="ab-sidebar-nav" data-sidebar-toggle>
-        Menu
-      </button>
-      <a class="ab-mobilebar-brand" href="{{ home_url }}">
-        <span class="ab-dot"></span>
-        <span>ABITO</span>
-      </a>
-      <a class="ab-mobilebar-cta" href="{{ home_url }}">Menu</a>
-    </div>
-
-    <div class="ab-sidebar-backdrop" hidden data-sidebar-backdrop></div>
-
-    <aside class="ab-sidebar" id="ab-sidebar-nav">
-      <div class="ab-sidebar-head">
-        <a class="ab-brand" href="{{ home_url }}">
-          <span class="ab-dot"></span>
-          <span>ABITO</span>
-        </a>
-      </div>
-
-      <div class="ab-sidebar-quick">
-        <a class="ab-sidebar-quick-link primary {% if request.path == alquiler_crear_url %}is-active{% endif %}" href="{{ alquiler_crear_url }}">Crear alquiler</a>
-        <a class="ab-sidebar-quick-link {% if request.path == alquiler_ver_url %}is-active{% endif %}" href="{{ alquiler_ver_url }}">Ver alquileres</a>
-        <a class="ab-sidebar-quick-link {% if request.path == entregas_url %}is-active{% endif %}" href="{{ entregas_url }}">Entregas</a>
-        <a class="ab-sidebar-quick-link {% if request.path == ruedos_url %}is-active{% endif %}" href="{{ ruedos_url }}">Ruedos</a>
-      </div>
-    </aside>
-
     <main class="ab-main">
       {% if messages %}
         <div class="ab-flash-stack">
@@ -72,36 +43,6 @@
   </div>
 
   <script>
-    (function () {
-      const app = document.querySelector("[data-app-shell]");
-      const toggle = document.querySelector("[data-sidebar-toggle]");
-      const sidebar = document.getElementById("ab-sidebar-nav");
-      const backdrop = document.querySelector("[data-sidebar-backdrop]");
-      if (!app || !toggle || !sidebar || !backdrop) return;
-
-      function setOpen(open) {
-        app.classList.toggle("is-sidebar-open", open);
-        toggle.setAttribute("aria-expanded", open ? "true" : "false");
-        backdrop.hidden = !open;
-      }
-
-      toggle.addEventListener("click", function () {
-        setOpen(!app.classList.contains("is-sidebar-open"));
-      });
-
-      backdrop.addEventListener("click", function () {
-        setOpen(false);
-      });
-
-      sidebar.querySelectorAll("a").forEach(function (link) {
-        link.addEventListener("click", function () {
-          if (window.innerWidth <= 1040) {
-            setOpen(false);
-          }
-        });
-      });
-    })();
-
     (function () {
       const availableNode = document.getElementById("ab-available-prendas");
       const availablePayload = availableNode ? JSON.parse(availableNode.textContent) : {};
