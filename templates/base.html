@@ -39,7 +39,7 @@
         {% if user.is_authenticated %}
           <a class="ab-global-btn secondary" href="{% url 'cuentas:actividad' %}">Registro de actividad</a>
           {% if user.perfil.rol == 'PROPIETARIO' %}<a class="ab-global-btn secondary" href="{% url 'cuentas:usuarios' %}">Usuarios</a>{% endif %}
-          <details class="ab-user-menu"><summary>{{ user.perfil.nombre|default:user.username }} ▾</summary><div><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cambiar usuario</button></form><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form></div></details>
+          <details class="ab-user-menu"><summary>{{ user.perfil.nombre|default:user.username }} ▾</summary><div class="ab-user-dropdown"><a href="{% url 'cuentas:cambiar_password' %}">Modificar contraseña</a><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cambiar usuario</button></form><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form></div></details>
         {% endif %}
       </div>
 

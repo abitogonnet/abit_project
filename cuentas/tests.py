@@ -27,6 +27,8 @@ class AccesoTests(TestCase):
         })
         self.assertRedirects(response, reverse("cuentas:login"))
         self.assertEqual(PerfilUsuario.objects.get().rol, PerfilUsuario.PROPIETARIO)
+        self.assertFalse(PerfilUsuario.objects.get().debe_cambiar_password)
+        self.assertTrue(User.objects.get(username="bautista").check_password("ClaveSegura-2026!"))
         self.assertRedirects(self.client.get(reverse("cuentas:configuracion_inicial")), reverse("cuentas:login"))
 
     def test_empleado_no_accede_finanzas_y_no_ve_actividad_financiera(self):
@@ -51,4 +53,36 @@ class AccesoTests(TestCase):
         user.save()
         response = self.client.post(reverse("cuentas:login"), {"username": "lucas", "password": "ClaveSegura-2026!"})
         self.assertEqual(response.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_usuario_creado_por_propietario_debe_cambiar_password(self):
+        propietario = self.crear_usuario("bautista", PerfilUsuario.PROPIETARIO)
+        propietario.perfil.debe_cambiar_password = False
+        propietario.perfil.save()
+        self.client.force_login(propietario)
+        response = self.client.post(reverse("cuentas:usuario_crear"), {
+            "nombre": "Nano", "username": "nano", "rol": PerfilUsuario.EMPLEADO,
+            "password1": "Temporal-2026!", "password2": "Temporal-2026!",
+        })
+        self.assertRedirects(response, reverse("cuentas:usuarios"))
+        self.assertTrue(User.objects.get(username="nano").perfil.debe_cambiar_password)
+
+    def test_cambio_personal_limpia_pendiente_y_mantiene_sesion(self):
+        user = self.crear_usuario("nano", PerfilUsuario.EMPLEADO)
+        self.client.force_login(user)
+        response = self.client.post(reverse("cuentas:cambiar_password"), {
+            "old_password": "ClaveSegura-2026!",
+            "new_password1": "NuevaClave-2026!",
+            "new_password2": "NuevaClave-2026!",
+        })
+        self.assertRedirects(response, reverse("alquileres:home"))
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("NuevaClave-2026!"))
+        self.assertFalse(user.perfil.debe_cambiar_password)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_logout_post_invalida_sesion(self):
+        user = self.crear_usuario("lucas", PerfilUsuario.EMPLEADO)
+        self.client.force_login(user)
+        self.assertRedirects(self.client.post(reverse("cuentas:logout")), reverse("cuentas:login"))
         self.assertNotIn("_auth_user_id", self.client.session)

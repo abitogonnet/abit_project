@@ -3,7 +3,8 @@ import os
 from datetime import datetime, time, timedelta
 
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
@@ -66,7 +67,7 @@ def configuracion_inicial(request):
                 if _hay_propietario():
                     return redirect("cuentas:login")
                 user = User.objects.create_user(form.cleaned_data["username"], password=form.cleaned_data["password1"])
-                PerfilUsuario.objects.create(user=user, nombre=form.cleaned_data["nombre"], rol=PerfilUsuario.PROPIETARIO)
+                PerfilUsuario.objects.create(user=user, nombre=form.cleaned_data["nombre"], rol=PerfilUsuario.PROPIETARIO, debe_cambiar_password=False)
             messages.success(request, "Propietario creado. Ya podés iniciar sesión.")
             return redirect("cuentas:login")
     return render(request, "cuentas/configuracion_inicial.html", {"form": form})
@@ -83,7 +84,7 @@ def usuario_crear(request):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             user = User.objects.create_user(form.cleaned_data["username"], password=form.cleaned_data["password1"])
-            PerfilUsuario.objects.create(user=user, nombre=form.cleaned_data["nombre"], rol=form.cleaned_data["rol"])
+            PerfilUsuario.objects.create(user=user, nombre=form.cleaned_data["nombre"], rol=form.cleaned_data["rol"], debe_cambiar_password=True)
         registrar_actividad(request, "Creó usuario", Actividad.USUARIOS, objeto=user, referencia=user.username)
         return redirect("cuentas:usuarios")
     return render(request, "cuentas/usuario_form.html", {"form": form, "titulo": "Crear usuario"})
@@ -128,3 +129,16 @@ def actividad(request):
     if desde: qs = qs.filter(creado_en__date__gte=desde)
     if hasta: qs = qs.filter(creado_en__date__lte=hasta)
     return render(request, "cuentas/actividad.html", {"actividades": qs[:500], "usuarios": User.objects.filter(actividades__isnull=False).distinct(), "categorias": Actividad.CATEGORIAS, "filtros": request.GET})
+
+
+def cambiar_password(request):
+    form = PasswordChangeForm(request.user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        request.user.perfil.debe_cambiar_password = False
+        request.user.perfil.save(update_fields=["debe_cambiar_password"])
+        update_session_auth_hash(request, user)
+        registrar_actividad(request, "Cambió su contraseña", Actividad.USUARIOS, objeto=user, referencia=user.username)
+        messages.success(request, "Contraseña actualizada.")
+        return redirect("alquileres:home")
+    return render(request, "cuentas/cambiar_password.html", {"form": form})

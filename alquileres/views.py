@@ -116,6 +116,15 @@ def home(request):
     ]
 
     prioridades = []
+    if getattr(getattr(request.user, "perfil", None), "debe_cambiar_password", False):
+        prioridades.append({
+            "kind": "link",
+            "title": "Modificar contraseña",
+            "description": "Reemplazá la contraseña temporal por una contraseña personal.",
+            "href": reverse("cuentas:cambiar_password"),
+            "cta": "Modificar contraseña",
+            "tone": "warn",
+        })
     if devoluciones_hoy:
         _adjuntar_detalle_alquiler(devoluciones_hoy)
         for alquiler in devoluciones_hoy:
