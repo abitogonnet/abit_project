@@ -10,6 +10,8 @@ from django.utils import timezone
 
 from alquileres.models import Alquiler
 from alquileres.services import regularizar_saldos_de_cerrados
+from cuentas.models import Actividad
+from cuentas.services import registrar_actividad
 
 from .access import require_finanzas_access
 from .forms import DivisionBienesForm, GastoForm
@@ -311,7 +313,8 @@ def crear(request):
     if request.method == "POST":
         form = GastoForm(request.POST)
         if form.is_valid():
-            form.save()
+            gasto = form.save()
+            registrar_actividad(request, "Creó gasto", Actividad.FINANZAS, objeto=gasto, referencia=str(gasto), detalle=f"${gasto.monto}", financiera=True)
             messages.success(request, "Gasto guardado.")
             return _redirect_home_with_month(month_ctx["ym_value"])
         messages.error(request, "Revisa los campos del gasto.")
@@ -339,7 +342,8 @@ def division_bienes(request):
     if request.method == "POST":
         form = DivisionBienesForm(request.POST)
         if form.is_valid():
-            form.save()
+            division = form.save()
+            registrar_actividad(request, "Creó división de bienes", Actividad.FINANZAS, objeto=division, referencia=str(division), financiera=True)
             messages.success(request, "Division de bienes guardada.")
             return _redirect_home_with_month(month_ctx["ym_value"])
         messages.error(request, "Revisa los campos de la division.")

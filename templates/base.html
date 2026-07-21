@@ -36,6 +36,11 @@
       <div class="ab-global-actions">
         <a class="ab-global-btn" href="{{ home_url }}">Volver al menu</a>
         <button class="ab-global-btn secondary" type="button" data-go-back>Atras</button>
+        {% if user.is_authenticated %}
+          <a class="ab-global-btn secondary" href="{% url 'cuentas:actividad' %}">Registro de actividad</a>
+          {% if user.perfil.rol == 'PROPIETARIO' %}<a class="ab-global-btn secondary" href="{% url 'cuentas:usuarios' %}">Usuarios</a>{% endif %}
+          <details class="ab-user-menu"><summary>{{ user.perfil.nombre|default:user.username }} ▾</summary><div><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cambiar usuario</button></form><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form></div></details>
+        {% endif %}
       </div>
 
       {% block content %}{% endblock %}

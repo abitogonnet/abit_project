@@ -24,6 +24,8 @@ from .forms import (
     talle_options_for,
 )
 from .models import Prenda
+from cuentas.models import Actividad
+from cuentas.services import registrar_actividad
 
 
 PREFIJOS = {
@@ -211,6 +213,7 @@ def crear_prenda(request):
                         obj.codigo = codigo
                         try:
                             obj.save()
+                            registrar_actividad(request, "Creó prenda", Actividad.STOCK, objeto=obj, referencia=obj.codigo)
                             messages.success(request, f"Prenda creada: {obj.codigo} ({obj.get_categoria_display()})")
                             return redirect("prendas:stock")
                         except IntegrityError:
@@ -239,7 +242,11 @@ def editar_prenda(request, pk):
     if request.method == "POST":
         form = PrendaForm(request.POST, instance=prenda)
         if form.is_valid():
+            estado_anterior = prenda.estado
             form.save()
+            registrar_actividad(request, "Modificó prenda", Actividad.STOCK, objeto=prenda, referencia=prenda.codigo)
+            if prenda.estado != estado_anterior:
+                registrar_actividad(request, "Cambió estado de prenda", Actividad.STOCK, objeto=prenda, referencia=prenda.codigo, detalle=prenda.get_estado_display())
             messages.success(request, f"Prenda actualizada: {prenda.codigo}.")
             return redirect("prendas:stock")
         messages.error(request, "Revisa los campos marcados.")
@@ -294,6 +301,8 @@ def stock(request):
 
             if actualizadas:
                 Prenda.objects.bulk_update(actualizadas, ["origen"])
+                for actualizada in actualizadas:
+                    registrar_actividad(request, "Modificó prenda", Actividad.STOCK, objeto=actualizada, referencia=actualizada.codigo, detalle="Origen actualizado")
                 total = len(actualizadas)
                 messages.success(
                     request,
@@ -322,8 +331,11 @@ def stock(request):
         estados_validos = [estado for estado, _label in Prenda.ESTADOS]
 
         if nuevo_estado in estados_validos:
+            estado_anterior = prenda.estado
             prenda.estado = nuevo_estado
             prenda.save(update_fields=["estado"])
+            if estado_anterior != nuevo_estado:
+                registrar_actividad(request, "Cambió estado de prenda", Actividad.STOCK, objeto=prenda, referencia=prenda.codigo, detalle=prenda.get_estado_display())
             messages.success(request, f"Estado actualizado: {prenda.codigo} -> {prenda.get_estado_display()}")
         else:
             messages.error(request, "Estado invalido.")

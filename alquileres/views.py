@@ -13,6 +13,8 @@ from prendas.models import Prenda
 
 from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA, VerAlquileresFiltroForm
 from .models import Alquiler, AlquilerItem
+from cuentas.models import Actividad
+from cuentas.services import registrar_actividad
 
 try:
     from visitas.models import Visita
@@ -882,6 +884,8 @@ def _toggle_saldo_pagado(alquiler: Alquiler):
 
 
 def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool:
+    estado_anterior = alquiler.estado_alquiler
+    saldo_anterior = alquiler.estado_saldo
     changed = False
     error = ""
     success_message = ""
@@ -916,6 +920,17 @@ def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool
     elif changed:
         alquiler.save()
         _sync_prendas_por_estado(alquiler)
+        if alquiler.estado_alquiler != estado_anterior:
+            eventos = {
+                Alquiler.EST_ENTREGADO: ("Marcó alquiler como entregado", Actividad.ENTREGA),
+                Alquiler.EST_CERRADO: ("Marcó alquiler como devuelto/cerrado", Actividad.DEVOLUCION),
+                Alquiler.EST_CANCELADO: ("Canceló alquiler", Actividad.ALQUILER),
+            }
+            if alquiler.estado_alquiler in eventos:
+                nombre, categoria = eventos[alquiler.estado_alquiler]
+                registrar_actividad(request, nombre, categoria, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}")
+        if alquiler.estado_saldo == Alquiler.SAL_PAG and saldo_anterior != Alquiler.SAL_PAG:
+            registrar_actividad(request, "Marcó abonado restante", Actividad.PAGO, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"${alquiler.saldo}")
         messages.success(request, success_message)
     else:
         messages.info(request, "No hubo cambios.")
@@ -1037,6 +1052,8 @@ def crear(request):
 
                 _refresh_prendas_estado(touched_prendas)
                 request.session["ultimo_mensaje_cliente"] = _armar_mensaje_cliente(alquiler)
+
+            registrar_actividad(request, "Creó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"Seña: ${alquiler.sena}")
 
             messages.success(request, "Alquiler creado. Copia el mensaje para el cliente.")
             return redirect("alquileres:crear")
@@ -1306,6 +1323,7 @@ def ver(request):
                 alquiler.delete()
                 _refresh_prendas_estado_por_ids(prenda_ids)
             messages.success(request, f"Alquiler #{alquiler_id} eliminado.")
+            registrar_actividad(request, "Canceló/eliminó alquiler", Actividad.ALQUILER, referencia=f"Alquiler #{alquiler_id}")
             return _redirect_ver_con_filtros(request)
 
         if accion == "editar":
@@ -1325,6 +1343,7 @@ def ver(request):
                     )
                     _refresh_prendas_estado_por_ids(touched_ids)
                 messages.success(request, f"Alquiler #{alquiler.id} editado.")
+                registrar_actividad(request, "Modificó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}")
                 return _redirect_ver_con_filtros(request)
 
             messages.error(request, "Revisa los datos del alquiler antes de guardar.")
@@ -1357,6 +1376,7 @@ def ver(request):
             alquiler.save()
             _sync_prendas_por_estado(alquiler)
             messages.success(request, f"Alquiler #{alquiler.id} actualizado.")
+            registrar_actividad(request, "Modificó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}")
         else:
             messages.info(request, "No hubo cambios.")
 
@@ -1377,6 +1397,7 @@ def entregas(request):
                 alquiler.delete()
                 _refresh_prendas_estado_por_ids(prenda_ids)
             messages.success(request, f"Alquiler #{alquiler_id} eliminado.")
+            registrar_actividad(request, "Canceló/eliminó alquiler", Actividad.ALQUILER, referencia=f"Alquiler #{alquiler_id}")
             return _redirect_entregas_con_filtro(request)
 
         if accion == "editar":
@@ -1396,6 +1417,7 @@ def entregas(request):
                     )
                     _refresh_prendas_estado_por_ids(touched_ids)
                 messages.success(request, f"Alquiler #{alquiler.id} editado.")
+                registrar_actividad(request, "Modificó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}")
                 return _redirect_entregas_con_filtro(request)
 
             messages.error(request, "Revisa los datos del alquiler antes de guardar.")

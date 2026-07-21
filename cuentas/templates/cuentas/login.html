@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-card ab-auth-card"><h1>Iniciar sesión</h1><p>Ingresá con tu usuario de Abito.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ next }}">{{ form.as_p }}<button class="ab-btn primary" type="submit">Ingresar</button></form></section>
+{% endblock %}

@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<section class="ab-card ab-auth-card"><h1>{{ titulo }}</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="ab-btn primary" type="submit">Guardar</button></form></section>{% endblock %}

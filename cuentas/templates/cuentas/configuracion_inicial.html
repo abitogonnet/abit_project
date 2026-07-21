@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}<section class="ab-card ab-auth-card"><h1>Configuración inicial</h1><p>Creá el primer usuario propietario. Esta pantalla se bloquea automáticamente después.</p>
+<form method="post">{% csrf_token %}<p><label>Clave secreta inicial</label><input type="password" name="setup_secret" required autocomplete="off"></p>
+<p><label>Nombre</label>{{ form.nombre }}{{ form.nombre.errors }}</p><p><label>Nombre de usuario</label>{{ form.username }}{{ form.username.errors }}</p><p><label>Contraseña</label>{{ form.password1 }}{{ form.password1.errors }}</p><p><label>Confirmación</label>{{ form.password2 }}{{ form.password2.errors }}</p>{{ form.non_field_errors }}
+<button class="ab-btn primary" type="submit">Crear propietario</button></form></section>{% endblock %}

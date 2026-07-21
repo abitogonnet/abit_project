@@ -89,7 +89,7 @@
     </div>
   </div>
 
-  <div class="ab-section-card ab-home-primary-card ab-home-primary-card-finance" id="menu-finanzas">
+  {% if user.perfil.rol != 'EMPLEADO' %}<div class="ab-section-card ab-home-primary-card ab-home-primary-card-finance" id="menu-finanzas">
     <div class="ab-section-head">
       <div>
         <h2 class="ab-mini-title">Finanzas</h2>
@@ -122,7 +122,7 @@
         <span>Caja</span>
       </a>
     </div>
-  </div>
+  </div>{% endif %}
 </section>
 
 <section class="ab-dashboard-grid ab-dashboard-grid-home-lower">
