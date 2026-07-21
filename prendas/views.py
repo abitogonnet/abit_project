@@ -346,7 +346,8 @@ def stock(request):
             prenda.estado = nuevo_estado
             prenda.save(update_fields=["estado"])
             if estado_anterior != nuevo_estado:
-                registrar_actividad(request, "Cambió estado de prenda", Actividad.STOCK, objeto=prenda, referencia=prenda.codigo, detalle=prenda.get_estado_display())
+                anterior_label = dict(Prenda.ESTADOS).get(estado_anterior, estado_anterior)
+                registrar_actividad(request, "Cambió estado de prenda", Actividad.STOCK, objeto=prenda, referencia=prenda.codigo, detalle=f"{anterior_label} → {prenda.get_estado_display()}")
             messages.success(request, f"Estado actualizado: {prenda.codigo} -> {prenda.get_estado_display()}")
         else:
             messages.error(request, "Estado invalido.")
@@ -361,6 +362,7 @@ def stock(request):
         {"label": "Disponibles", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_DISP)},
         {"label": "Reservadas", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_RES)},
         {"label": "Entregadas", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_ENT)},
+        {"label": "Lavandería", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_LAV)},
         {"label": "Danadas", "valor": sum(1 for prenda in prendas if prenda.estado == Prenda.E_DAN)},
         {"label": "Sin origen", "valor": len(prendas_sin_origen)},
     ]

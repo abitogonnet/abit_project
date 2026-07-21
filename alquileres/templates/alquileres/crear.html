@@ -36,13 +36,15 @@
         <p class="ab-kicker">Confirmacion</p>
         <h2 class="ab-mini-title">Mensaje listo</h2>
       </div>
-      <button class="ab-btn2" type="button" data-copy-message>Copiar mensaje</button>
+      <div class="ab-actions"><button class="ab-btn2" type="button" data-copy-message>Copiar mensaje</button>{% if whatsapp_url %}<a class="ab-btn" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>{% endif %}</div>
     </div>
     <div class="ab-body">
       <pre id="msgBox" class="ab-pre">{{ mensaje_cliente }}</pre>
     </div>
   </section>
 {% endif %}
+
+{% if cliente_recurrente %}<div class="ab-msg info" data-recurring-client>Este cliente ya alquiló anteriormente. Hacer 10% de descuento.</div>{% endif %}
 
 <form method="post" id="alqForm" class="ab-create-layout" data-draft-clear="{% if mensaje_cliente %}1{% else %}0{% endif %}">
   {% csrf_token %}
@@ -64,12 +66,17 @@
       </div>
 
       <div class="ab-grid">
-        <div class="col-6 ab-field">
+        <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.cliente_nombre.id_for_label }}">Nombre del cliente</label>
           {{ form.cliente_nombre }}
           {% if form.cliente_nombre.errors %}<div class="ab-field-errors">{{ form.cliente_nombre.errors }}</div>{% endif %}
         </div>
-        <div class="col-6 ab-field">
+        <div class="col-4 ab-field">
+          <label class="ab-lab" for="{{ form.cliente_dni.id_for_label }}">DNI</label>
+          {{ form.cliente_dni }}
+          {% if form.cliente_dni.errors %}<div class="ab-field-errors">{{ form.cliente_dni.errors }}</div>{% endif %}
+        </div>
+        <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.cliente_telefono.id_for_label }}">Telefono</label>
           {{ form.cliente_telefono }}
           {% if form.cliente_telefono.errors %}<div class="ab-field-errors">{{ form.cliente_telefono.errors }}</div>{% endif %}
@@ -592,6 +599,8 @@
 
     form.addEventListener("input", saveDraft);
     form.addEventListener("change", saveDraft);
+    const recurringNotice = document.querySelector("[data-recurring-client]");
+    if (recurringNotice) setTimeout(function () { recurringNotice.hidden = true; }, 7000);
   })();
 </script>
 {% endblock %}

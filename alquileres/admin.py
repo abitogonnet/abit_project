@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Alquiler, AlquilerItem
+from .models import Alquiler, AlquilerItem, Cliente
+
+admin.site.register(Cliente)
 
 class AlquilerItemInline(admin.TabularInline):
     model = AlquilerItem

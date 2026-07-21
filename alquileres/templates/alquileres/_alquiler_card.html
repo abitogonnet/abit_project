@@ -1,4 +1,4 @@
-<article class="ab-entity-card ab-rental-card">
+<article class="ab-entity-card ab-rental-card" id="alquiler-{{ a.id }}">
   <div class="ab-entity-card-head">
     <div>
       <p class="ab-entity-card-eyebrow">
@@ -199,6 +199,7 @@
   {% if show_copy_message %}
     <div class="ab-actions" style="margin-top: 18px;">
       <button class="ab-btn2" type="button" data-copy-card-message>Copiar mensaje</button>
+      {% if a.whatsapp_url %}<a class="ab-btn" href="{{ a.whatsapp_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>{% else %}<span class="ab-small">Revisá el teléfono para abrir WhatsApp.</span>{% endif %}
       <textarea class="js-copy-card-message-text" hidden>{{ a.mensaje_cliente }}</textarea>
     </div>
   {% endif %}

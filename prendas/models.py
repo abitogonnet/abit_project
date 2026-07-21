@@ -54,12 +54,14 @@ class Prenda(models.Model):
     E_DISP = "DISPONIBLE"
     E_RES = "RESERVADO"
     E_ENT = "ENTREGADO"
+    E_LAV = "LAVANDERIA"
     E_DAN = "DANADA"
 
     ESTADOS = [
         (E_DISP, "Disponible"),
         (E_RES, "Reservado"),
         (E_ENT, "Entregado"),
+        (E_LAV, "Lavandería"),
         (E_DAN, "Dañada"),
     ]
 

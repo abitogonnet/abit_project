@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight"><div class="ab-pagehero-copy"><p class="ab-kicker">Clientes</p><h1 class="ab-title">Clientes</h1></div></section>
+<section class="ab-section-card">
+  <form method="get" class="ab-inline-form-grid"><div class="ab-field"><label class="ab-lab">Nombre o DNI</label><input class="ab-inp" name="q" value="{{ query }}"></div><div><button class="ab-btn" type="submit">Buscar</button></div></form>
+  <div class="ab-table-wrap" style="margin-top:18px"><table class="ab-table"><thead><tr><th>Nombre</th><th>DNI</th><th>Alquileres</th><th>Acción</th></tr></thead><tbody>{% for cliente in clientes %}<tr><td>{{ cliente.nombre }}</td><td>{{ cliente.dni }}</td><td>{{ cliente.total_alquileres }}</td><td><a class="ab-btn2" href="{% url 'alquileres:cliente_detalle' cliente.pk %}">Ver alquileres</a></td></tr>{% empty %}<tr><td colspan="4">No se encontraron clientes.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

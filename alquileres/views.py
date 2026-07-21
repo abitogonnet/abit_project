@@ -3,7 +3,8 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.db.models import Count, Q
 from django.http import Http404
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,7 +13,8 @@ from django.utils import timezone
 from prendas.models import Prenda
 
 from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA, VerAlquileresFiltroForm
-from .models import Alquiler, AlquilerItem
+from .models import Alquiler, AlquilerItem, Cliente
+from .whatsapp import generar_enlace_whatsapp, mensaje_recordatorio
 from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
 
@@ -52,15 +54,34 @@ def home(request):
         Alquiler.objects
         .filter(estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS)
     )
-    entregas_hoy = alquileres_activos.filter(fecha_entrega=hoy).count()
+    entregas_hoy_lista = list(
+        Alquiler.objects.filter(estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO], fecha_entrega=hoy)
+        .prefetch_related("items__prenda").order_by("id")
+    )
+    entregas_hoy = len(entregas_hoy_lista)
     devoluciones_hoy_qs = (
-        alquileres_activos
-        .filter(fecha_devolucion=hoy)
+        Alquiler.objects
+        .filter(estado_alquiler=Alquiler.EST_ENTREGADO, fecha_devolucion=hoy)
         .prefetch_related("items__prenda")
         .order_by("fecha_entrega", "id")
     )
     devoluciones_hoy = list(devoluciones_hoy_qs)
-    devoluciones_retrasadas = alquileres_activos.filter(fecha_devolucion__lt=hoy).count()
+    entregas_pendientes_confirmar = list(
+        Alquiler.objects.filter(estado_alquiler=Alquiler.EST_RESERVADO, fecha_entrega__lt=hoy)
+        .prefetch_related("items__prenda").order_by("fecha_entrega", "id")
+    )
+    atrasados_lista = list(
+        Alquiler.objects.filter(estado_alquiler=Alquiler.EST_ENTREGADO, fecha_devolucion__lt=hoy)
+        .prefetch_related("items__prenda").order_by("fecha_devolucion", "id")
+    )
+    entregas_semana_lista = list(
+        Alquiler.objects.filter(
+            estado_alquiler=Alquiler.EST_RESERVADO,
+            fecha_entrega__gt=hoy,
+            fecha_entrega__lte=proximos_siete,
+        ).prefetch_related("items__prenda").order_by("fecha_entrega", "id")
+    )
+    devoluciones_retrasadas = len(atrasados_lista)
     saldos_pendientes = alquileres_activos.filter(estado_saldo=Alquiler.SAL_PEND, saldo__gt=0).count()
     alquileres_semana = alquileres_activos.filter(
         fecha_entrega__gte=hoy,
@@ -125,17 +146,9 @@ def home(request):
             "cta": "Modificar contraseña",
             "tone": "warn",
         })
-    if devoluciones_hoy:
-        _adjuntar_detalle_alquiler(devoluciones_hoy)
-        for alquiler in devoluciones_hoy:
-            prioridades.append({
-                "kind": "close_today",
-                "title": alquiler.cliente_nombre,
-                "description": f"A devolver hoy - {alquiler.personas_resumen or alquiler.persona1_nombre or 'Sin detalle de personas'}",
-                "cta": "Cerrar alquiler",
-                "tone": "warn",
-                "alquiler_id": alquiler.id,
-            })
+    listas_operativas = [entregas_hoy_lista, devoluciones_hoy, entregas_semana_lista, entregas_pendientes_confirmar, atrasados_lista]
+    for lista in listas_operativas:
+        _adjuntar_detalle_alquiler(lista)
 
     cerrado_id = request.GET.get("cerrado", "")
     if cerrado_id.isdigit():
@@ -150,24 +163,6 @@ def home(request):
                 "description": "Alquiler cerrado correctamente",
                 "tone": "ok",
             })
-    if entregas_hoy:
-        prioridades.append({
-            "kind": "link",
-            "title": "Preparar entregas de hoy",
-            "description": f"{entregas_hoy} alquiler{'es' if entregas_hoy != 1 else ''} necesita{'n' if entregas_hoy != 1 else ''} atencion operativa inmediata.",
-            "href": reverse("alquileres:entregas"),
-            "cta": "Ir a entregas",
-            "tone": "warn",
-        })
-    if devoluciones_retrasadas:
-        prioridades.append({
-            "kind": "link",
-            "title": "Resolver devoluciones atrasadas",
-            "description": f"{devoluciones_retrasadas} caso{'s' if devoluciones_retrasadas != 1 else ''} ya esta{'n' if devoluciones_retrasadas != 1 else ''} fuera de fecha.",
-            "href": reverse("alquileres:retrasados"),
-            "cta": "Ver atrasos",
-            "tone": "danger",
-        })
     if pendientes_origen:
         prioridades.append({
             "kind": "link",
@@ -248,6 +243,12 @@ def home(request):
         "hoy": hoy,
         "kpis": kpis,
         "prioridades": prioridades,
+        "entregas_hoy_lista": entregas_hoy_lista,
+        "devoluciones_hoy_lista": devoluciones_hoy,
+        "entregas_semana_lista": entregas_semana_lista,
+        "mostrar_entregas_semana": (not entregas_hoy_lista and not devoluciones_hoy) or (entregas_hoy_lista and devoluciones_hoy),
+        "entregas_pendientes_confirmar": entregas_pendientes_confirmar,
+        "atrasados_lista": atrasados_lista,
         "flujos": flujos,
         "aprendizaje": aprendizaje,
         "proximos_movimientos": proximos_movimientos,
@@ -447,6 +448,8 @@ def _badge_estado_prenda(value: str) -> str:
         return "warn"
     if value == Prenda.E_DAN:
         return "danger"
+    if value == Prenda.E_LAV:
+        return "warn"
     return "secondary"
 
 
@@ -640,6 +643,9 @@ def _adjuntar_detalle_alquiler(alquileres):
         alquiler.estado_saldo_badge = _badge_estado_saldo(alquiler.estado_saldo_actual)
         alquiler.saldo_editable = alquiler.saldo > 0
         alquiler.mensaje_cliente = _armar_mensaje_cliente_con_items(alquiler, items)
+        alquiler.whatsapp_url = generar_enlace_whatsapp(alquiler.cliente_telefono, alquiler.mensaje_cliente)
+        alquiler.recordatorio_whatsapp_url = generar_enlace_whatsapp(alquiler.cliente_telefono, mensaje_recordatorio(alquiler))
+        alquiler.ver_url = f"{reverse('alquileres:ver')}#alquiler-{alquiler.id}"
         alquiler.esta_finalizado = alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_FINALES
         alquiler.puede_marcar_entregado = alquiler.estado_alquiler == Alquiler.EST_RESERVADO
         alquiler.puede_cerrar = alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS
@@ -764,8 +770,37 @@ def _armar_mensaje_cliente(alq: Alquiler) -> str:
     return _armar_mensaje_cliente_con_items(alq, items)
 
 
+def _vincular_cliente(alquiler, dni):
+    cliente = Cliente.objects.filter(dni=dni).first()
+    recurrente = cliente is not None
+    if cliente is None:
+        try:
+            with transaction.atomic():
+                cliente = Cliente.objects.create(
+                    dni=dni,
+                    nombre=alquiler.cliente_nombre,
+                    telefono=alquiler.cliente_telefono,
+                )
+        except IntegrityError:
+            cliente = Cliente.objects.get(dni=dni)
+            recurrente = True
+    else:
+        cambios = []
+        if cliente.nombre != alquiler.cliente_nombre:
+            cliente.nombre = alquiler.cliente_nombre
+            cambios.append("nombre")
+        if cliente.telefono != alquiler.cliente_telefono:
+            cliente.telefono = alquiler.cliente_telefono
+            cambios.append("telefono")
+        if cambios:
+            cambios.append("actualizado_en")
+            cliente.save(update_fields=cambios)
+    alquiler.cliente = cliente
+    return recurrente
+
+
 def _refresh_prenda_estado(prenda: Prenda):
-    if prenda.estado == Prenda.E_DAN:
+    if prenda.estado in {Prenda.E_DAN, Prenda.E_LAV}:
         return
 
     activos = (
@@ -1018,7 +1053,7 @@ def _disponibles_por_categoria():
     grouped = {short: [] for short in SHORT_POR_CATEGORIA.values()}
     prendas = (
         Prenda.objects
-        .exclude(estado=Prenda.E_DAN)
+        .exclude(estado__in=[Prenda.E_DAN, Prenda.E_LAV])
         .order_by("categoria", "-creado_en", "-codigo")
     )
     for prenda in prendas:
@@ -1030,6 +1065,8 @@ def _disponibles_por_categoria():
 
 def crear(request):
     msg_cliente = request.session.pop("ultimo_mensaje_cliente", None)
+    whatsapp_url = request.session.pop("ultimo_whatsapp_url", "")
+    cliente_recurrente = request.session.pop("cliente_recurrente", False)
     disponibles = _disponibles_por_categoria()
 
     if request.method == "POST":
@@ -1046,11 +1083,14 @@ def crear(request):
                 alquiler.fecha_visita = alquiler.fecha_reserva
                 alquiler.estado_alquiler = Alquiler.EST_RESERVADO
                 alquiler.estado_saldo = Alquiler.SAL_PEND
+                recurrente = _vincular_cliente(alquiler, form.cleaned_data["cliente_dni"])
                 alquiler.save()
                 touched_prendas.extend(_crear_items_desde_seleccion(alquiler, selected))
 
                 _refresh_prendas_estado(touched_prendas)
                 request.session["ultimo_mensaje_cliente"] = _armar_mensaje_cliente(alquiler)
+                request.session["ultimo_whatsapp_url"] = generar_enlace_whatsapp(alquiler.cliente_telefono, request.session["ultimo_mensaje_cliente"])
+                request.session["cliente_recurrente"] = recurrente
 
             registrar_actividad(request, "Creó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"Seña: ${alquiler.sena}")
 
@@ -1072,11 +1112,20 @@ def crear(request):
     return render(request, "alquileres/crear.html", {
         "form": form,
         "mensaje_cliente": msg_cliente,
+        "whatsapp_url": whatsapp_url,
+        "cliente_recurrente": cliente_recurrente,
     })
 
 
 def _sync_prendas_por_estado(alquiler: Alquiler):
-    _refresh_prendas_estado(item.prenda for item in alquiler.items.select_related("prenda").all())
+    prendas = [item.prenda for item in alquiler.items.select_related("prenda").all()]
+    if alquiler.estado_alquiler == Alquiler.EST_CERRADO:
+        for prenda in prendas:
+            if prenda.estado != Prenda.E_DISP:
+                prenda.estado = Prenda.E_DISP
+                prenda.save(update_fields=["estado"])
+        return
+    _refresh_prendas_estado(prendas)
 
 
 def _redirect_ver_con_filtros(request):
@@ -1336,6 +1385,10 @@ def ver(request):
             if edit_form.is_valid():
                 with transaction.atomic():
                     alquiler = edit_form.save()
+                    dni = edit_form.cleaned_data.get("cliente_dni")
+                    if dni:
+                        _vincular_cliente(alquiler, dni)
+                        alquiler.save(update_fields=["cliente"])
                     touched_ids = _sync_items_alquiler(
                         alquiler,
                         edit_form.cleaned_data.get("_selected_prendas"),
@@ -1410,6 +1463,10 @@ def entregas(request):
             if edit_form.is_valid():
                 with transaction.atomic():
                     alquiler = edit_form.save()
+                    dni = edit_form.cleaned_data.get("cliente_dni")
+                    if dni:
+                        _vincular_cliente(alquiler, dni)
+                        alquiler.save(update_fields=["cliente"])
                     touched_ids = _sync_items_alquiler(
                         alquiler,
                         edit_form.cleaned_data.get("_selected_prendas"),
@@ -1467,3 +1524,18 @@ def retrasados(request):
         "hoy": hoy,
         "retrasos": retrasos,
     })
+
+
+def clientes(request):
+    query = (request.GET.get("q") or "").strip()
+    qs = Cliente.objects.annotate(total_alquileres=Count("alquileres")).order_by("nombre", "dni")
+    if query:
+        qs = qs.filter(Q(nombre__icontains=query) | Q(dni__icontains=query))
+    return render(request, "alquileres/clientes.html", {"clientes": qs, "query": query})
+
+
+def cliente_detalle(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    alquileres = list(cliente.alquileres.prefetch_related("items__prenda").order_by("-fecha_reserva", "-id"))
+    _adjuntar_detalle_alquiler(alquileres)
+    return render(request, "alquileres/cliente_detalle.html", {"cliente": cliente, "alquileres": alquileres})

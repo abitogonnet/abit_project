@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from prendas.models import Prenda
 
 from .models import Alquiler, AlquilerItem
+from .whatsapp import normalizar_telefono
 
 HTML_DATE_FORMAT = "%Y-%m-%d"
 
@@ -369,8 +370,8 @@ def _validar_prendas(
             form.add_error(fieldname, "Ese codigo no corresponde a esa categoria.")
             return None
 
-        if prenda.estado == Prenda.E_DAN and prenda.id not in allow_prenda_ids:
-            form.add_error(fieldname, "Esa prenda esta marcada como danada.")
+        if prenda.estado in {Prenda.E_DAN, Prenda.E_LAV} and prenda.id not in allow_prenda_ids:
+            form.add_error(fieldname, "Esa prenda no está disponible para alquilar.")
             return None
 
         conflicto = conflictos_by_prenda_id.get(prenda.id)
@@ -415,6 +416,11 @@ def _validar_prendas(
 
 
 class AlquilerForm(forms.ModelForm):
+    cliente_dni = forms.CharField(
+        label="DNI",
+        max_length=12,
+        widget=forms.TextInput(attrs={"class": "ab-inp", "inputmode": "numeric", "autocomplete": "off"}),
+    )
     personas_visibles = forms.IntegerField(
         required=False,
         min_value=1,
@@ -470,6 +476,18 @@ class AlquilerForm(forms.ModelForm):
 
         return cleaned
 
+    def clean_cliente_dni(self):
+        dni = "".join(char for char in (self.cleaned_data.get("cliente_dni") or "") if char.isdigit())
+        if not 7 <= len(dni) <= 9:
+            raise ValidationError("Ingresá un DNI válido, solamente con números.")
+        return dni
+
+    def clean_cliente_telefono(self):
+        telefono = (self.cleaned_data.get("cliente_telefono") or "").strip()
+        if not normalizar_telefono(telefono):
+            raise ValidationError("Ingresá un teléfono local válido, por ejemplo 2213540416.")
+        return telefono
+
 
 class VerAlquileresFiltroForm(forms.Form):
     fecha_desde = forms.DateField(
@@ -493,6 +511,12 @@ class VerAlquileresFiltroForm(forms.Form):
 
 
 class AlquilerEdicionForm(forms.ModelForm):
+    cliente_dni = forms.CharField(
+        label="DNI",
+        max_length=12,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "ab-inp", "inputmode": "numeric", "autocomplete": "off"}),
+    )
     personas_visibles = forms.IntegerField(
         required=False,
         min_value=1,
@@ -503,6 +527,8 @@ class AlquilerEdicionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         disponibles = kwargs.pop("disponibles", None) or {}
         super().__init__(*args, **kwargs)
+        if self.instance and self.instance.cliente_id:
+            self.fields["cliente_dni"].initial = self.instance.cliente.dni
         for field_name in ("fecha_reserva", "fecha_entrega", "fecha_devolucion"):
             self.fields[field_name].required = False
         _configurar_campos_prenda(
@@ -572,3 +598,12 @@ class AlquilerEdicionForm(forms.ModelForm):
                 )
 
         return cleaned
+
+    def clean_cliente_dni(self):
+        raw = (self.cleaned_data.get("cliente_dni") or "").strip()
+        if not raw and not self.instance.cliente_id:
+            return ""
+        dni = "".join(char for char in raw if char.isdigit())
+        if not 7 <= len(dni) <= 9:
+            raise ValidationError("Ingresá un DNI válido, solamente con números.")
+        return dni

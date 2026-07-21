@@ -9,6 +9,17 @@ def _q2(x: Decimal) -> Decimal:
     return (x or Decimal("0")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=80)
+    dni = models.CharField(max_length=12, unique=True, db_index=True)
+    telefono = models.CharField(max_length=30)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.nombre} - DNI {self.dni}"
+
+
 class Alquiler(models.Model):
     MAX_PERSONAS = 6
 
@@ -47,6 +58,7 @@ class Alquiler(models.Model):
     # Datos cliente
     cliente_nombre = models.CharField(max_length=80)
     cliente_telefono = models.CharField(max_length=30)
+    cliente = models.ForeignKey(Cliente, null=True, blank=True, on_delete=models.PROTECT, related_name="alquileres")
 
     # Fechas
     fecha_visita = models.DateField()

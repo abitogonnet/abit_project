@@ -39,12 +39,17 @@
           </div>
         </div>
         <div class="ab-grid">
-          <div class="col-6 ab-field">
+          <div class="{% if alquiler.cliente_id %}col-4{% else %}col-6{% endif %} ab-field">
             <label class="ab-lab">Cliente</label>
             {{ alquiler.edit_form.cliente_nombre }}
             {% if alquiler.edit_form.cliente_nombre.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_nombre.errors }}</div>{% endif %}
           </div>
-          <div class="col-6 ab-field">
+          {% if alquiler.cliente_id %}<div class="col-4 ab-field">
+            <label class="ab-lab">DNI</label>
+            {{ alquiler.edit_form.cliente_dni }}
+            {% if alquiler.edit_form.cliente_dni.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_dni.errors }}</div>{% endif %}
+          </div>{% endif %}
+          <div class="{% if alquiler.cliente_id %}col-4{% else %}col-6{% endif %} ab-field">
             <label class="ab-lab">Telefono</label>
             {{ alquiler.edit_form.cliente_telefono }}
             {% if alquiler.edit_form.cliente_telefono.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.cliente_telefono.errors }}</div>{% endif %}

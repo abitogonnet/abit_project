@@ -13,4 +13,6 @@ urlpatterns = [
     # NUEVOS
     path("entregas/", views.entregas, name="entregas"),
     path("retrasados/", views.retrasados, name="retrasados"),
+    path("clientes/", views.clientes, name="clientes"),
+    path("clientes/<int:pk>/", views.cliente_detalle, name="cliente_detalle"),
 ]
