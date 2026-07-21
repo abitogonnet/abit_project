@@ -385,6 +385,42 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(alquiler.saldo_pagado_en, date(2026, 7, 16))
 
     @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 16))
+    def test_home_permite_revertir_saldo_abonado_si_se_marco_por_error(self, _mock_localdate):
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 16),
+            fecha_reserva=date(2026, 7, 16),
+            fecha_entrega=date(2026, 7, 18),
+            fecha_devolucion=date(2026, 7, 20),
+            cliente_nombre="Cliente Reversion",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="2400",
+            sena="600",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_saldo=Alquiler.SAL_PEND,
+        )
+
+        self.client.post(reverse("alquileres:home"), {
+            "alq_id": alquiler.id,
+            "accion": "marcar_saldo_pagado",
+        }, follow=True)
+
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PAG)
+        self.assertEqual(alquiler.saldo_pagado_en, date(2026, 7, 16))
+
+        response = self.client.post(reverse("alquileres:home"), {
+            "alq_id": alquiler.id,
+            "accion": "marcar_saldo_pagado",
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.estado_saldo, Alquiler.SAL_PEND)
+        self.assertEqual(alquiler.metodo_saldo, "")
+        self.assertIsNone(alquiler.saldo_pagado_en)
+
+    @patch("alquileres.views.timezone.localdate", return_value=date(2026, 7, 16))
     def test_home_agrupa_proximos_movimientos_por_dia(self, _mock_localdate):
         primero = self._create_alquiler("Dia1-A")
         primero.fecha_entrega = date(2026, 7, 17)
@@ -554,7 +590,7 @@ class AlquileresViewsTests(TestCase):
         self.assertContains(response, "Oxford")
 
     @patch("alquileres.views.timezone.localdate", return_value=date(2026, 6, 8))
-    def test_entregas_prioriza_entrega_mas_cercana_y_deja_cerrados_al_final(self, _mock_localdate):
+    def test_entregas_prioriza_entrega_mas_cercana_y_excluye_finalizados(self, _mock_localdate):
         manana = Alquiler.objects.create(
             fecha_visita=date(2026, 6, 8),
             fecha_reserva=date(2026, 6, 8),
@@ -592,6 +628,19 @@ class AlquileresViewsTests(TestCase):
             metodo_sena=Alquiler.MP_EFEC,
             estado_alquiler=Alquiler.EST_CERRADO,
         )
+        cancelado = Alquiler.objects.create(
+            fecha_visita=date(2026, 6, 8),
+            fecha_reserva=date(2026, 6, 8),
+            fecha_entrega=date(2026, 6, 10),
+            fecha_devolucion=date(2026, 6, 12),
+            cliente_nombre="Cliente Cancelado",
+            cliente_telefono="4444",
+            persona1_nombre="Mario",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_alquiler=Alquiler.EST_CANCELADO,
+        )
 
         response = self.client.get(reverse("alquileres:entregas"), {
             "hasta": "2026-06-14",
@@ -600,7 +649,8 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         self.assertLess(content.index(f"#{manana.id}"), content.index(f"#{lejano.id}"))
-        self.assertLess(content.index(f"#{lejano.id}"), content.index(f"#{cerrado.id}"))
+        self.assertNotIn(f"#{cerrado.id}", content)
+        self.assertNotIn(f"#{cancelado.id}", content)
 
     def test_entregas_permite_editar_alquiler_desde_lista_filtrada(self):
         hoy = timezone.localdate()
@@ -741,6 +791,43 @@ class AlquileresViewsTests(TestCase):
         self.assertEqual(alquiler.metodo_sena, Alquiler.MP_TRANS)
         self.assertEqual(alquiler.total_final, 1800)
         self.assertEqual(alquiler.saldo, 1300)
+
+    def test_ver_alquileres_permite_cancelar_un_reservado_y_libera_la_prenda(self):
+        saco = Prenda.objects.create(
+            codigo="SA-041-B",
+            categoria=Prenda.C_SACO,
+            marca="Boiler",
+            color="Negro",
+            talle="4",
+            estado=Prenda.E_RES,
+        )
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 4, 16),
+            fecha_reserva=date(2026, 4, 16),
+            fecha_entrega=date(2026, 4, 20),
+            fecha_devolucion=date(2026, 4, 25),
+            cliente_nombre="Cliente Cancelado",
+            cliente_telefono="1111",
+            persona1_nombre="Juan",
+            total_bruto="1000",
+            sena="100",
+            metodo_sena=Alquiler.MP_EFEC,
+            estado_alquiler=Alquiler.EST_RESERVADO,
+        )
+        AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=saco)
+
+        response = self.client.post(reverse("alquileres:ver"), {
+            "alq_id": alquiler.id,
+            "accion": "cancelar_alquiler",
+            "fecha_desde": "",
+            "fecha_hasta": "",
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        alquiler.refresh_from_db()
+        saco.refresh_from_db()
+        self.assertEqual(alquiler.estado_alquiler, Alquiler.EST_CANCELADO)
+        self.assertEqual(saco.estado, Prenda.E_DISP)
 
     def test_ver_alquileres_muestra_boton_para_copiar_mensaje_del_cliente(self):
         saco = Prenda.objects.create(

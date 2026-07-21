@@ -182,26 +182,17 @@
                   <strong>{{ alquiler.cliente_nombre }}</strong>
                   <span>{{ alquiler.personas_resumen|default:alquiler.persona1_nombre }}</span>
                 </div>
-                <div class="ab-stack">
-                  {% if alquiler.estado_alquiler == "ENTREGADO" %}
-                    <button class="ab-btn2" type="button" disabled>Entregado</button>
-                  {% else %}
-                    <form method="post" style="margin: 0;">
-                      {% csrf_token %}
-                      <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
-                      <button class="ab-btn2" type="submit" name="accion" value="marcar_entregado">Entregado</button>
-                    </form>
-                  {% endif %}
-
-                  {% if alquiler.estado_saldo_actual == "PAGADO" or not alquiler.saldo_editable %}
-                    <button class="ab-btn2" type="button" disabled>Saldo abonado</button>
-                  {% else %}
-                    <form method="post" style="margin: 0;">
-                      {% csrf_token %}
-                      <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
-                      <button class="ab-btn2" type="submit" name="accion" value="marcar_saldo_pagado">Saldo abonado</button>
-                    </form>
-                  {% endif %}
+                <div class="ab-home-movement-actions">
+                  <form method="post" class="ab-state-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
+                    <button class="ab-state-btn is-{{ alquiler.accion_entrega_clase }}" type="submit" name="accion" value="marcar_entregado" {% if alquiler.accion_entrega_deshabilitada %}disabled{% endif %}>{{ alquiler.accion_entrega_label }}</button>
+                  </form>
+                  <form method="post" class="ab-state-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
+                    <button class="ab-state-btn is-{{ alquiler.accion_saldo_clase }}" type="submit" name="accion" value="marcar_saldo_pagado" {% if alquiler.accion_saldo_deshabilitada %}disabled{% endif %}>Saldo abonado</button>
+                  </form>
                 </div>
               </article>
             {% endfor %}

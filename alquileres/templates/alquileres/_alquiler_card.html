@@ -172,50 +172,26 @@
   {% endif %}
 
   {% if enable_update_form %}
-    <form method="post" class="ab-inline-form-grid">
+    <form method="post" class="ab-rental-actions-form">
       {% csrf_token %}
       <input type="hidden" name="alq_id" value="{{ a.id }}">
       {% for key, value in filter_hidden_fields %}
         <input type="hidden" name="{{ key }}" value="{{ value }}">
       {% endfor %}
 
-      <div class="ab-field">
-        <label class="ab-lab">Saldo</label>
-        <select class="ab-sel" name="estado_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
-          {% for value, label in estados_saldo %}
-            <option value="{{ value }}" {% if a.estado_saldo_actual == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if not a.saldo_editable %}
-          <span class="ab-small">Pago completo.</span>
-        {% endif %}
-      </div>
-
-      <div class="ab-field">
-        <label class="ab-lab">Metodo saldo</label>
-        <select class="ab-sel" name="metodo_saldo" {% if not a.saldo_editable %}disabled{% endif %}>
-          <option value="">Elegir si esta pagado</option>
-          {% for value, label in metodos_pago %}
-            <option value="{{ value }}" {% if a.metodo_saldo == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="ab-field">
-        <label class="ab-lab">Estado alquiler</label>
-        <select class="ab-sel" name="estado_alquiler">
-          {% for value, label in estados_alquiler %}
-            <option value="{{ value }}" {% if a.estado_alquiler == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="ab-field">
-        <label class="ab-lab">&nbsp;</label>
-        <div class="ab-actions">
-          <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar</button>
-          <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ a.id }}. Continuar?');">Eliminar</button>
+      <div class="ab-rental-actions-head">
+        <div>
+          <h4>Acciones rapidas</h4>
+          <span class="ab-small">Entregado, saldo, cierre o cancelacion desde la misma ficha.</span>
         </div>
+        <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar el alquiler #{{ a.id }}. Continuar?');">Eliminar</button>
+      </div>
+
+      <div class="ab-rental-action-grid">
+        <button class="ab-state-btn is-{{ a.accion_entrega_clase }}" type="submit" name="accion" value="marcar_entregado" {% if a.accion_entrega_deshabilitada %}disabled{% endif %}>{{ a.accion_entrega_label }}</button>
+        <button class="ab-state-btn is-{{ a.accion_saldo_clase }}" type="submit" name="accion" value="marcar_saldo_pagado" {% if a.accion_saldo_deshabilitada %}disabled{% endif %}>Saldo abonado</button>
+        <button class="ab-state-btn is-{{ a.accion_cierre_clase }}" type="submit" name="accion" value="cerrar_alquiler" {% if a.accion_cierre_deshabilitada %}disabled{% endif %}>{{ a.accion_cierre_label }}</button>
+        <button class="ab-state-btn is-{{ a.accion_cancelar_clase }}" type="submit" name="accion" value="cancelar_alquiler" {% if a.accion_cancelar_deshabilitada %}disabled{% endif %}>{{ a.accion_cancelar_label }}</button>
       </div>
     </form>
   {% endif %}

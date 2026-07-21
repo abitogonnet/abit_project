@@ -343,7 +343,7 @@ def _validar_prendas(
             .select_related("alquiler", "prenda")
             .filter(
                 prenda_id__in=[prenda.id for prenda in prendas_by_codigo.values()],
-                alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
+                alquiler__estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
                 alquiler__fecha_entrega__lte=fecha_devolucion,
                 alquiler__fecha_devolucion__gte=fecha_entrega,
             )

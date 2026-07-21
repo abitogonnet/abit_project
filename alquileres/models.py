@@ -16,11 +16,15 @@ class Alquiler(models.Model):
     EST_RESERVADO = "RESERVADO"
     EST_ENTREGADO = "ENTREGADO"
     EST_CERRADO = "CERRADO"
+    EST_CANCELADO = "CANCELADO"
     ESTADOS_ALQUILER = [
         (EST_RESERVADO, "Reservado"),
         (EST_ENTREGADO, "Entregado"),
         (EST_CERRADO, "Cerrado"),
+        (EST_CANCELADO, "Cancelado"),
     ]
+    ESTADOS_ALQUILER_ACTIVOS = [EST_RESERVADO, EST_ENTREGADO]
+    ESTADOS_ALQUILER_FINALES = [EST_CERRADO, EST_CANCELADO]
 
     # Estado del saldo
     SAL_PEND = "PENDIENTE"

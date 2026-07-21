@@ -38,55 +38,7 @@ def home(request):
         alquiler = get_object_or_404(Alquiler, id=alquiler_id)
         accion = request.POST.get("accion", "")
 
-        if accion == "cerrar_alquiler":
-            changed, error = _actualizar_estado_operativo(
-                alquiler,
-                nuevo_estado=Alquiler.EST_CERRADO,
-                auto_pagar_al_cerrar=True,
-            )
-            if error:
-                messages.error(request, error)
-            elif changed:
-                alquiler.save()
-                _sync_prendas_por_estado(alquiler)
-                messages.success(request, f"Alquiler #{alquiler.id} cerrado.")
-            else:
-                messages.info(request, "No hubo cambios.")
-
-            return redirect("alquileres:home")
-
-        if accion == "marcar_entregado":
-            changed, error = _actualizar_estado_operativo(
-                alquiler,
-                nuevo_estado=Alquiler.EST_ENTREGADO,
-                auto_pagar_al_entregar=True,
-            )
-            if error:
-                messages.error(request, error)
-            elif changed:
-                alquiler.save()
-                _sync_prendas_por_estado(alquiler)
-                messages.success(request, f"Alquiler #{alquiler.id} marcado como entregado.")
-            else:
-                messages.info(request, "No hubo cambios.")
-
-            return redirect("alquileres:home")
-
-        if accion == "marcar_saldo_pagado":
-            changed, error = _actualizar_estado_operativo(
-                alquiler,
-                nuevo_saldo=Alquiler.SAL_PAG,
-                permitir_pago_sin_metodo=True,
-            )
-            if error:
-                messages.error(request, error)
-            elif changed:
-                alquiler.save()
-                _sync_prendas_por_estado(alquiler)
-                messages.success(request, f"Saldo del alquiler #{alquiler.id} marcado como abonado.")
-            else:
-                messages.info(request, "No hubo cambios.")
-
+        if _procesar_accion_operativa(request, alquiler, accion):
             return redirect("alquileres:home")
 
     hoy = timezone.localdate()
@@ -94,13 +46,12 @@ def home(request):
 
     alquileres_activos = (
         Alquiler.objects
-        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
+        .filter(estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS)
     )
     entregas_hoy = alquileres_activos.filter(fecha_entrega=hoy).count()
     devoluciones_hoy_qs = (
         alquileres_activos
         .filter(fecha_devolucion=hoy)
-        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
         .prefetch_related("items__prenda")
         .order_by("fecha_entrega", "id")
     )
@@ -447,6 +398,8 @@ def _texto_ruedo_categoria(items_persona: list[dict], categoria: str) -> str:
 
 
 def _badge_estado_alquiler(value: str) -> str:
+    if value == Alquiler.EST_CANCELADO:
+        return "danger"
     if value == Alquiler.EST_CERRADO:
         return "ok"
     if value == Alquiler.EST_ENTREGADO:
@@ -473,7 +426,7 @@ def _badge_estado_prenda(value: str) -> str:
 def _orden_entrega_key(alquiler: Alquiler, hoy):
     delta_dias = (alquiler.fecha_entrega - hoy).days
     return (
-        alquiler.estado_alquiler == Alquiler.EST_CERRADO,
+        alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_FINALES,
         abs(delta_dias),
         delta_dias < 0,
         alquiler.fecha_entrega,
@@ -663,6 +616,64 @@ def _adjuntar_detalle_alquiler(alquileres):
         alquiler.estado_saldo_badge = _badge_estado_saldo(alquiler.estado_saldo_actual)
         alquiler.saldo_editable = alquiler.saldo > 0
         alquiler.mensaje_cliente = _armar_mensaje_cliente_con_items(alquiler, items)
+        alquiler.esta_finalizado = alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_FINALES
+        alquiler.puede_marcar_entregado = alquiler.estado_alquiler == Alquiler.EST_RESERVADO
+        alquiler.puede_cerrar = alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS
+        alquiler.puede_cancelar = alquiler.estado_alquiler == Alquiler.EST_RESERVADO
+        alquiler.puede_toggle_saldo = alquiler.saldo > 0 and not alquiler.esta_finalizado
+
+        if alquiler.estado_alquiler == Alquiler.EST_CANCELADO:
+            alquiler.accion_entrega_label = "Cancelado"
+            alquiler.accion_entrega_clase = "danger"
+            alquiler.accion_entrega_deshabilitada = True
+        elif alquiler.estado_alquiler == Alquiler.EST_CERRADO:
+            alquiler.accion_entrega_label = "Cerrado"
+            alquiler.accion_entrega_clase = "ok"
+            alquiler.accion_entrega_deshabilitada = True
+        elif alquiler.estado_alquiler == Alquiler.EST_ENTREGADO:
+            alquiler.accion_entrega_label = "Entregado"
+            alquiler.accion_entrega_clase = "warn"
+            alquiler.accion_entrega_deshabilitada = True
+        else:
+            alquiler.accion_entrega_label = "Entregado"
+            alquiler.accion_entrega_clase = "neutral"
+            alquiler.accion_entrega_deshabilitada = False
+
+        if alquiler.estado_alquiler == Alquiler.EST_CANCELADO:
+            alquiler.accion_saldo_clase = "danger"
+            alquiler.accion_saldo_deshabilitada = True
+        elif alquiler.estado_saldo_actual == Alquiler.SAL_PAG or alquiler.saldo <= 0:
+            alquiler.accion_saldo_clase = "ok"
+            alquiler.accion_saldo_deshabilitada = not alquiler.puede_toggle_saldo
+        else:
+            alquiler.accion_saldo_clase = "neutral"
+            alquiler.accion_saldo_deshabilitada = not alquiler.puede_toggle_saldo
+
+        if alquiler.estado_alquiler == Alquiler.EST_CANCELADO:
+            alquiler.accion_cierre_label = "Cancelado"
+            alquiler.accion_cierre_clase = "danger"
+            alquiler.accion_cierre_deshabilitada = True
+        elif alquiler.estado_alquiler == Alquiler.EST_CERRADO:
+            alquiler.accion_cierre_label = "Cerrado"
+            alquiler.accion_cierre_clase = "ok"
+            alquiler.accion_cierre_deshabilitada = True
+        else:
+            alquiler.accion_cierre_label = "Cerrar"
+            alquiler.accion_cierre_clase = "ok-soft"
+            alquiler.accion_cierre_deshabilitada = False
+
+        if alquiler.estado_alquiler == Alquiler.EST_CANCELADO:
+            alquiler.accion_cancelar_label = "Cancelado"
+            alquiler.accion_cancelar_clase = "danger"
+            alquiler.accion_cancelar_deshabilitada = True
+        elif alquiler.estado_alquiler == Alquiler.EST_CERRADO:
+            alquiler.accion_cancelar_label = "Cancelado"
+            alquiler.accion_cancelar_clase = "neutral"
+            alquiler.accion_cancelar_deshabilitada = True
+        else:
+            alquiler.accion_cancelar_label = "Cancelado"
+            alquiler.accion_cancelar_clase = "danger-soft"
+            alquiler.accion_cancelar_deshabilitada = not alquiler.puede_cancelar
 
 
 def _adjuntar_formularios_edicion(alquileres, disponibles, form_por_alquiler_id=None):
@@ -741,7 +752,7 @@ def _refresh_prenda_estado(prenda: Prenda):
         .select_related("alquiler")
         .filter(
             prenda=prenda,
-            alquiler__estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO],
+            alquiler__estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
         )
     )
 
@@ -836,6 +847,67 @@ def _actualizar_estado_operativo(
                 changed = True
 
     return changed, ""
+
+
+def _toggle_saldo_pagado(alquiler: Alquiler):
+    if alquiler.saldo <= 0:
+        return False, "", f"Saldo del alquiler #{alquiler.id} ya esta completo."
+
+    if _estado_saldo_actual(alquiler) == Alquiler.SAL_PAG:
+        changed, error = _actualizar_estado_operativo(
+            alquiler,
+            nuevo_saldo=Alquiler.SAL_PEND,
+        )
+        return changed, error, f"Saldo del alquiler #{alquiler.id} vuelto a pendiente."
+
+    changed, error = _actualizar_estado_operativo(
+        alquiler,
+        nuevo_saldo=Alquiler.SAL_PAG,
+        permitir_pago_sin_metodo=True,
+    )
+    return changed, error, f"Saldo del alquiler #{alquiler.id} marcado como abonado."
+
+
+def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool:
+    changed = False
+    error = ""
+    success_message = ""
+
+    if accion == "cerrar_alquiler":
+        changed, error = _actualizar_estado_operativo(
+            alquiler,
+            nuevo_estado=Alquiler.EST_CERRADO,
+            auto_pagar_al_cerrar=True,
+        )
+        success_message = f"Alquiler #{alquiler.id} cerrado."
+    elif accion == "marcar_entregado":
+        changed, error = _actualizar_estado_operativo(
+            alquiler,
+            nuevo_estado=Alquiler.EST_ENTREGADO,
+            auto_pagar_al_entregar=True,
+        )
+        success_message = f"Alquiler #{alquiler.id} marcado como entregado."
+    elif accion in {"marcar_saldo_pagado", "toggle_saldo_pagado"}:
+        changed, error, success_message = _toggle_saldo_pagado(alquiler)
+    elif accion == "cancelar_alquiler":
+        changed, error = _actualizar_estado_operativo(
+            alquiler,
+            nuevo_estado=Alquiler.EST_CANCELADO,
+        )
+        success_message = f"Alquiler #{alquiler.id} cancelado."
+    else:
+        return False
+
+    if error:
+        messages.error(request, error)
+    elif changed:
+        alquiler.save()
+        _sync_prendas_por_estado(alquiler)
+        messages.success(request, success_message)
+    else:
+        messages.info(request, "No hubo cambios.")
+
+    return True
 
 
 def _crear_items_desde_seleccion(alquiler: Alquiler, selected_prendas):
@@ -1024,10 +1096,10 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
 
     alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
     resumen = [
-        {"label": "Activos", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler != Alquiler.EST_CERRADO)},
+        {"label": "Activos", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS)},
         {"label": "Reservados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler == Alquiler.EST_RESERVADO)},
         {"label": "Entregados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler == Alquiler.EST_ENTREGADO)},
-        {"label": "Cerrados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler == Alquiler.EST_CERRADO)},
+        {"label": "Finalizados", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_FINALES)},
     ]
     _adjuntar_detalle_alquiler(alquileres)
 
@@ -1084,7 +1156,11 @@ def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
 
     alquileres = (
         Alquiler.objects
-        .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=hasta)
+        .filter(
+            fecha_entrega__gte=hoy,
+            fecha_entrega__lte=hasta,
+            estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
+        )
         .prefetch_related("items__prenda")
     )
     alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
@@ -1249,6 +1325,9 @@ def ver(request):
                 ),
             )
 
+        if _procesar_accion_operativa(request, alquiler, accion):
+            return _redirect_ver_con_filtros(request)
+
         changed, error = _actualizar_estado_operativo(
             alquiler,
             nuevo_estado=request.POST.get("estado_alquiler", ""),
@@ -1317,26 +1396,7 @@ def entregas(request):
                 ),
             )
 
-        if accion == "actualizar":
-            changed, error = _actualizar_estado_operativo(
-                alquiler,
-                nuevo_estado=request.POST.get("estado_alquiler", ""),
-                nuevo_saldo=request.POST.get("estado_saldo", ""),
-                metodo_saldo=(request.POST.get("metodo_saldo") or "").strip(),
-                auto_pagar_al_entregar=True,
-                auto_pagar_al_cerrar=True,
-            )
-            if error:
-                messages.error(request, error)
-                return _redirect_entregas_con_filtro(request)
-
-            if changed:
-                alquiler.save()
-                _sync_prendas_por_estado(alquiler)
-                messages.success(request, f"Alquiler #{alquiler.id} actualizado.")
-            else:
-                messages.info(request, "No hubo cambios.")
-
+        if _procesar_accion_operativa(request, alquiler, accion):
             return _redirect_entregas_con_filtro(request)
 
     return render(request, "alquileres/entregas.html", _contexto_entregas(request.GET or None))
@@ -1350,27 +1410,15 @@ def retrasados(request):
         alquiler = get_object_or_404(Alquiler, id=alquiler_id)
         accion = request.POST.get("accion", "")
 
-        if accion == "cerrar_alquiler":
-            changed, error = _actualizar_estado_operativo(
-                alquiler,
-                nuevo_estado=Alquiler.EST_CERRADO,
-                auto_pagar_al_cerrar=True,
-            )
-            if error:
-                messages.error(request, error)
-            elif changed:
-                alquiler.save()
-                _sync_prendas_por_estado(alquiler)
-                messages.success(request, f"Alquiler #{alquiler.id} cerrado.")
-            else:
-                messages.info(request, "No hubo cambios.")
-
+        if _procesar_accion_operativa(request, alquiler, accion):
             return redirect("alquileres:retrasados")
 
     alquileres = list(
         Alquiler.objects
-        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
-        .filter(fecha_devolucion__lt=hoy)
+        .filter(
+            fecha_devolucion__lt=hoy,
+            estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
+        )
         .order_by("fecha_devolucion", "fecha_entrega", "id")
         .prefetch_related("items__prenda")
     )
