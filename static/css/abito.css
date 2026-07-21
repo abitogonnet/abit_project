@@ -1726,21 +1726,24 @@ body.ab-page {
 }
 
 .ab-home-primary-card-rentals {
+  border-color: rgba(194, 65, 90, 0.24);
   background:
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 34%),
-    linear-gradient(180deg, rgba(255, 253, 249, 0.98), rgba(237, 247, 243, 0.98));
+    radial-gradient(circle at top right, rgba(244, 114, 182, 0.28), transparent 42%),
+    linear-gradient(145deg, #fff1f4 0%, #fbd8e1 100%);
 }
 
 .ab-home-primary-card-stock {
+  border-color: rgba(8, 145, 178, 0.26);
   background:
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(251, 255, 253, 0.98), rgba(232, 245, 240, 0.98));
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.3), transparent 42%),
+    linear-gradient(145deg, #ecfeff 0%, #cceef2 100%);
 }
 
 .ab-home-primary-card-finance {
+  border-color: rgba(202, 138, 4, 0.28);
   background:
-    radial-gradient(circle at top right, rgba(17, 94, 89, 0.1), transparent 34%),
-    linear-gradient(180deg, rgba(255, 254, 250, 0.98), rgba(238, 245, 242, 0.98));
+    radial-gradient(circle at top right, rgba(250, 204, 21, 0.34), transparent 42%),
+    linear-gradient(145deg, #fffbea 0%, #f9e6ad 100%);
 }
 
 .ab-create-main,
