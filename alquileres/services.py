@@ -17,19 +17,19 @@ def fecha_referencia_pago_cierre(alquiler: Alquiler):
 def regularizar_saldos_de_cerrados():
     alquileres = (
         Alquiler.objects
-        .filter(estado_alquiler=Alquiler.EST_CERRADO, saldo__gt=0)
         .filter(
-            Q(estado_saldo=Alquiler.SAL_PEND)
-            | Q(saldo_pagado_en__isnull=True)
+            Q(estado_alquiler__in=[Alquiler.EST_ENTREGADO, Alquiler.EST_CERRADO])
+            | Q(estado_saldo=Alquiler.SAL_PAG)
+            | Q(saldo__lte=0)
         )
+        .filter(Q(saldo__gt=0) | Q(estado_saldo=Alquiler.SAL_PEND) | Q(saldo_pagado_en__isnull=True))
     )
 
     actualizados = 0
     for alquiler in alquileres:
         changed = False
 
-        if alquiler.estado_saldo != Alquiler.SAL_PAG:
-            alquiler.estado_saldo = Alquiler.SAL_PAG
+        if alquiler.marcar_completamente_abonado(fecha_referencia_pago_cierre(alquiler)):
             changed = True
 
         if alquiler.saldo_pagado_en is None:
@@ -37,7 +37,7 @@ def regularizar_saldos_de_cerrados():
             changed = True
 
         if changed:
-            alquiler.save(update_fields=["estado_saldo", "saldo_pagado_en"])
+            alquiler.save(update_fields=["saldo", "estado_saldo", "saldo_pagado_en"])
             actualizados += 1
 
     return actualizados

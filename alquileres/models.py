@@ -82,9 +82,11 @@ class Alquiler(models.Model):
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
 
-    def calcular_totales(self):
-        bruto = _q2(Decimal(self.total_bruto or 0))
-        pct = Decimal(self.descuento_pct or 0)
+    @classmethod
+    def calcular_importes(cls, total_bruto, descuento_pct, sena):
+        """Única fórmula para total final y saldo contractual."""
+        bruto = _q2(Decimal(total_bruto or 0))
+        pct = Decimal(descuento_pct or 0)
         if pct < 0:
             pct = Decimal("0")
         if pct > 100:
@@ -93,21 +95,75 @@ class Alquiler(models.Model):
         desc = _q2(bruto * (pct / Decimal("100")))
         final = _q2(bruto - desc)
 
-        sena = _q2(Decimal(self.sena or 0))
+        sena = _q2(Decimal(sena or 0))
         if sena < 0:
             sena = Decimal("0")
         if sena > final:
             sena = final
 
-        saldo = _q2(final - sena)
+        return bruto, pct, desc, final, sena, _q2(final - sena)
 
+    def calcular_totales(self):
+        bruto, pct, desc, final, sena, saldo_contractual = self.calcular_importes(
+            self.total_bruto, self.descuento_pct, self.sena
+        )
+
+        self.total_bruto = bruto
+        self.descuento_pct = pct
         self.descuento_monto = desc
         self.total_final = final
         self.sena = sena
-        self.saldo = saldo
+        completamente_abonado = (
+            saldo_contractual <= 0
+            or self.estado_saldo == self.SAL_PAG
+            or self.estado_alquiler in (self.EST_ENTREGADO, self.EST_CERRADO)
+        )
+        if completamente_abonado:
+            self.saldo = Decimal("0.00")
+            self.estado_saldo = self.SAL_PAG
+            if self.saldo_pagado_en is None:
+                self.saldo_pagado_en = self.fecha_reserva or timezone.localdate()
+        else:
+            self.saldo = saldo_contractual
+            self.estado_saldo = self.SAL_PEND
 
+    @property
+    def esta_completamente_abonado(self):
+        return self.estado_saldo == self.SAL_PAG and self.saldo <= 0
+
+    @property
+    def saldo_pendiente_actual(self):
+        return Decimal("0.00") if self.esta_completamente_abonado else _q2(Decimal(self.saldo or 0))
+
+    @property
+    def saldo_contractual(self):
+        return _q2(Decimal(self.total_final or 0) - Decimal(self.sena or 0))
+
+    def marcar_completamente_abonado(self, fecha=None):
+        if self.esta_completamente_abonado:
+            return False
+        self.estado_saldo = self.SAL_PAG
+        self.saldo = Decimal("0.00")
+        if self.saldo_pagado_en is None:
+            self.saldo_pagado_en = fecha or timezone.localdate()
+        return True
+
+    def marcar_saldo_pendiente(self):
+        contractual = self.saldo_contractual
+        if contractual <= 0:
+            return False
+        self.estado_saldo = self.SAL_PEND
+        self.saldo = contractual
+        self.metodo_saldo = ""
+        self.saldo_pagado_en = None
+        return True
     def save(self, *args, **kwargs):
         self.calcular_totales()
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {
+                "total_bruto", "descuento_pct", "descuento_monto", "total_final",
+                "sena", "saldo", "estado_saldo", "saldo_pagado_en",
+            }
         super().save(*args, **kwargs)
 
     def __str__(self):

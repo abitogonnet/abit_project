@@ -460,15 +460,11 @@ def _ordenar_alquileres_por_entrega(alquileres, hoy):
 
 
 def _saldo_restante_actual(alquiler: Alquiler) -> Decimal:
-    if alquiler.saldo <= 0 or alquiler.estado_saldo == Alquiler.SAL_PAG:
-        return Decimal("0.00")
-    return alquiler.saldo
+    return alquiler.saldo_pendiente_actual
 
 
 def _estado_saldo_actual(alquiler: Alquiler) -> str:
-    if alquiler.saldo <= 0:
-        return Alquiler.SAL_PAG
-    return alquiler.estado_saldo
+    return Alquiler.SAL_PAG if alquiler.esta_completamente_abonado else Alquiler.SAL_PEND
 
 
 def _metodos_pago_actuales(alquiler: Alquiler) -> list[str]:
@@ -528,7 +524,8 @@ def _armar_mensaje_cliente_con_items(alq: Alquiler, items) -> str:
     else:
         partes.append(f"- Total final: ${alq.total_final}")
     partes.append(f"- Sena: ${alq.sena}")
-    partes.append(f"- Resta: ${alq.saldo}")
+    if not alq.esta_completamente_abonado:
+        partes.append(f"- Resta: ${alq.saldo_pendiente_actual}")
 
     return "\n".join(partes)
 
@@ -807,17 +804,17 @@ def _actualizar_estado_operativo(
     auto_pagar_al_cerrar: bool = False,
     permitir_pago_sin_metodo: bool = False,
 ):
-    saldo_editable = alquiler.saldo > 0
+    saldo_editable = alquiler.saldo_contractual > 0
     changed = False
     auto_pago = False
 
     if nuevo_estado in dict(Alquiler.ESTADOS_ALQUILER):
         if auto_pagar_al_entregar and nuevo_estado == Alquiler.EST_ENTREGADO:
-            if saldo_editable and alquiler.estado_saldo != Alquiler.SAL_PAG:
+            if saldo_editable and not alquiler.esta_completamente_abonado:
                 nuevo_saldo = Alquiler.SAL_PAG
                 auto_pago = True
         if auto_pagar_al_cerrar and nuevo_estado == Alquiler.EST_CERRADO:
-            if saldo_editable and alquiler.estado_saldo != Alquiler.SAL_PAG:
+            if saldo_editable and not alquiler.esta_completamente_abonado:
                 nuevo_saldo = Alquiler.SAL_PAG
                 auto_pago = True
 
@@ -839,33 +836,25 @@ def _actualizar_estado_operativo(
             if requires_method:
                 return False, "Para marcar saldo como pagado tienes que elegir el metodo de pago."
 
-            if alquiler.estado_saldo != Alquiler.SAL_PAG:
-                alquiler.estado_saldo = Alquiler.SAL_PAG
+            if alquiler.marcar_completamente_abonado():
                 changed = True
 
             if metodo_saldo and alquiler.metodo_saldo != metodo_saldo:
                 alquiler.metodo_saldo = metodo_saldo
                 changed = True
 
-            if alquiler.saldo_pagado_en != timezone.localdate():
+            if alquiler.saldo_pagado_en is None:
                 alquiler.saldo_pagado_en = timezone.localdate()
                 changed = True
         else:
-            if alquiler.estado_saldo != nuevo_saldo:
-                alquiler.estado_saldo = nuevo_saldo
-                changed = True
-            if alquiler.metodo_saldo:
-                alquiler.metodo_saldo = ""
-                changed = True
-            if alquiler.saldo_pagado_en is not None:
-                alquiler.saldo_pagado_en = None
+            if alquiler.marcar_saldo_pendiente():
                 changed = True
 
     return changed, ""
 
 
 def _toggle_saldo_pagado(alquiler: Alquiler):
-    if alquiler.saldo <= 0:
+    if alquiler.saldo_contractual <= 0:
         return False, "", f"Saldo del alquiler #{alquiler.id} ya esta completo."
 
     if _estado_saldo_actual(alquiler) == Alquiler.SAL_PAG:
@@ -886,6 +875,7 @@ def _toggle_saldo_pagado(alquiler: Alquiler):
 def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool:
     estado_anterior = alquiler.estado_alquiler
     saldo_anterior = alquiler.estado_saldo
+    importe_saldo_antes = alquiler.saldo_pendiente_actual
     changed = False
     error = ""
     success_message = ""
@@ -930,7 +920,7 @@ def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool
                 nombre, categoria = eventos[alquiler.estado_alquiler]
                 registrar_actividad(request, nombre, categoria, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}")
         if alquiler.estado_saldo == Alquiler.SAL_PAG and saldo_anterior != Alquiler.SAL_PAG:
-            registrar_actividad(request, "Marcó abonado restante", Actividad.PAGO, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"${alquiler.saldo}")
+            registrar_actividad(request, "Marcó abonado restante", Actividad.PAGO, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"${importe_saldo_antes}")
         messages.success(request, success_message)
     else:
         messages.info(request, "No hubo cambios.")

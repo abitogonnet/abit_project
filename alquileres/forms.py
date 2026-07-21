@@ -456,8 +456,13 @@ class AlquilerForm(forms.ModelForm):
         sena = Decimal(cleaned.get("sena") or 0)
         if total < 0:
             self.add_error("total_bruto", "El total no puede ser negativo.")
-        if sena < 0:
-            self.add_error("sena", "La sena no puede ser negativa.")
+        if sena <= 0:
+            self.add_error("sena", "La seña debe ser mayor a 0.")
+        _bruto, _pct, _desc, total_final, _sena_ajustada, _saldo = Alquiler.calcular_importes(
+            total, cleaned.get("descuento_pct"), sena
+        )
+        if sena > total_final:
+            self.add_error("sena", "La seña no puede superar el total final.")
 
         metodo_sena = (cleaned.get("metodo_sena") or "").strip()
         if sena > 0 and not metodo_sena:
@@ -534,8 +539,13 @@ class AlquilerEdicionForm(forms.ModelForm):
         sena = Decimal(cleaned.get("sena") or 0)
         if total < 0:
             self.add_error("total_bruto", "El total no puede ser negativo.")
-        if sena < 0:
-            self.add_error("sena", "La sena no puede ser negativa.")
+        if sena <= 0:
+            self.add_error("sena", "La seña debe ser mayor a 0.")
+        _bruto, _pct, _desc, total_final, _sena_ajustada, _saldo = Alquiler.calcular_importes(
+            total, cleaned.get("descuento_pct"), sena
+        )
+        if sena > total_final:
+            self.add_error("sena", "La seña no puede superar el total final.")
 
         metodo_sena = (cleaned.get("metodo_sena") or "").strip()
         if sena > 0 and not metodo_sena:
