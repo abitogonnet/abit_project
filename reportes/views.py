@@ -2,6 +2,7 @@ import csv
 from collections import defaultdict
 from datetime import date, timedelta
 import unicodedata
+from decimal import Decimal
 
 from django.db.models import Max
 from django.http import HttpResponse
@@ -378,9 +379,10 @@ def home(request):
         Alquiler.objects
         .filter(estado_saldo=Alquiler.SAL_PAG, saldo_pagado_en__isnull=False)
         .filter(saldo_pagado_en__gte=start, saldo_pagado_en__lt=end)
-        .values_list("saldo_pagado_en", "saldo", "metodo_saldo")
+        .values_list("saldo_pagado_en", "total_final", "sena", "saldo_a_favor_aplicado", "metodo_saldo")
     )
-    for paid_date, amount, method in saldos:
+    for paid_date, total_final, sena, credito, method in saldos:
+        amount = max(Decimal("0"), total_final - sena - credito)
         amount = float(amount or 0)
         method = (method or "").strip() or "SIN"
         if period == "mensual":
@@ -494,9 +496,10 @@ def exportar_excel(request):
         Alquiler.objects
         .filter(estado_saldo=Alquiler.SAL_PAG, saldo_pagado_en__isnull=False)
         .filter(saldo_pagado_en__gte=start, saldo_pagado_en__lt=end)
-        .values_list("saldo_pagado_en", "saldo", "metodo_saldo")
+        .values_list("saldo_pagado_en", "total_final", "sena", "saldo_a_favor_aplicado", "metodo_saldo")
     )
-    for paid_date, amount, method in saldos:
+    for paid_date, total_final, sena, credito, method in saldos:
+        amount = max(Decimal("0"), total_final - sena - credito)
         amount = float(amount or 0)
         method = (method or "").strip() or "SIN"
         if period == "mensual":

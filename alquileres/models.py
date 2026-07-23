@@ -13,6 +13,7 @@ class Cliente(models.Model):
     nombre = models.CharField(max_length=80)
     dni = models.CharField(max_length=12, unique=True, db_index=True)
     telefono = models.CharField(max_length=30)
+    saldo_a_favor = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
 
@@ -82,6 +83,8 @@ class Alquiler(models.Model):
 
     sena = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    saldo_a_favor_aplicado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    credito_cancelacion_generado = models.BooleanField(default=False)
 
     # ✅ Métodos (seña al crear; saldo al marcar PAGADO)
     metodo_sena = models.CharField(max_length=20, choices=METODOS_PAGO, blank=True, default="")
@@ -125,6 +128,10 @@ class Alquiler(models.Model):
         self.descuento_monto = desc
         self.total_final = final
         self.sena = sena
+        saldo_contractual = max(
+            Decimal("0.00"),
+            _q2(saldo_contractual - Decimal(self.saldo_a_favor_aplicado or 0)),
+        )
         completamente_abonado = (
             saldo_contractual <= 0
             or self.estado_saldo == self.SAL_PAG
@@ -149,7 +156,14 @@ class Alquiler(models.Model):
 
     @property
     def saldo_contractual(self):
-        return _q2(Decimal(self.total_final or 0) - Decimal(self.sena or 0))
+        return max(
+            Decimal("0.00"),
+            _q2(
+                Decimal(self.total_final or 0)
+                - Decimal(self.sena or 0)
+                - Decimal(self.saldo_a_favor_aplicado or 0)
+            ),
+        )
 
     def marcar_completamente_abonado(self, fecha=None):
         if self.esta_completamente_abonado:
@@ -216,6 +230,12 @@ class AlquilerItem(models.Model):
     ruedo_valor = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     ruedo_tipo = models.CharField(max_length=10, choices=RUEDO_TIPOS, blank=True, default="")
     notas = models.CharField(max_length=200, blank=True, default="")
+    ruedo_listo = models.BooleanField(default=False)
+    ruedo_listo_en = models.DateTimeField(null=True, blank=True)
+    ruedo_listo_por = models.ForeignKey(
+        "auth.User", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="ruedos_marcados_listos",
+    )
 
     def __str__(self):
         return f"{self.alquiler_id} - P{self.persona_num} - {self.prenda.codigo}"

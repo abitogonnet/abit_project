@@ -39,6 +39,8 @@ def iniciar_sesion(request):
         login(request, form.get_user())
         _configurar_vencimiento(request)
         next_url = request.POST.get("next") or request.GET.get("next")
+        if request.user.perfil.rol == PerfilUsuario.COSTURERA:
+            return redirect("alquileres:ruedos")
         return redirect(next_url if next_url and next_url.startswith("/") else "alquileres:home")
     return render(request, "cuentas/login.html", {"form": form, "next": request.GET.get("next", "")})
 

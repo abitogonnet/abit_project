@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -17,6 +17,7 @@ from .models import Alquiler, AlquilerItem, Cliente
 from .whatsapp import generar_enlace_whatsapp, mensaje_recordatorio
 from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
+from gastos.services import registrar_movimiento, registrar_saldo, registrar_sena, sincronizar_movimientos_alquiler
 
 try:
     from visitas.models import Visita
@@ -138,7 +139,7 @@ def home(request):
 
     prioridades = []
     if getattr(getattr(request.user, "perfil", None), "debe_cambiar_password", False):
-        prioridades.append({
+        prioridades.insert(0, {
             "kind": "link",
             "title": "Modificar contraseña",
             "description": "Reemplazá la contraseña temporal por una contraseña personal.",
@@ -164,9 +165,9 @@ def home(request):
                 "tone": "ok",
             })
     if pendientes_origen:
-        prioridades.append({
+        prioridades.insert(0, {
             "kind": "link",
-            "title": "Completar datos de stock",
+            "title": f"Corregir stock — {pendientes_origen} prendas pendientes",
             "description": f"Quedan {pendientes_origen} prenda{'s' if pendientes_origen != 1 else ''} sin origen cargado.",
             "href": reverse("prendas:stock"),
             "cta": "Corregir stock",
@@ -902,11 +903,7 @@ def _toggle_saldo_pagado(alquiler: Alquiler):
         return False, "", f"Saldo del alquiler #{alquiler.id} ya esta completo."
 
     if _estado_saldo_actual(alquiler) == Alquiler.SAL_PAG:
-        changed, error = _actualizar_estado_operativo(
-            alquiler,
-            nuevo_saldo=Alquiler.SAL_PEND,
-        )
-        return changed, error, f"Saldo del alquiler #{alquiler.id} vuelto a pendiente."
+        return False, "", f"Saldo del alquiler #{alquiler.id} ya está abonado."
 
     changed, error = _actualizar_estado_operativo(
         alquiler,
@@ -953,6 +950,21 @@ def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool
         messages.error(request, error)
     elif changed:
         alquiler.save()
+        if alquiler.estado_saldo == Alquiler.SAL_PAG and saldo_anterior != Alquiler.SAL_PAG:
+            registrar_saldo(alquiler, request.user)
+        if alquiler.estado_alquiler == Alquiler.EST_CANCELADO and not alquiler.credito_cancelacion_generado:
+            if alquiler.cliente_id and alquiler.sena > 0:
+                cliente = Cliente.objects.get(pk=alquiler.cliente_id)
+                cliente.saldo_a_favor += alquiler.sena
+                cliente.save(update_fields=["saldo_a_favor"])
+                alquiler.credito_cancelacion_generado = True
+                alquiler.save(update_fields=["credito_cancelacion_generado"])
+                registrar_movimiento(
+                    clave=f"alquiler:{alquiler.pk}:credito-cancelacion",
+                    concepto="Saldo transferido a favor del cliente",
+                    referencia=f"Alquiler #{alquiler.pk}", cliente=cliente,
+                    alquiler=alquiler, usuario=request.user, informativo=True,
+                )
         _sync_prendas_por_estado(alquiler)
         if alquiler.estado_alquiler != estado_anterior:
             eventos = {
@@ -1084,7 +1096,23 @@ def crear(request):
                 alquiler.estado_alquiler = Alquiler.EST_RESERVADO
                 alquiler.estado_saldo = Alquiler.SAL_PEND
                 recurrente = _vincular_cliente(alquiler, form.cleaned_data["cliente_dni"])
+                if form.cleaned_data.get("aplicar_saldo_a_favor"):
+                    cliente = Cliente.objects.select_for_update().get(pk=alquiler.cliente_id)
+                    credito = form.cleaned_data["monto_saldo_a_favor"]
+                    if credito > cliente.saldo_a_favor:
+                        raise IntegrityError("Saldo a favor insuficiente.")
+                    cliente.saldo_a_favor -= credito
+                    cliente.save(update_fields=["saldo_a_favor"])
+                    alquiler.saldo_a_favor_aplicado = credito
                 alquiler.save()
+                registrar_sena(alquiler, request.user)
+                if alquiler.saldo_a_favor_aplicado:
+                    registrar_movimiento(
+                        clave=f"alquiler:{alquiler.pk}:credito-aplicado",
+                        concepto="Aplicación de saldo a favor", referencia=f"Alquiler #{alquiler.pk}",
+                        usuario=request.user, alquiler=alquiler, cliente=alquiler.cliente,
+                        informativo=True,
+                    )
                 touched_prendas.extend(_crear_items_desde_seleccion(alquiler, selected))
 
                 _refresh_prendas_estado(touched_prendas)
@@ -1094,8 +1122,8 @@ def crear(request):
 
             registrar_actividad(request, "Creó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"Seña: ${alquiler.sena}")
 
-            messages.success(request, "Alquiler creado. Copia el mensaje para el cliente.")
-            return redirect("alquileres:crear")
+            messages.success(request, "Alquiler creado correctamente.")
+            return redirect(f"{reverse('alquileres:ver')}?buscar={alquiler.id}")
 
         messages.error(request, "Revisa los campos del formulario.")
     else:
@@ -1171,6 +1199,13 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         if fecha_hasta:
             alquileres = alquileres.filter(fecha_entrega__lte=fecha_hasta)
             filtros_activos = True
+        buscar = (filtros_form.cleaned_data.get("buscar") or "").strip()
+        if buscar:
+            query = Q(cliente_nombre__icontains=buscar) | Q(cliente__dni__icontains=buscar)
+            if buscar.isdigit():
+                query |= Q(id=int(buscar))
+            alquileres = alquileres.filter(query)
+            filtros_activos = True
 
     alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
     resumen = [
@@ -1207,6 +1242,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         "resumen": resumen,
         "filtros_form": filtros_form,
         "filtros_activos": filtros_activos,
+        "buscar": filtros_form["buscar"].value() or "",
         "edit_open_id": edit_open_id,
         "filter_hidden_fields": hidden_fields,
         "disponibles_json": _disponibles_payload(disponibles),
@@ -1276,6 +1312,17 @@ def _contexto_entregas(data=None, form_por_alquiler_id=None, edit_open_id=None):
 
 
 def ruedos(request):
+    if request.method == "POST":
+        item = get_object_or_404(AlquilerItem.objects.select_related("prenda"), pk=request.POST.get("item_id"))
+        if item.ruedo_valor and not item.ruedo_listo:
+            item.ruedo_listo = True
+            item.ruedo_listo_en = timezone.now()
+            item.ruedo_listo_por = request.user
+            item.save(update_fields=["ruedo_listo", "ruedo_listo_en", "ruedo_listo_por"])
+            registrar_actividad(request, f"Marcó listo el ruedo de {item.prenda.codigo}",
+                                Actividad.STOCK, objeto=item, referencia=item.prenda.codigo)
+            messages.success(request, "Ruedo marcado como listo.")
+        return redirect(f"{reverse('alquileres:ruedos')}?semana={request.POST.get('semana', '')}")
     hoy = timezone.localdate()
     semana_actual = _start_of_week(hoy)
     semana_inicio = _parse_week_value(request.GET.get("semana"), semana_actual)
@@ -1306,6 +1353,9 @@ def ruedos(request):
         mensaje_linea = f"{_detalle_prenda_ruedo_mensaje(prenda)}, {_texto_ruedo_mensaje(item)}".strip()
 
         ruedos_items.append({
+            "id": item.id,
+            "listo": item.ruedo_listo,
+            "listo_en": item.ruedo_listo_en,
             "fecha_retiro": alquiler.fecha_entrega,
             "fecha_a_hacer": fecha_a_hacer,
             "cliente_nombre": alquiler.cliente_nombre,
@@ -1385,6 +1435,7 @@ def ver(request):
             if edit_form.is_valid():
                 with transaction.atomic():
                     alquiler = edit_form.save()
+                    sincronizar_movimientos_alquiler(alquiler, request.user)
                     dni = edit_form.cleaned_data.get("cliente_dni")
                     if dni:
                         _vincular_cliente(alquiler, dni)
@@ -1463,6 +1514,7 @@ def entregas(request):
             if edit_form.is_valid():
                 with transaction.atomic():
                     alquiler = edit_form.save()
+                    sincronizar_movimientos_alquiler(alquiler, request.user)
                     dni = edit_form.cleaned_data.get("cliente_dni")
                     if dni:
                         _vincular_cliente(alquiler, dni)
@@ -1539,3 +1591,15 @@ def cliente_detalle(request, pk):
     alquileres = list(cliente.alquileres.prefetch_related("items__prenda").order_by("-fecha_reserva", "-id"))
     _adjuntar_detalle_alquiler(alquileres)
     return render(request, "alquileres/cliente_detalle.html", {"cliente": cliente, "alquileres": alquileres})
+
+
+def cliente_por_dni(request):
+    dni = "".join(c for c in request.GET.get("dni", "") if c.isdigit())
+    cliente = Cliente.objects.filter(dni=dni).first()
+    if not cliente:
+        return JsonResponse({"encontrado": False})
+    return JsonResponse({
+        "encontrado": True, "nombre": cliente.nombre, "telefono": cliente.telefono,
+        "saldo_a_favor": str(cliente.saldo_a_favor),
+        "recurrente": cliente.alquileres.exists(),
+    })

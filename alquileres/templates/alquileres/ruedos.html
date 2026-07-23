@@ -83,6 +83,7 @@
               <th>Codigo</th>
               <th>Prenda</th>
               <th>Ruedo</th>
+              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -95,6 +96,7 @@
                 <td><strong>{{ item.codigo }}</strong></td>
                 <td>{{ item.detalle }}</td>
                 <td><strong>{{ item.ruedo }}</strong></td>
+                <td>{% if item.listo %}<span class="ab-badge ok">LISTO</span>{% else %}<span class="ab-badge warn">PENDIENTE</span><form method="post">{% csrf_token %}<input type="hidden" name="item_id" value="{{ item.id }}"><input type="hidden" name="semana" value="{{ semana_value }}"><button class="ab-btn2" type="submit">Ruedo listo</button></form>{% endif %}</td>
               </tr>
             {% endfor %}
           </tbody>

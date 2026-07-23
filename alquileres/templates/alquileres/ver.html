@@ -40,6 +40,10 @@
 
     <form method="get" class="ab-inline-form-grid">
       <div class="ab-field">
+        <label class="ab-lab" for="{{ filtros_form.buscar.id_for_label }}">Cliente o DNI</label>
+        {{ filtros_form.buscar }}
+      </div>
+      <div class="ab-field">
         <label class="ab-lab" for="{{ filtros_form.fecha_desde.id_for_label }}">Desde</label>
         {{ filtros_form.fecha_desde }}
       </div>

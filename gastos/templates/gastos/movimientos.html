@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load abito_tags %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Finanzas</p><h1 class="ab-title">Movimientos</h1></div>
+<aside class="ab-pagehero-panel"><span>Saldo actual de la cuenta</span><strong class="ab-num">${{ saldo_actual|miles0 }}</strong></aside></section>
+<section class="ab-section-card">
+  <form method="get" class="ab-inline-form-grid">
+    <div class="ab-field"><label class="ab-lab">Desde</label><input class="ab-inp" type="date" name="desde" value="{{ filtros.desde }}"></div>
+    <div class="ab-field"><label class="ab-lab">Hasta</label><input class="ab-inp" type="date" name="hasta" value="{{ filtros.hasta }}"></div>
+    <div class="ab-field"><label class="ab-lab">Tipo</label><select class="ab-sel" name="tipo"><option value="">Todos</option><option value="ingresos" {% if filtros.tipo == "ingresos" %}selected{% endif %}>Ingresos</option><option value="egresos" {% if filtros.tipo == "egresos" %}selected{% endif %}>Egresos</option></select></div>
+    <div class="ab-field"><label class="ab-lab">Usuario</label><select class="ab-sel" name="usuario"><option value="">Todos</option>{% for u in usuarios %}<option value="{{ u.id }}" {% if filtros.usuario == u.id|stringformat:"s" %}selected{% endif %}>{{ u.perfil.nombre|default:u.username }}</option>{% endfor %}</select></div>
+    <div class="ab-field"><label class="ab-lab">Buscar</label><input class="ab-inp" name="q" value="{{ filtros.q }}" placeholder="Alquiler o concepto"></div>
+    <button class="ab-btn" type="submit">Filtrar</button>
+  </form>
+</section>
+<section class="ab-section-card"><div class="ab-table-wrap"><table class="ab-table"><thead><tr><th>Fecha y hora</th><th>Movimiento</th><th>Referencia</th><th>Ingreso</th><th>Egreso</th><th>Saldo acumulado</th><th>Usuario</th></tr></thead><tbody>
+{% for m in movimientos %}<tr><td>{{ m.fecha_hora|date:"d/m/Y H:i" }}</td><td>{{ m.concepto }}{% if m.informativo %} <span class="ab-pill">Informativo</span>{% endif %}</td><td>{% if m.alquiler_id %}<a href="{% url 'alquileres:ver' %}?buscar={{ m.alquiler_id }}">{{ m.referencia }}</a>{% else %}{{ m.referencia }}{% endif %}</td><td>{% if m.ingreso %}${{ m.ingreso|miles0 }}{% else %}-{% endif %}</td><td>{% if m.egreso %}${{ m.egreso|miles0 }}{% else %}-{% endif %}</td><td>${{ m.saldo_acumulado|miles0 }}</td><td>{{ m.usuario.perfil.nombre|default:m.usuario.username|default:"Sistema" }}</td></tr>
+{% empty %}<tr><td colspan="7">No hay movimientos para estos filtros.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

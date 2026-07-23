@@ -34,9 +34,11 @@
       {% endif %}
 
       <div class="ab-global-actions">
+        {% if user.is_authenticated and user.perfil.rol == 'COSTURERA' %}
+          <a class="ab-global-btn" href="{{ ruedos_url }}">Ruedos</a>
+        {% elif user.is_authenticated %}
         <a class="ab-global-btn" href="{{ home_url }}">Volver al menu</a>
         <button class="ab-global-btn secondary" type="button" data-go-back>Atras</button>
-        {% if user.is_authenticated %}
           <a class="ab-global-btn secondary" href="{% url 'cuentas:actividad' %}">Registro de actividad</a>
           <a class="ab-global-btn secondary" href="{% url 'alquileres:clientes' %}">Clientes</a>
           {% if user.perfil.rol == 'PROPIETARIO' %}<a class="ab-global-btn secondary" href="{% url 'cuentas:usuarios' %}">Usuarios</a>{% endif %}
@@ -336,6 +338,39 @@
         bindDetailPanel(details);
       });
       enhanceEditForms(document);
+    })();
+
+    (function () {
+      const guardedForms = Array.from(document.querySelectorAll("#alqForm, .js-alq-edit-form"));
+      guardedForms.forEach(function (form) {
+        let dirty = false, submitting = false;
+        form.addEventListener("input", function () { dirty = true; });
+        form.addEventListener("change", function () { dirty = true; });
+        form.addEventListener("submit", function (event) {
+          if (submitting) { event.preventDefault(); return; }
+          submitting = true; dirty = false;
+          form.querySelectorAll("button[type='submit']").forEach(function (button) {
+            button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = "Guardando…";
+          });
+        });
+        window.addEventListener("beforeunload", function (event) {
+          if (!dirty || submitting) return;
+          event.preventDefault(); event.returnValue = "";
+        });
+      });
+      document.querySelectorAll("form").forEach(function (form) {
+        if (guardedForms.includes(form) || form.dataset.submitGuard === "off") return;
+        form.addEventListener("submit", function () {
+          form.querySelectorAll("button[type='submit']").forEach(function (button) {
+            button.disabled = true;
+            if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
+            button.textContent = "Guardando…";
+          });
+        }, {once: true});
+      });
+      document.querySelectorAll(".ab-flash-stack .ab-msg").forEach(function (node) {
+        setTimeout(function () { node.hidden = true; }, 6000);
+      });
     })();
 
     (function () {

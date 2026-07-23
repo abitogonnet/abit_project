@@ -15,4 +15,5 @@ urlpatterns = [
     path("retrasados/", views.retrasados, name="retrasados"),
     path("clientes/", views.clientes, name="clientes"),
     path("clientes/<int:pk>/", views.cliente_detalle, name="cliente_detalle"),
+    path("api/clientes/por-dni/", views.cliente_por_dni, name="cliente_por_dni"),
 ]

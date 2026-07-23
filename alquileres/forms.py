@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 from prendas.models import Prenda
 
-from .models import Alquiler, AlquilerItem
+from .models import Alquiler, AlquilerItem, Cliente
 from .whatsapp import normalizar_telefono
 
 HTML_DATE_FORMAT = "%Y-%m-%d"
@@ -427,6 +427,11 @@ class AlquilerForm(forms.ModelForm):
         max_value=Alquiler.MAX_PERSONAS,
         widget=forms.HiddenInput(),
     )
+    aplicar_saldo_a_favor = forms.BooleanField(required=False)
+    monto_saldo_a_favor = forms.DecimalField(
+        required=False, min_value=Decimal("0.01"), max_digits=12, decimal_places=2,
+        widget=forms.NumberInput(attrs={"class": "ab-inp", "step": "0.01"}),
+    )
 
     class Meta:
         model = Alquiler
@@ -470,6 +475,14 @@ class AlquilerForm(forms.ModelForm):
         if sena > total_final:
             self.add_error("sena", "La seña no puede superar el total final.")
 
+        if cleaned.get("aplicar_saldo_a_favor"):
+            credito = Decimal(cleaned.get("monto_saldo_a_favor") or 0)
+            cliente = Cliente.objects.filter(dni=cleaned.get("cliente_dni")).first()
+            if not cliente or credito > cliente.saldo_a_favor:
+                self.add_error("monto_saldo_a_favor", "El cliente no tiene ese saldo a favor disponible.")
+            if credito > total_final - sena:
+                self.add_error("monto_saldo_a_favor", "El saldo aplicado supera el importe pendiente.")
+
         metodo_sena = (cleaned.get("metodo_sena") or "").strip()
         if sena > 0 and not metodo_sena:
             self.add_error("metodo_sena", "Elige el metodo de pago de la sena.")
@@ -490,6 +503,9 @@ class AlquilerForm(forms.ModelForm):
 
 
 class VerAlquileresFiltroForm(forms.Form):
+    buscar = forms.CharField(required=False, widget=forms.TextInput(attrs={
+        "class": "ab-inp", "placeholder": "Nombre, DNI o número de alquiler",
+    }))
     fecha_desde = forms.DateField(
         required=False,
         widget=_html_date_widget(),

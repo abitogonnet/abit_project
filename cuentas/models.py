@@ -6,10 +6,12 @@ class PerfilUsuario(models.Model):
     PROPIETARIO = "PROPIETARIO"
     ADMINISTRADOR = "ADMINISTRADOR"
     EMPLEADO = "EMPLEADO"
+    COSTURERA = "COSTURERA"
     ROLES = [
         (PROPIETARIO, "Propietario"),
         (ADMINISTRADOR, "Administrador"),
         (EMPLEADO, "Empleado"),
+        (COSTURERA, "Costurera"),
     ]
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="ab-msg info">Saldo a favor disponible: ${{ cliente.saldo_a_favor }}</div>
 <section class="ab-pagehero ab-pagehero-tight"><div class="ab-pagehero-copy"><p class="ab-kicker">Cliente</p><h1 class="ab-title">{{ cliente.nombre }}</h1><div class="ab-chip-row"><span class="ab-chip">DNI {{ cliente.dni }}</span><span class="ab-chip">{{ cliente.telefono }}</span></div></div></section>
 <section class="ab-section-card"><div class="ab-section-head"><div><h2 class="ab-mini-title">Historial de alquileres</h2></div></div><div class="ab-entity-list">{% for a in alquileres %}<article class="ab-entity-card"><div class="ab-entity-card-head"><div><p class="ab-entity-card-eyebrow">Alquiler #{{ a.id }} — {{ a.fecha_reserva|date:'d/m/Y' }}</p><h3>{{ a.personas_resumen }}</h3></div><a class="ab-btn2" href="{{ a.ver_url }}">Ver alquiler</a></div><div class="ab-persona-summary-list">{% for persona in a.detalle_personas %}<div class="ab-persona-summary-card"><strong>{{ persona.nombre }}</strong>{% for item in persona.items %}<span>{{ item.categoria }} {{ item.codigo }} — talle {{ item.talle }}</span>{% endfor %}</div>{% endfor %}</div></article>{% empty %}<div class="ab-empty">Este cliente todavía no tiene alquileres asociados.</div>{% endfor %}</div></section>
 {% endblock %}

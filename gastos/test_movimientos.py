@@ -1,0 +1,74 @@
+from datetime import date
+from decimal import Decimal
+
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
+
+from alquileres.models import Alquiler, Cliente
+from cuentas.models import PerfilUsuario
+from .models import Gasto, MovimientoFinanciero
+from .services import registrar_movimiento, registrar_saldo, registrar_sena, resumen_movimientos
+
+
+class MovimientosFinancierosTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("owner", password="test")
+        PerfilUsuario.objects.create(user=self.user, nombre="Owner", rol=PerfilUsuario.PROPIETARIO)
+        self.client.force_login(self.user)
+        self.cliente = Cliente.objects.create(nombre="Juan", dni="40123456", telefono="2213540416")
+
+    def alquiler(self, estado=Alquiler.EST_RESERVADO):
+        return Alquiler.objects.create(
+            cliente=self.cliente, cliente_nombre="Juan", cliente_telefono="2213540416",
+            persona1_nombre="Juan", fecha_visita=date.today(), fecha_reserva=date.today(),
+            fecha_entrega=date.today(), fecha_devolucion=date.today(),
+            total_bruto=Decimal("300000"), sena=Decimal("50000"),
+            metodo_sena=Alquiler.MP_EFEC, estado_alquiler=estado,
+        )
+
+    def test_sena_y_saldo_se_contabilizan_una_sola_vez(self):
+        alquiler = self.alquiler()
+        registrar_sena(alquiler, self.user)
+        registrar_sena(alquiler, self.user)
+        registrar_saldo(alquiler, self.user)
+        registrar_saldo(alquiler, self.user)
+        self.assertEqual(MovimientoFinanciero.objects.filter(alquiler=alquiler).count(), 2)
+        self.assertEqual(resumen_movimientos()["saldo"], Decimal("300000"))
+
+    def test_entregado_y_cierre_posterior_no_duplican_saldo(self):
+        alquiler = self.alquiler()
+        registrar_sena(alquiler, self.user)
+        self.client.post(reverse("alquileres:home"), {"alq_id": alquiler.id, "accion": "marcar_entregado"})
+        self.client.post(reverse("alquileres:home"), {"alq_id": alquiler.id, "accion": "cerrar_alquiler"})
+        self.assertEqual(MovimientoFinanciero.objects.filter(clave=f"alquiler:{alquiler.id}:saldo").count(), 1)
+        self.assertEqual(resumen_movimientos()["saldo"], Decimal("300000"))
+
+    def test_cierre_directo_contabiliza_restante_y_cancelado_no(self):
+        cerrado = self.alquiler()
+        registrar_sena(cerrado, self.user)
+        self.client.post(reverse("alquileres:home"), {"alq_id": cerrado.id, "accion": "cerrar_alquiler"})
+        cancelado = self.alquiler()
+        registrar_sena(cancelado, self.user)
+        self.client.post(reverse("alquileres:home"), {"alq_id": cancelado.id, "accion": "cancelar_alquiler"})
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.saldo_a_favor, Decimal("50000"))
+        self.assertFalse(MovimientoFinanciero.objects.filter(clave=f"alquiler:{cancelado.id}:saldo").exists())
+        self.assertEqual(resumen_movimientos()["saldo"], Decimal("350000"))
+
+    def test_gasto_reconcilia_saldo(self):
+        alquiler = self.alquiler()
+        registrar_sena(alquiler, self.user)
+        gasto = Gasto.objects.create(categoria="Lavandería", monto=Decimal("40000"))
+        registrar_movimiento(clave=f"gasto:{gasto.id}", concepto="Gasto", referencia="Gasto",
+                             egreso=gasto.monto, gasto=gasto, usuario=self.user)
+        self.assertEqual(resumen_movimientos()["saldo"], Decimal("10000"))
+
+    def test_planilla_movimientos_es_privada_y_renderiza(self):
+        response = self.client.get(reverse("gastos:movimientos"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Saldo actual de la cuenta")
+        empleado = User.objects.create_user("empleado", password="test")
+        PerfilUsuario.objects.create(user=empleado, nombre="Empleado", rol=PerfilUsuario.EMPLEADO)
+        self.client.force_login(empleado)
+        self.assertEqual(self.client.get(reverse("gastos:movimientos")).status_code, 403)

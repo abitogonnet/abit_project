@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 
 
@@ -18,6 +19,24 @@ class Gasto(models.Model):
 
     def __str__(self):
         return f"{self.fecha} - {self.categoria} - ${self.monto}"
+
+
+class MovimientoFinanciero(models.Model):
+    clave = models.CharField(max_length=100, unique=True)
+    fecha_hora = models.DateTimeField(default=timezone.now, db_index=True)
+    concepto = models.CharField(max_length=100)
+    referencia = models.CharField(max_length=160, blank=True)
+    ingreso = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    egreso = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    informativo = models.BooleanField(default=False, db_index=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    alquiler = models.ForeignKey("alquileres.Alquiler", null=True, blank=True, on_delete=models.SET_NULL)
+    gasto = models.ForeignKey(Gasto, null=True, blank=True, on_delete=models.SET_NULL)
+    division = models.ForeignKey("DivisionBienes", null=True, blank=True, on_delete=models.SET_NULL)
+    cliente = models.ForeignKey("alquileres.Cliente", null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        ordering = ["-fecha_hora", "-id"]
 
 
 class DivisionBienes(models.Model):

@@ -74,6 +74,7 @@
         <div class="col-4 ab-field">
           <label class="ab-lab" for="{{ form.cliente_dni.id_for_label }}">DNI</label>
           {{ form.cliente_dni }}
+          <div class="ab-small" data-client-lookup-status></div>
           {% if form.cliente_dni.errors %}<div class="ab-field-errors">{{ form.cliente_dni.errors }}</div>{% endif %}
         </div>
         <div class="col-4 ab-field">
@@ -126,10 +127,10 @@
             {% if not section.visible %}hidden{% endif %}
           >
             <div class="ab-person-section-head">
-              <h3>Persona {{ section.number }}</h3>
+              <button class="ab-btn2" type="button" data-persona-toggle><span data-persona-arrow>▼</span> Persona {{ section.number }} <span data-persona-title></span></button>
               <span class="ab-chip">{{ section.badge }}</span>
             </div>
-
+            <div data-persona-content>
             <div class="ab-field">
               <label class="ab-lab" for="{{ section.name_field.id_for_label }}">Nombre persona {{ section.number }}</label>
               {{ section.name_field }}
@@ -169,6 +170,7 @@
                   {% endif %}
                 </article>
               {% endfor %}
+            </div>
             </div>
           </section>
         {% endfor %}
@@ -214,6 +216,15 @@
         <div class="col-4 ab-field">
           <label class="ab-lab">Saldo restante</label>
           <input class="ab-inp" id="saldo_ui" type="text" readonly>
+        </div>
+        <div class="col-4 ab-field">
+          <label class="ab-lab">{{ form.aplicar_saldo_a_favor }} Aplicar saldo a favor</label>
+          <span class="ab-small">No genera un nuevo ingreso.</span>
+        </div>
+        <div class="col-4 ab-field">
+          <label class="ab-lab" for="{{ form.monto_saldo_a_favor.id_for_label }}">Monto a aplicar</label>
+          {{ form.monto_saldo_a_favor }}
+          {% if form.monto_saldo_a_favor.errors %}<div class="ab-field-errors">{{ form.monto_saldo_a_favor.errors }}</div>{% endif %}
         </div>
       </div>
     </section>
@@ -508,8 +519,10 @@
       const total = num((document.getElementById("id_total_bruto") || {}).value);
       const pct = Math.min(Math.max(num((document.getElementById("id_descuento_pct") || {}).value), 0), 100);
       const sena = Math.max(num((document.getElementById("id_sena") || {}).value), 0);
+      const credito = (document.getElementById("id_aplicar_saldo_a_favor") || {}).checked
+        ? Math.max(num((document.getElementById("id_monto_saldo_a_favor") || {}).value), 0) : 0;
       const totalFinal = Math.max(total - (total * pct / 100), 0);
-      const saldo = Math.max(totalFinal - sena, 0);
+      const saldo = Math.max(totalFinal - sena - credito, 0);
       const personasActivas = visiblePersonaCount();
       const prendasTotales = personaSections
         .filter(function (section) {
@@ -601,6 +614,44 @@
     form.addEventListener("change", saveDraft);
     const recurringNotice = document.querySelector("[data-recurring-client]");
     if (recurringNotice) setTimeout(function () { recurringNotice.hidden = true; }, 7000);
+
+    let lookupTimer;
+    const dniInput = document.getElementById("id_cliente_dni");
+    const nameInput = document.getElementById("id_cliente_nombre");
+    const phoneInput = document.getElementById("id_cliente_telefono");
+    const lookupStatus = document.querySelector("[data-client-lookup-status]");
+    if (dniInput) dniInput.addEventListener("input", function () {
+      clearTimeout(lookupTimer);
+      const dni = dniInput.value.replace(/\D/g, "");
+      if (dni.length < 7) return;
+      lookupTimer = setTimeout(async function () {
+        const response = await fetch("{% url 'alquileres:cliente_por_dni' %}?dni=" + encodeURIComponent(dni));
+        const data = await response.json();
+        if (!data.encontrado) { if (lookupStatus) lookupStatus.textContent = "Cliente nuevo"; return; }
+        nameInput.value = data.nombre; phoneInput.value = data.telefono;
+        if (lookupStatus) {
+          lookupStatus.textContent = "Este cliente ya alquiló anteriormente. Hacer 10% de descuento."
+            + (data.saldo_a_favor !== "0.00" ? " Tiene $" + data.saldo_a_favor + " de saldo a favor." : "");
+          setTimeout(function () { lookupStatus.textContent = ""; }, 7000);
+        }
+        updateSummary(); saveDraft();
+      }, 350);
+    });
+
+    personaSections.forEach(function (section) {
+      const toggle = section.querySelector("[data-persona-toggle]");
+      const content = section.querySelector("[data-persona-content]");
+      const arrow = section.querySelector("[data-persona-arrow]");
+      const title = section.querySelector("[data-persona-title]");
+      const name = section.querySelector("input[name*='persona'][name$='_nombre']");
+      if (!toggle || !content) return;
+      function syncTitle() { if (title) title.textContent = name && name.value ? "— " + name.value : ""; }
+      toggle.addEventListener("click", function () {
+        content.hidden = !content.hidden; if (arrow) arrow.textContent = content.hidden ? "▶" : "▼";
+      });
+      if (name) name.addEventListener("input", syncTitle);
+      syncTitle();
+    });
   })();
 </script>
 {% endblock %}

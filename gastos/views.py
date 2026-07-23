@@ -15,7 +15,8 @@ from cuentas.services import registrar_actividad
 
 from .access import require_finanzas_access
 from .forms import DivisionBienesForm, GastoForm
-from .models import DivisionBienes, Gasto
+from .models import DivisionBienes, Gasto, MovimientoFinanciero
+from .services import registrar_movimiento, resumen_movimientos
 
 MESES_ES = [
     "enero",
@@ -159,24 +160,31 @@ def _aggregate_alquiler_totals(*, start=None, end=None, account_end=None):
 
 
 def _resumen_cuenta(*, start=None, end=None, account_end=None):
+    # La cuenta y la planilla usan exactamente el mismo libro mayor.
     alquiler_totals = _aggregate_alquiler_totals(start=start, end=end, account_end=account_end)
     gasto_totals = _aggregate_period_totals(Gasto, "monto", start=start, end=end, account_end=account_end)
     division_totals = _aggregate_period_totals(DivisionBienes, "monto_total", start=start, end=end, account_end=account_end)
 
+    cuenta_qs = MovimientoFinanciero.objects.filter(informativo=False)
+    if account_end:
+        cuenta_qs = cuenta_qs.filter(fecha_hora__date__lt=account_end)
+    cuenta = cuenta_qs.aggregate(i=Sum("ingreso"), e=Sum("egreso"))
+    total_ingresos_cuenta = cuenta["i"] or Decimal("0")
+    total_egresos_cuenta = cuenta["e"] or Decimal("0")
+    saldo_actual_cuenta = total_ingresos_cuenta - total_egresos_cuenta
     total_senas_cuenta = alquiler_totals["total_senas_cuenta"]
-    total_saldos_pagados_cuenta = alquiler_totals["total_saldos_pagados_cuenta"]
-    total_ingresos_cuenta = total_senas_cuenta + total_saldos_pagados_cuenta
+    total_saldos_pagados_cuenta = total_ingresos_cuenta - total_senas_cuenta
     total_gastos_cuenta = gasto_totals["total_cuenta"]
     total_dividido_cuenta = division_totals["total_cuenta"]
-    saldo_actual_cuenta = total_ingresos_cuenta - total_gastos_cuenta - total_dividido_cuenta
 
+    periodo = resumen_movimientos(desde=start, hasta=(end - timedelta(days=1)) if start and end else None)
     total_senas_periodo = alquiler_totals["total_senas_periodo"]
-    total_saldos_pagados_periodo = alquiler_totals["total_saldos_pagados_periodo"]
+    total_saldos_pagados_periodo = periodo["ingresos"] - total_senas_periodo
     total_gastos_periodo = gasto_totals["total_periodo"]
     total_dividido_periodo = division_totals["total_periodo"]
 
-    total_ingresos_periodo = total_senas_periodo + total_saldos_pagados_periodo
-    saldo_neto_periodo = total_ingresos_periodo - total_gastos_periodo - total_dividido_periodo
+    total_ingresos_periodo = periodo["ingresos"]
+    saldo_neto_periodo = periodo["saldo"]
 
     return {
         "saldo_actual_cuenta": saldo_actual_cuenta,
@@ -314,6 +322,11 @@ def crear(request):
         form = GastoForm(request.POST)
         if form.is_valid():
             gasto = form.save()
+            registrar_movimiento(
+                clave=f"gasto:{gasto.pk}", concepto=f"Gasto {gasto.categoria}",
+                referencia=f"Gasto #{gasto.pk}", egreso=gasto.monto,
+                usuario=request.user, gasto=gasto,
+            )
             registrar_actividad(request, "Creó gasto", Actividad.FINANZAS, objeto=gasto, referencia=str(gasto), detalle=f"${gasto.monto}", financiera=True)
             messages.success(request, "Gasto guardado.")
             return _redirect_home_with_month(month_ctx["ym_value"])
@@ -343,6 +356,11 @@ def division_bienes(request):
         form = DivisionBienesForm(request.POST)
         if form.is_valid():
             division = form.save()
+            registrar_movimiento(
+                clave=f"division:{division.pk}", concepto="División de bienes",
+                referencia=f"División #{division.pk}", egreso=division.monto_total,
+                usuario=request.user, division=division,
+            )
             registrar_actividad(request, "Creó división de bienes", Actividad.FINANZAS, objeto=division, referencia=str(division), financiera=True)
             messages.success(request, "Division de bienes guardada.")
             return _redirect_home_with_month(month_ctx["ym_value"])
@@ -362,4 +380,31 @@ def division_bienes(request):
         "division_cards": division_summary["cards"],
         "division_mode_label": division_summary["mode_label"],
         **_resumen_cuenta(start=month_ctx["start"], end=month_ctx["end"]),
+    })
+
+
+def movimientos(request):
+    access_response = require_finanzas_access(request)
+    if access_response:
+        return access_response
+    qs = MovimientoFinanciero.objects.select_related("usuario", "alquiler", "gasto", "division")
+    desde, hasta = request.GET.get("desde", ""), request.GET.get("hasta", "")
+    tipo, usuario, q = request.GET.get("tipo", ""), request.GET.get("usuario", ""), (request.GET.get("q") or "").strip()
+    if desde: qs = qs.filter(fecha_hora__date__gte=desde)
+    if hasta: qs = qs.filter(fecha_hora__date__lte=hasta)
+    if tipo == "ingresos": qs = qs.filter(ingreso__gt=0)
+    if tipo == "egresos": qs = qs.filter(egreso__gt=0)
+    if usuario.isdigit(): qs = qs.filter(usuario_id=int(usuario))
+    if q: qs = qs.filter(Q(concepto__icontains=q) | Q(referencia__icontains=q))
+    rows = list(qs.order_by("fecha_hora", "id"))
+    saldo = Decimal("0")
+    for row in rows:
+        saldo += row.ingreso - row.egreso
+        row.saldo_acumulado = saldo
+    rows.reverse()
+    from django.contrib.auth.models import User
+    return render(request, "gastos/movimientos.html", {
+        "movimientos": rows, "saldo_actual": resumen_movimientos()["saldo"],
+        "usuarios": User.objects.filter(movimientofinanciero__isnull=False).distinct(),
+        "filtros": request.GET,
     })
