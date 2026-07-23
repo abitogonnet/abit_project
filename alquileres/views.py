@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 from urllib.parse import urlencode
+import secrets
 
 from django.contrib import messages
 from django.db import IntegrityError, transaction
@@ -94,6 +95,16 @@ def home(request):
         categoria__in=[Prenda.C_SACO, Prenda.C_PANTALON],
         origen="",
     ).count()
+    ruedos_pendientes = list(
+        AlquilerItem.objects.select_related("alquiler", "prenda")
+        .filter(
+            ruedo_valor__gt=0, ruedo_listo=False,
+            alquiler__estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
+            alquiler__fecha_entrega__gte=hoy,
+            alquiler__fecha_entrega__lte=proximos_siete,
+        )
+        .order_by("alquiler__fecha_entrega", "prenda__codigo")
+    )
 
     visitas_hoy = 0
     visitas_semana = 0
@@ -173,6 +184,19 @@ def home(request):
             "cta": "Corregir stock",
             "tone": "accent",
         })
+    prioridades_ruedos = []
+    for item in ruedos_pendientes:
+        dias = (item.alquiler.fecha_entrega - hoy).days
+        urgente = dias <= 3
+        prioridades_ruedos.append({
+            "kind": "link",
+            "title": ("URGENTE — Ruedo pendiente" if urgente else "Ruedo pendiente"),
+            "description": f"{item.prenda.codigo} · entrega {item.alquiler.fecha_entrega.strftime('%d/%m/%Y')} · faltan {dias} día{'s' if dias != 1 else ''}.",
+            "href": reverse("alquileres:ruedos"),
+            "cta": "Ver ruedos",
+            "tone": "danger" if urgente else "warn",
+        })
+    prioridades[0:0] = prioridades_ruedos
     if not prioridades:
         prioridades.append({
             "kind": "link",
@@ -182,6 +206,11 @@ def home(request):
             "cta": "Crear alquiler",
             "tone": "ok",
         })
+    prioridades_destacadas = [
+        item for item in prioridades
+        if item.get("title", "").startswith(("URGENTE", "Ruedo pendiente", "Corregir stock"))
+    ]
+    prioridades = [item for item in prioridades if item not in prioridades_destacadas]
 
     flujos = [
         {
@@ -244,6 +273,7 @@ def home(request):
         "hoy": hoy,
         "kpis": kpis,
         "prioridades": prioridades,
+        "prioridades_destacadas": prioridades_destacadas,
         "entregas_hoy_lista": entregas_hoy_lista,
         "devoluciones_hoy_lista": devoluciones_hoy,
         "entregas_semana_lista": entregas_semana_lista,
@@ -1080,8 +1110,16 @@ def crear(request):
     whatsapp_url = request.session.pop("ultimo_whatsapp_url", "")
     cliente_recurrente = request.session.pop("cliente_recurrente", False)
     disponibles = _disponibles_por_categoria()
+    creation_token = request.session.get("alquiler_creation_token")
+    if not creation_token:
+        creation_token = secrets.token_urlsafe(24)
+        request.session["alquiler_creation_token"] = creation_token
 
     if request.method == "POST":
+        supplied_token = request.POST.get("creation_token", "")
+        if supplied_token and supplied_token != creation_token:
+            messages.info(request, "Ese alquiler ya fue procesado.")
+            return redirect("alquileres:ver")
         form = AlquilerForm(request.POST, disponibles=disponibles)
         if form.is_valid():
             selected = form.cleaned_data.get(
@@ -1113,12 +1151,18 @@ def crear(request):
                         usuario=request.user, alquiler=alquiler, cliente=alquiler.cliente,
                         informativo=True,
                     )
+                    registrar_actividad(
+                        request, "Aplicó saldo a favor", Actividad.PAGO, objeto=alquiler,
+                        referencia=f"Alquiler #{alquiler.pk}",
+                        detalle=f"${alquiler.saldo_a_favor_aplicado}",
+                    )
                 touched_prendas.extend(_crear_items_desde_seleccion(alquiler, selected))
 
                 _refresh_prendas_estado(touched_prendas)
                 request.session["ultimo_mensaje_cliente"] = _armar_mensaje_cliente(alquiler)
                 request.session["ultimo_whatsapp_url"] = generar_enlace_whatsapp(alquiler.cliente_telefono, request.session["ultimo_mensaje_cliente"])
                 request.session["cliente_recurrente"] = recurrente
+                request.session.pop("alquiler_creation_token", None)
 
             registrar_actividad(request, "Creó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"Seña: ${alquiler.sena}")
 
@@ -1142,6 +1186,7 @@ def crear(request):
         "mensaje_cliente": msg_cliente,
         "whatsapp_url": whatsapp_url,
         "cliente_recurrente": cliente_recurrente,
+        "creation_token": creation_token,
     })
 
 
@@ -1322,13 +1367,14 @@ def ruedos(request):
             registrar_actividad(request, f"Marcó listo el ruedo de {item.prenda.codigo}",
                                 Actividad.STOCK, objeto=item, referencia=item.prenda.codigo)
             messages.success(request, "Ruedo marcado como listo.")
-        return redirect(f"{reverse('alquileres:ruedos')}?semana={request.POST.get('semana', '')}")
+        return redirect(f"{reverse('alquileres:ruedos')}?semana={request.POST.get('semana', '')}&estado={request.POST.get('estado', 'pendientes')}")
     hoy = timezone.localdate()
     semana_actual = _start_of_week(hoy)
     semana_inicio = _parse_week_value(request.GET.get("semana"), semana_actual)
     semana_fin = semana_inicio + timedelta(days=6)
+    estado_ruedo = request.GET.get("estado", "pendientes")
 
-    items = list(
+    items_qs = (
         AlquilerItem.objects
         .select_related("alquiler", "prenda")
         .filter(
@@ -1343,6 +1389,11 @@ def ruedos(request):
             "prenda__codigo",
         )
     )
+    if estado_ruedo == "pendientes":
+        items_qs = items_qs.filter(ruedo_listo=False)
+    elif estado_ruedo == "listos":
+        items_qs = items_qs.filter(ruedo_listo=True)
+    items = list(items_qs)
 
     ruedos_items = []
     for item in items:
@@ -1376,6 +1427,7 @@ def ruedos(request):
         "semana_anterior": _week_value(semana_inicio - timedelta(days=7)),
         "semana_siguiente": _week_value(semana_inicio + timedelta(days=7)),
         "semana_actual": _week_value(semana_actual),
+        "estado_ruedo": estado_ruedo,
         "ruedos_items": ruedos_items,
         "mensaje_ruedos": mensaje_ruedos,
         "resumen_ruedos": [

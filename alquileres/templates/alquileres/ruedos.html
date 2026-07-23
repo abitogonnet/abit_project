@@ -23,6 +23,9 @@
     <div class="ab-actions">
       <button class="ab-btn" type="button" data-copy-ruedos {% if not mensaje_ruedos %}disabled{% endif %}>Copiar mensaje</button>
       <a class="ab-btn2" href="{% url 'alquileres:ruedos' %}?semana={{ semana_actual }}">Semana actual</a>
+      <a class="ab-btn2" href="?semana={{ semana_value }}&estado=pendientes">Pendientes</a>
+      <a class="ab-btn2" href="?semana={{ semana_value }}&estado=listos">Listos</a>
+      <a class="ab-btn2" href="?semana={{ semana_value }}&estado=todos">Todos</a>
     </div>
     <div class="ab-small" data-copy-ruedos-status></div>
   </aside>
@@ -78,7 +81,7 @@
             <tr>
               <th>Fecha a hacer</th>
               <th>Retiro</th>
-              <th>Cliente</th>
+              {% if user.perfil.rol != 'COSTURERA' %}<th>Cliente</th>{% endif %}
               <th>Persona</th>
               <th>Codigo</th>
               <th>Prenda</th>
@@ -91,12 +94,12 @@
               <tr>
                 <td class="ab-num">{{ item.fecha_a_hacer|date:"d/m/Y" }}</td>
                 <td class="ab-num">{{ item.fecha_retiro|date:"d/m/Y" }}</td>
-                <td>{{ item.cliente_nombre }}</td>
+                {% if user.perfil.rol != 'COSTURERA' %}<td>{{ item.cliente_nombre }}</td>{% endif %}
                 <td>{{ item.persona_nombre }}</td>
                 <td><strong>{{ item.codigo }}</strong></td>
                 <td>{{ item.detalle }}</td>
                 <td><strong>{{ item.ruedo }}</strong></td>
-                <td>{% if item.listo %}<span class="ab-badge ok">LISTO</span>{% else %}<span class="ab-badge warn">PENDIENTE</span><form method="post">{% csrf_token %}<input type="hidden" name="item_id" value="{{ item.id }}"><input type="hidden" name="semana" value="{{ semana_value }}"><button class="ab-btn2" type="submit">Ruedo listo</button></form>{% endif %}</td>
+                <td>{% if item.listo %}<span class="ab-badge ok">LISTO</span>{% else %}<span class="ab-badge warn">PENDIENTE</span><form method="post">{% csrf_token %}<input type="hidden" name="item_id" value="{{ item.id }}"><input type="hidden" name="semana" value="{{ semana_value }}"><input type="hidden" name="estado" value="{{ estado_ruedo }}"><button class="ab-btn2" type="submit">Ruedo listo</button></form>{% endif %}</td>
               </tr>
             {% endfor %}
           </tbody>

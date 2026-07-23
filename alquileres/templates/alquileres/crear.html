@@ -48,6 +48,7 @@
 
 <form method="post" id="alqForm" class="ab-create-layout" data-draft-clear="{% if mensaje_cliente %}1{% else %}0{% endif %}">
   {% csrf_token %}
+  <input type="hidden" name="creation_token" value="{{ creation_token }}">
   {{ form.personas_visibles }}
 
   <div class="ab-create-main">
@@ -111,7 +112,8 @@
           </div>
         </div>
         <div class="ab-actions">
-          <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}" target="_blank" rel="noopener">Buscar prenda</a>
+          <button class="ab-btn2" type="button" data-open-prenda-modal data-url="{% url 'prendas:buscar_prenda' %}?embed=1">Buscar prenda</button>
+          <button class="ab-btn2" type="button" data-open-prenda-modal data-url="{% url 'prendas:crear' %}?embed=1">Crear prenda</button>
           <button class="ab-btn2" type="button" data-add-persona>
             <span data-add-persona-label>Agregar persona</span>
           </button>
@@ -243,6 +245,7 @@
         <button class="ab-btn" type="submit">Guardar alquiler</button>
         <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
       </div>
+      <div class="ab-msg warn" data-ruedo-warning hidden>ATENCIÓN: este alquiler tiene al menos una prenda con ruedo y la entrega es en 3 días o menos. Avisar al cliente que la entrega podría demorarse hasta 1 día adicional por el trabajo de costura.</div>
     </section>
   </div>
 
@@ -291,6 +294,11 @@
     </div>
   </aside>
 </form>
+
+<dialog class="ab-prenda-dialog" data-prenda-dialog>
+  <div class="ab-dialog-head"><strong>Prendas</strong><button class="ab-btn2" type="button" data-close-prenda-modal>Cerrar</button></div>
+  <iframe title="Buscar o crear prenda" data-prenda-frame></iframe>
+</dialog>
 
 <script>
   (function () {
@@ -544,6 +552,12 @@
       textValue("[data-summary-prendas]", `${prendasTotales} seleccionadas`);
       textValue("[data-summary-total]", formatMoney(totalFinal));
       textValue("[data-summary-saldo]", formatMoney(saldo));
+      const warning = document.querySelector("[data-ruedo-warning]");
+      const hasRuedo = Array.from(form.querySelectorAll("input[name*='ruedo_valor']")).some(function (field) { return num(field.value) > 0; });
+      const deliveryDate = delivery ? new Date(delivery + "T12:00:00") : null;
+      const today = new Date(); today.setHours(12, 0, 0, 0);
+      const days = deliveryDate ? Math.ceil((deliveryDate - today) / 86400000) : 99;
+      if (warning) warning.hidden = !(hasRuedo && days >= 0 && days <= 3);
     }
 
     function markActiveStep(stepId) {
@@ -651,6 +665,36 @@
       });
       if (name) name.addEventListener("input", syncTitle);
       syncTitle();
+    });
+
+    const prendaDialog = document.querySelector("[data-prenda-dialog]");
+    const prendaFrame = document.querySelector("[data-prenda-frame]");
+    document.querySelectorAll("[data-open-prenda-modal]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        prendaFrame.src = button.dataset.url; prendaDialog.showModal();
+      });
+    });
+    const closePrenda = document.querySelector("[data-close-prenda-modal]");
+    if (closePrenda) closePrenda.addEventListener("click", function () { prendaDialog.close(); });
+    window.addEventListener("message", async function (event) {
+      if (event.origin !== window.location.origin || !event.data || event.data.type !== "abito-prenda-creada") return;
+      const response = await fetch("{% url 'prendas:disponibles_api' %}");
+      const payload = await response.json();
+      const shortByCategory = {SACO:"saco", PANTALON:"pantalon", CAMISA:"camisa", CHALECO:"chaleco", MONO:"mono", CORBATA:"corbata", ZAPATOS:"zapatos", CINTURON:"cinturon"};
+      const short = shortByCategory[event.data.categoria];
+      const item = payload.prendas.find(function (p) { return p.codigo === event.data.codigo; });
+      if (short && item) {
+        window.abAvailablePayload[short] = window.abAvailablePayload[short] || [];
+        if (!window.abAvailablePayload[short].some(function (p) { return p.value === item.codigo; })) {
+          window.abAvailablePayload[short].push({value:item.codigo, label:item.label});
+        }
+        document.querySelectorAll(".js-code-select[data-category-key='" + short + "']").forEach(function (select) {
+          if (!Array.from(select.options).some(function (option) { return option.value === item.codigo; })) {
+            select.add(new Option(item.label, item.codigo));
+          }
+        });
+      }
+      prendaDialog.close();
     });
   })();
 </script>

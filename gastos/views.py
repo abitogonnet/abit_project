@@ -387,7 +387,7 @@ def movimientos(request):
     access_response = require_finanzas_access(request)
     if access_response:
         return access_response
-    qs = MovimientoFinanciero.objects.select_related("usuario", "alquiler", "gasto", "division")
+    qs = MovimientoFinanciero.objects.select_related("usuario", "usuario__perfil", "alquiler", "gasto", "division")
     desde, hasta = request.GET.get("desde", ""), request.GET.get("hasta", "")
     tipo, usuario, q = request.GET.get("tipo", ""), request.GET.get("usuario", ""), (request.GET.get("q") or "").strip()
     if desde: qs = qs.filter(fecha_hora__date__gte=desde)

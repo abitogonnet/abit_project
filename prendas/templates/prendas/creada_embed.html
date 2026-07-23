@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-card"><div class="ab-msg ok">Prenda creada: {{ prenda.codigo }}.</div><button class="ab-btn" type="button" onclick="window.parent.postMessage({type:'abito-prenda-creada', codigo:'{{ prenda.codigo|escapejs }}', categoria:'{{ prenda.categoria|escapejs }}'}, window.location.origin)">Volver al alquiler</button></section>
+<script>window.parent.postMessage({type:"abito-prenda-creada", codigo:"{{ prenda.codigo|escapejs }}", categoria:"{{ prenda.categoria|escapejs }}"}, window.location.origin);</script>
+{% endblock %}

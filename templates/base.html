@@ -54,6 +54,7 @@
     (function () {
       const availableNode = document.getElementById("ab-available-prendas");
       const availablePayload = availableNode ? JSON.parse(availableNode.textContent) : {};
+      window.abAvailablePayload = availablePayload;
 
       function parseAmount(value) {
         const normalized = String(value || "").replace(",", ".").trim();

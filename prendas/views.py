@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
 from .forms import (
@@ -194,6 +195,7 @@ def _buscar_por_codigo(q: str):
 
 def crear_prenda(request):
     codigo_preview = None
+    embed = request.GET.get("embed") == "1" or request.POST.get("embed") == "1"
 
     if request.method == "POST":
         accion = request.POST.get("accion", "generar")
@@ -216,6 +218,8 @@ def crear_prenda(request):
                             obj.save()
                             registrar_actividad(request, "Creó prenda", Actividad.STOCK, objeto=obj, referencia=obj.codigo)
                             messages.success(request, f"Prenda creada: {obj.codigo} ({obj.get_categoria_display()})")
+                            if embed:
+                                return render(request, "prendas/creada_embed.html", {"prenda": obj})
                             return redirect("prendas:stock")
                         except IntegrityError:
                             continue
@@ -234,6 +238,7 @@ def crear_prenda(request):
         show_generate=True,
         codigo_preview=codigo_preview,
     )
+    ctx["embed"] = embed
     return render(request, "prendas/crear.html", ctx)
 
 
@@ -426,4 +431,16 @@ def buscar_prenda(request):
         "prendas_por_codigo": prendas_por_codigo,
         "buscado": buscado,
         "codigo_buscado": codigo_buscado,
+        "embed": request.GET.get("embed") == "1",
     })
+
+
+def disponibles_api(request):
+    prendas = Prenda.objects.exclude(estado__in=[Prenda.E_DAN, Prenda.E_LAV]).order_by("categoria", "codigo")
+    return JsonResponse({"prendas": [
+        {
+            "codigo": p.codigo, "categoria": p.categoria,
+            "label": f"{p.codigo} - {p.color} {p.marca} talle {p.talle}".strip(),
+        }
+        for p in prendas
+    ]})

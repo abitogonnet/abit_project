@@ -33,6 +33,7 @@
 <div class="ab-page-stack">
   <form method="post" id="prendaForm" class="ab-split-shell">
     {% csrf_token %}
+    {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
 
     <section class="ab-section-card">
       <div class="ab-section-head">
