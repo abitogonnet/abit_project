@@ -208,14 +208,15 @@ def _resumen_cuenta(*, start=None, end=None, account_end=None):
 
 
 def _saldos_pendientes_resto_semana(hoy: date) -> Decimal:
+    desde = hoy - timedelta(days=hoy.weekday())
     hasta = _end_of_week(hoy)
     total = (
         Alquiler.objects
-        .exclude(estado_alquiler=Alquiler.EST_CERRADO)
         .filter(
+            estado_alquiler=Alquiler.EST_RESERVADO,
             estado_saldo=Alquiler.SAL_PEND,
             saldo__gt=0,
-            fecha_entrega__gte=hoy,
+            fecha_entrega__gte=desde,
             fecha_entrega__lte=hasta,
         )
         .aggregate(total=Sum("saldo"))["total"]
@@ -297,6 +298,17 @@ def home(request):
     )
 
     resumen_cuenta = _resumen_cuenta(start=month_ctx["start"], end=month_ctx["end"])
+    hoy = timezone.localdate()
+    mes_actual_inicio = _start_of_month(hoy)
+    mes_actual_fin = _first_day_next_month(mes_actual_inicio)
+    resumen_mes_actual = resumen_movimientos(
+        desde=mes_actual_inicio, hasta=mes_actual_fin - timedelta(days=1)
+    )
+    saldo_total = resumen_movimientos()["saldo"]
+    gastos_mes_actual = (
+        Gasto.objects.filter(fecha__gte=mes_actual_inicio, fecha__lt=mes_actual_fin)
+        .aggregate(total=Sum("monto"))["total"] or Decimal("0")
+    )
 
     return render(request, "gastos/home.html", {
         "gastos": gastos,
@@ -307,6 +319,12 @@ def home(request):
         "total_div_mes": resumen_cuenta["total_dividido_periodo"],
         "ym_value": month_ctx["ym_value"],
         "month_label": month_ctx["month_label"],
+        "finanzas_cards": [
+            {"label": "SALDO TOTAL", "value": saldo_total},
+            {"label": "SALDO DEL MES", "value": resumen_mes_actual["saldo"]},
+            {"label": "A ENTRAR ESTA SEMANA", "value": _saldos_pendientes_resto_semana(hoy)},
+            {"label": "GASTOS DEL MES", "value": gastos_mes_actual},
+        ],
         **resumen_cuenta,
     })
 

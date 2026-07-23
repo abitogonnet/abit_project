@@ -185,14 +185,14 @@ def home(request):
             "tone": "accent",
         })
     prioridades_ruedos = []
-    for item in ruedos_pendientes:
-        dias = (item.alquiler.fecha_entrega - hoy).days
-        urgente = dias <= 3
+    if ruedos_pendientes:
+        urgente = any((item.alquiler.fecha_entrega - hoy).days <= 3 for item in ruedos_pendientes)
+        total_ruedos = len(ruedos_pendientes)
         prioridades_ruedos.append({
             "kind": "link",
-            "title": ("URGENTE — Ruedo pendiente" if urgente else "Ruedo pendiente"),
-            "description": f"{item.prenda.codigo} · entrega {item.alquiler.fecha_entrega.strftime('%d/%m/%Y')} · faltan {dias} día{'s' if dias != 1 else ''}.",
-            "href": reverse("alquileres:ruedos"),
+            "title": f"{'URGENTE — ' if urgente else ''}Ruedos pendientes — {total_ruedos}",
+            "description": "Hay trabajos de costura pendientes con entrega dentro de los próximos 7 días.",
+            "href": f"{reverse('alquileres:ruedos')}?estado=pendientes",
             "cta": "Ver ruedos",
             "tone": "danger" if urgente else "warn",
         })
@@ -208,7 +208,7 @@ def home(request):
         })
     prioridades_destacadas = [
         item for item in prioridades
-        if item.get("title", "").startswith(("URGENTE", "Ruedo pendiente", "Corregir stock"))
+        if item.get("title", "").startswith(("URGENTE", "Ruedos pendientes", "Corregir stock"))
     ]
     prioridades = [item for item in prioridades if item not in prioridades_destacadas]
 

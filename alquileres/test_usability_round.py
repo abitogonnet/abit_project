@@ -41,7 +41,8 @@ class UsabilityRoundTests(TestCase):
         AlquilerItem.objects.create(alquiler=urgente, prenda=p1, ruedo_valor=3, ruedo_tipo=AlquilerItem.RUEDO_CM)
         AlquilerItem.objects.create(alquiler=proximo, prenda=p2, ruedo_valor=2, ruedo_tipo=AlquilerItem.RUEDO_CM)
         content = self.client.get(reverse("alquileres:home")).content.decode()
-        self.assertLess(content.index("URGENTE — Ruedo pendiente"), content.index(">Ruedo pendiente<"))
+        self.assertIn("URGENTE — Ruedos pendientes — 2", content)
+        self.assertEqual(content.count("Hay trabajos de costura pendientes"), 1)
 
     def test_costurera_no_accede_a_api_de_stock(self):
         costurera = User.objects.create_user("costurera2", password="test")

@@ -11,20 +11,6 @@
     </div>
   </div>
   <aside class="ab-pagehero-panel">
-    <div class="ab-summary-list">
-      <div>
-        <span>Saldo actual en cuenta</span>
-        <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
-      </div>
-      <div>
-        <span>Resultado neto del mes</span>
-        <strong class="ab-num">${{ saldo_neto_periodo|miles0 }}</strong>
-      </div>
-      <div>
-        <span>Ingresos del mes</span>
-        <strong class="ab-num">${{ total_ingresos_alquileres_periodo|miles0 }}</strong>
-      </div>
-    </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'gastos:crear' %}?ym={{ ym_value }}">Crear gasto</a>
       <a class="ab-btn" href="{% url 'gastos:division_bienes' %}?ym={{ ym_value }}">Division de bienes</a>
@@ -51,6 +37,13 @@
 
   <section class="ab-section-card">
     <div class="ab-summary-grid">
+      {% for card in finanzas_cards %}
+        <div class="ab-summary-card">
+          <span class="ab-small">{{ card.label }}</span>
+          <strong class="ab-num">${{ card.value|miles0 }}</strong>
+        </div>
+      {% endfor %}
+      {% comment %}
       <div class="ab-summary-card">
         <span class="ab-small">Saldo actual en cuenta</span>
         <strong class="ab-num">${{ saldo_actual_cuenta|miles0 }}</strong>
@@ -79,6 +72,7 @@
         <span class="ab-small">Resultado neto del mes</span>
         <strong class="ab-num">${{ saldo_neto_periodo|miles0 }}</strong>
       </div>
+      {% endcomment %}
     </div>
   </section>
 

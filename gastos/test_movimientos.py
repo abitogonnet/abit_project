@@ -72,3 +72,11 @@ class MovimientosFinancierosTests(TestCase):
         PerfilUsuario.objects.create(user=empleado, nombre="Empleado", rol=PerfilUsuario.EMPLEADO)
         self.client.force_login(empleado)
         self.assertEqual(self.client.get(reverse("gastos:movimientos")).status_code, 403)
+
+    def test_finanzas_muestra_solo_cuatro_indicadores_principales(self):
+        response = self.client.get(reverse("gastos:home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "SALDO TOTAL", count=1)
+        self.assertContains(response, "SALDO DEL MES", count=1)
+        self.assertContains(response, "A ENTRAR ESTA SEMANA", count=1)
+        self.assertContains(response, "GASTOS DEL MES", count=1)
