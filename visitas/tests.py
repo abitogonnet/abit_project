@@ -42,6 +42,27 @@ class CuposTests(TestCase):
         self.assertEqual(_capacidad_por_horario(fecha)[time(18)], 0)
 
 
+class UbicacionPublicaTests(TestCase):
+    def test_reserva_y_confirmacion_muestran_mapa_sin_como_llegar(self):
+        reserva = self.client.get(reverse("visitas:reservar"))
+        self.assertContains(reserva, "Calle 489 entre 23 y 24 N.º 2871")
+        self.assertContains(reserva, "output=embed")
+        self.assertNotContains(reserva, "Cómo llegar")
+
+        visita = Visita.objects.create(
+            nombre="Cliente", telefono="2215555555", dni="12345678",
+            cantidad_personas=1, fecha_evento=date.today() + timedelta(days=5),
+            fecha_visita=date.today() + timedelta(days=1), hora_visita=time(17),
+        )
+        session = self.client.session
+        session["ultima_visita_id"] = visita.pk
+        session.save()
+        confirmacion = self.client.get(reverse("visitas:confirmada"))
+        self.assertContains(confirmacion, "Calle 489 entre 23 y 24 N.º 2871")
+        self.assertContains(confirmacion, "output=embed")
+        self.assertNotContains(confirmacion, "Cómo llegar")
+
+
 class ReservaClienteTests(TestCase):
     def payload(self, dni="12345678"):
         hoy = date.today()

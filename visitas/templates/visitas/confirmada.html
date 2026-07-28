@@ -100,16 +100,7 @@
           </div>
         {% endif %}
 
-        <div class="address-card confirm-address-card">
-          <p class="address-label">Dirección para la visita</p>
-          <p class="address-value">
-            {% if site_config and site_config.direccion_post_reserva %}
-              {{ site_config.direccion_post_reserva }}
-            {% else %}
-              Cargá la dirección exacta desde la configuración del sitio en el admin.
-            {% endif %}
-          </p>
-        </div>
+        {% include "includes/abito_location_map.html" %}
 
         <div class="detail-actions reserve-actions">
           <a
