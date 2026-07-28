@@ -39,6 +39,25 @@ class MovimientoFinanciero(models.Model):
         ordering = ["-fecha_hora", "-id"]
 
 
+class InformeFinancieroSemanal(models.Model):
+    clave_solicitud = models.UUIDField(unique=True, editable=False)
+    periodo_desde = models.DateTimeField()
+    periodo_hasta = models.DateTimeField()
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    destinatarios = models.JSONField(default=dict)
+    resultados = models.JSONField(default=dict)
+    creado_en = models.DateTimeField(auto_now_add=True, db_index=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-creado_en", "-id"]
+
+    def __str__(self):
+        return f"Informe semanal {self.periodo_desde:%d/%m/%Y}"
+
+
 class DivisionBienes(models.Model):
     """
     Cuando se saca plata de la cuenta y se divide entre Tade y Bauti.

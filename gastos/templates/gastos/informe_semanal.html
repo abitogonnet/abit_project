@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Finanzas</p>
+    <h1 class="ab-title">Informe semanal</h1>
+    <p class="ab-lead">Resumen del dinero efectivamente cobrado y pagado.</p>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <a class="ab-btn2" href="{% url 'gastos:home' %}">Volver a Finanzas</a>
+  </aside>
+</section>
+
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Confirmación</p>
+        <h2 class="ab-mini-title">¿Enviar informe semanal?</h2>
+      </div>
+    </div>
+    <p>Se enviará el informe financiero semanal a:</p>
+    <div class="ab-chip-row">
+      <span class="ab-chip">Bauti</span>
+      <span class="ab-chip">Tadeo</span>
+    </div>
+    <p><strong>Período:</strong> {{ desde|date:"d/m/Y H:i" }} – {{ hasta|date:"d/m/Y H:i" }}</p>
+    {% if not whatsapp_configurado %}
+      <div class="ab-empty">WhatsApp Business todavía no está configurado para envíos automáticos. El PDF sí se puede descargar.</div>
+    {% endif %}
+    <div class="ab-actions">
+      <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
+      <a class="ab-btn2" href="{% url 'gastos:descargar_informe_semanal' %}">Descargar PDF</a>
+      <form method="post" data-single-submit>
+        {% csrf_token %}
+        <input type="hidden" name="clave_solicitud" value="{{ clave_solicitud }}">
+        <button class="ab-btn" type="submit" {% if not whatsapp_configurado %}disabled{% endif %}>
+          Enviar informe
+        </button>
+      </form>
+    </div>
+  </section>
+
+  {% if resultado_actual %}
+  <section class="ab-section-card">
+    <h2 class="ab-mini-title">Resultado del envío</h2>
+    <div class="ab-summary-list">
+      {% for nombre, resultado in resultado_actual.resultados.items %}
+      <div>
+        <span>{{ nombre }}</span>
+        <strong>{{ resultado.estado|capfirst }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Registro</p>
+        <h2 class="ab-mini-title">Informes recientes</h2>
+      </div>
+    </div>
+    <div class="ab-entity-list">
+      {% for informe in informes_recientes %}
+      <article class="ab-entity-card">
+        <div class="ab-entity-card-head">
+          <div>
+            <p class="ab-entity-card-eyebrow">{{ informe.creado_en|date:"d/m/Y H:i" }}</p>
+            <h3 class="ab-entity-card-title">{{ informe.periodo_desde|date:"d/m/Y" }} – {{ informe.periodo_hasta|date:"d/m/Y H:i" }}</h3>
+            <p class="ab-entity-card-subtitle">Enviado por {{ informe.usuario.perfil.nombre|default:informe.usuario.username }}</p>
+          </div>
+        </div>
+        <div class="ab-chip-row">
+          {% for nombre, resultado in informe.resultados.items %}
+          <span class="ab-chip">{{ nombre }}: {{ resultado.estado }}</span>
+          {% endfor %}
+        </div>
+      </article>
+      {% empty %}
+      <div class="ab-empty">Todavía no hay informes enviados.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<script>
+document.querySelectorAll("[data-single-submit]").forEach(function (form) {
+  form.addEventListener("submit", function () {
+    var button = form.querySelector("button[type=submit]");
+    button.disabled = true;
+    button.textContent = "Enviando…";
+  });
+});
+</script>
+{% endblock %}

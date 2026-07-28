@@ -1,9 +1,13 @@
 from datetime import date, timedelta
 from decimal import Decimal
 from urllib.parse import urlencode
+import uuid
 
 from django.contrib import messages
+from django.conf import settings
+from django.db import transaction
 from django.db.models import Max, Q, Sum
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -15,8 +19,16 @@ from cuentas.services import registrar_actividad
 
 from .access import require_finanzas_access
 from .forms import DivisionBienesForm, GastoForm
-from .models import DivisionBienes, Gasto, MovimientoFinanciero
+from .models import DivisionBienes, Gasto, InformeFinancieroSemanal, MovimientoFinanciero
 from .services import registrar_movimiento, resumen_movimientos
+from .weekly_report import (
+    datos_informe_semanal,
+    enviar_documento_whatsapp,
+    generar_pdf,
+    nombre_archivo,
+    periodo_semanal,
+    whatsapp_configurado,
+)
 
 MESES_ES = [
     "enero",
@@ -433,4 +445,109 @@ def movimientos(request):
         "movimientos": rows, "saldo_actual": resumen_movimientos()["saldo"],
         "usuarios": User.objects.filter(movimientofinanciero__isnull=False).distinct(),
         "filtros": request.GET,
+    })
+
+
+def descargar_informe_semanal(request):
+    access_response = require_finanzas_access(request)
+    if access_response:
+        return access_response
+    regularizar_saldos_de_cerrados(request.user)
+    desde, hasta = periodo_semanal()
+    datos = datos_informe_semanal(desde, hasta)
+    response = HttpResponse(generar_pdf(datos), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{nombre_archivo(datos)}"'
+    return response
+
+
+def enviar_informe_semanal(request):
+    access_response = require_finanzas_access(request)
+    if access_response:
+        return access_response
+    regularizar_saldos_de_cerrados(request.user)
+    desde, hasta = periodo_semanal()
+    resultado_actual = None
+
+    if request.method == "POST":
+        try:
+            clave = uuid.UUID(request.POST.get("clave_solicitud", ""))
+        except (ValueError, TypeError, AttributeError):
+            messages.error(request, "La confirmación venció. Volvé a intentar.")
+            return redirect("gastos:enviar_informe_semanal")
+
+        destinatarios = settings.WEEKLY_REPORT_RECIPIENTS
+        if not whatsapp_configurado():
+            messages.warning(
+                request,
+                "WhatsApp Business todavía no está configurado para envíos automáticos. "
+                "Podés descargar el PDF.",
+            )
+        else:
+            with transaction.atomic():
+                informe, _ = InformeFinancieroSemanal.objects.get_or_create(
+                    clave_solicitud=clave,
+                    defaults={
+                        "periodo_desde": desde,
+                        "periodo_hasta": hasta,
+                        "usuario": request.user,
+                        "destinatarios": destinatarios,
+                    },
+                )
+                informe = InformeFinancieroSemanal.objects.select_for_update().get(pk=informe.pk)
+                datos = datos_informe_semanal(informe.periodo_desde, informe.periodo_hasta)
+                pdf = generar_pdf(datos)
+                archivo = nombre_archivo(datos)
+                caption = (
+                    "Informe financiero semanal de Abito\n"
+                    f"Período: {timezone.localtime(informe.periodo_desde):%d/%m/%Y} – "
+                    f"{timezone.localtime(informe.periodo_hasta):%d/%m/%Y}"
+                )
+                resultados = dict(informe.resultados)
+                for nombre, telefono in informe.destinatarios.items():
+                    if resultados.get(nombre, {}).get("estado") == "enviado":
+                        continue
+                    resultados[nombre] = enviar_documento_whatsapp(
+                        pdf, archivo, telefono, caption
+                    )
+                informe.resultados = resultados
+                informe.save(update_fields=["resultados", "actualizado_en"])
+                resultado_actual = informe
+
+            enviados = [
+                nombre for nombre, dato in resultado_actual.resultados.items()
+                if dato.get("estado") == "enviado"
+            ]
+            fallidos = [
+                nombre for nombre, dato in resultado_actual.resultados.items()
+                if dato.get("estado") != "enviado"
+            ]
+            if enviados:
+                registrar_actividad(
+                    request,
+                    "Informe financiero semanal enviado",
+                    Actividad.FINANZAS,
+                    objeto=resultado_actual,
+                    referencia=f"{desde:%d/%m/%Y} - {hasta:%d/%m/%Y}",
+                    detalle=f"Enviados: {', '.join(enviados)}"
+                    + (f". Fallaron: {', '.join(fallidos)}" if fallidos else ""),
+                    financiera=True,
+                )
+            if fallidos:
+                messages.error(
+                    request,
+                    f"No se pudo enviar a: {', '.join(fallidos)}. "
+                    "Los destinatarios que ya lo recibieron no se reenviarán al reintentar.",
+                )
+            else:
+                messages.success(request, "Informe enviado correctamente a Bauti y Tadeo.")
+
+    return render(request, "gastos/informe_semanal.html", {
+        "desde": desde,
+        "hasta": hasta,
+        "clave_solicitud": str(uuid.uuid4()),
+        "whatsapp_configurado": whatsapp_configurado(),
+        "resultado_actual": resultado_actual,
+        "informes_recientes": InformeFinancieroSemanal.objects.select_related(
+            "usuario", "usuario__perfil"
+        )[:10],
     })

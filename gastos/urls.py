@@ -8,4 +8,6 @@ urlpatterns = [
     path("crear/", views.crear, name="crear"),
     path("division-bienes/", views.division_bienes, name="division_bienes"),
     path("movimientos/", views.movimientos, name="movimientos"),
+    path("informe-semanal/", views.enviar_informe_semanal, name="enviar_informe_semanal"),
+    path("informe-semanal/descargar/", views.descargar_informe_semanal, name="descargar_informe_semanal"),
 ]
