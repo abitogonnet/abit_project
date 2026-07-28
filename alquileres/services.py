@@ -14,15 +14,17 @@ def fecha_referencia_pago_cierre(alquiler: Alquiler):
     )
 
 
-def regularizar_saldos_de_cerrados():
+def regularizar_saldos_de_cerrados(usuario=None):
+    # Import local para evitar dependencia circular al cargar las apps.
+    from gastos.services import registrar_saldo
+
     alquileres = (
         Alquiler.objects
         .filter(
             Q(estado_alquiler__in=[Alquiler.EST_ENTREGADO, Alquiler.EST_CERRADO])
             | Q(estado_saldo=Alquiler.SAL_PAG)
-            | Q(saldo__lte=0)
         )
-        .filter(Q(saldo__gt=0) | Q(estado_saldo=Alquiler.SAL_PEND) | Q(saldo_pagado_en__isnull=True))
+        .exclude(estado_alquiler=Alquiler.EST_CANCELADO)
     )
 
     actualizados = 0
@@ -39,5 +41,13 @@ def regularizar_saldos_de_cerrados():
         if changed:
             alquiler.save(update_fields=["saldo", "estado_saldo", "saldo_pagado_en"])
             actualizados += 1
+        # Un alquiler entregado/cerrado o ya marcado como pagado representa
+        # dinero efectivamente cobrado. La clave única evita contabilizarlo
+        # más de una vez aunque esta regularización se ejecute repetidamente.
+        if (
+            alquiler.estado_alquiler in [Alquiler.EST_ENTREGADO, Alquiler.EST_CERRADO]
+            or alquiler.estado_saldo == Alquiler.SAL_PAG
+        ):
+            registrar_saldo(alquiler, usuario)
 
     return actualizados

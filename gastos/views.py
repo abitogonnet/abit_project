@@ -284,7 +284,7 @@ def home(request):
     if access_response:
         return access_response
 
-    regularizar_saldos_de_cerrados()
+    regularizar_saldos_de_cerrados(request.user)
     month_ctx = _resolve_month(request)
     gastos = (
         Gasto.objects
@@ -320,7 +320,7 @@ def home(request):
         "ym_value": month_ctx["ym_value"],
         "month_label": month_ctx["month_label"],
         "finanzas_cards": [
-            {"label": "SALDO TOTAL", "value": saldo_total},
+            {"label": "SALDO ACTUAL", "value": saldo_total},
             {"label": "SALDO DEL MES", "value": resumen_mes_actual["saldo"]},
             {"label": "A ENTRAR ESTA SEMANA", "value": _saldos_pendientes_resto_semana(hoy)},
             {"label": "GASTOS DEL MES", "value": gastos_mes_actual},
@@ -415,10 +415,18 @@ def movimientos(request):
     if usuario.isdigit(): qs = qs.filter(usuario_id=int(usuario))
     if q: qs = qs.filter(Q(concepto__icontains=q) | Q(referencia__icontains=q))
     rows = list(qs.order_by("fecha_hora", "id"))
+    # El acumulado pertenece al libro mayor completo. Los filtros deciden qué
+    # filas se muestran, pero nunca deben reiniciar ni alterar el saldo real.
+    saldo_por_movimiento = {}
     saldo = Decimal("0")
+    for row in MovimientoFinanciero.objects.order_by(
+        "fecha_hora", "id"
+    ).only("id", "ingreso", "egreso", "informativo"):
+        if not row.informativo:
+            saldo += row.ingreso - row.egreso
+        saldo_por_movimiento[row.pk] = saldo
     for row in rows:
-        saldo += row.ingreso - row.egreso
-        row.saldo_acumulado = saldo
+        row.saldo_acumulado = saldo_por_movimiento.get(row.pk, saldo)
     rows.reverse()
     from django.contrib.auth.models import User
     return render(request, "gastos/movimientos.html", {
