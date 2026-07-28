@@ -139,11 +139,7 @@ def _categorias_con_origen():
 
 
 def _prendas_sin_origen():
-    return (
-        Prenda.objects
-        .filter(origen="")
-        .order_by("categoria", "marca", "talle", "codigo")
-    )
+    return Prenda.incompletas().order_by("categoria", "marca", "talle", "codigo")
 
 
 def _ocupar_prendas_con_alquiler(prendas):
@@ -249,11 +245,16 @@ def editar_prenda(request, pk):
         form = PrendaForm(request.POST, instance=prenda)
         if form.is_valid():
             estado_anterior = prenda.estado
-            form.save()
+            actualizada = form.save()
+            actualizada.refresh_from_db()
             registrar_actividad(request, "Modificó prenda", Actividad.STOCK, objeto=prenda, referencia=prenda.codigo)
             if prenda.estado != estado_anterior:
                 registrar_actividad(request, "Cambió estado de prenda", Actividad.STOCK, objeto=prenda, referencia=prenda.codigo, detalle=prenda.get_estado_display())
-            messages.success(request, f"Prenda actualizada: {prenda.codigo}.")
+            messages.success(
+                request,
+                f"Prenda actualizada: {actualizada.codigo}."
+                + (" Ya no está incompleta." if actualizada.esta_completa else ""),
+            )
             return redirect("prendas:stock")
         messages.error(request, "Revisa los campos marcados.")
     else:

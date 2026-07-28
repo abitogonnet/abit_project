@@ -15,6 +15,7 @@ from prendas.models import Prenda
 
 from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA, VerAlquileresFiltroForm
 from .models import Alquiler, AlquilerItem, Cliente
+from .services import cerrar_alquiler
 from .whatsapp import generar_enlace_whatsapp, mensaje_recordatorio
 from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
@@ -91,10 +92,7 @@ def home(request):
     ).count()
 
     stock_disponible = Prenda.objects.filter(estado=Prenda.E_DISP).count()
-    pendientes_origen = Prenda.objects.filter(
-        categoria__in=[Prenda.C_SACO, Prenda.C_PANTALON],
-        origen="",
-    ).count()
+    pendientes_origen = Prenda.incompletas().count()
     ruedos_pendientes = list(
         AlquilerItem.objects.select_related("alquiler", "prenda")
         .filter(
@@ -950,6 +948,15 @@ def _toggle_saldo_pagado(alquiler: Alquiler):
 
 
 def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool:
+    if accion == "cerrar_alquiler":
+        alquiler_cerrado, changed = cerrar_alquiler(alquiler.pk, request.user)
+        alquiler.refresh_from_db()
+        if changed:
+            messages.success(request, f"Alquiler #{alquiler_cerrado.id} cerrado.")
+        else:
+            messages.info(request, "El alquiler ya estaba cerrado.")
+        return True
+
     estado_anterior = alquiler.estado_alquiler
     saldo_anterior = alquiler.estado_saldo
     importe_saldo_antes = alquiler.saldo_pendiente_actual
@@ -957,14 +964,7 @@ def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool
     error = ""
     success_message = ""
 
-    if accion == "cerrar_alquiler":
-        changed, error = _actualizar_estado_operativo(
-            alquiler,
-            nuevo_estado=Alquiler.EST_CERRADO,
-            auto_pagar_al_cerrar=True,
-        )
-        success_message = f"Alquiler #{alquiler.id} cerrado."
-    elif accion == "marcar_entregado":
+    if accion == "marcar_entregado":
         changed, error = _actualizar_estado_operativo(
             alquiler,
             nuevo_estado=Alquiler.EST_ENTREGADO,
@@ -1550,6 +1550,10 @@ def ver(request):
             )
 
         if _procesar_accion_operativa(request, alquiler, accion):
+            return _redirect_ver_con_filtros(request)
+
+        if request.POST.get("estado_alquiler") == Alquiler.EST_CERRADO:
+            _procesar_accion_operativa(request, alquiler, "cerrar_alquiler")
             return _redirect_ver_con_filtros(request)
 
         changed, error = _actualizar_estado_operativo(

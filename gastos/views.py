@@ -18,7 +18,7 @@ from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
 
 from .access import require_finanzas_access
-from .forms import DivisionBienesForm, GastoForm
+from .forms import DivisionBienesForm, GASTO_CATEGORIAS, GastoForm
 from .models import DivisionBienes, Gasto, InformeFinancieroSemanal, MovimientoFinanciero
 from .services import registrar_movimiento, resumen_movimientos
 from .weekly_report import (
@@ -298,11 +298,28 @@ def home(request):
 
     regularizar_saldos_de_cerrados(request.user)
     month_ctx = _resolve_month(request)
-    gastos = (
+    gastos = list(
         Gasto.objects
         .filter(fecha__gte=month_ctx["start"], fecha__lt=month_ctx["end"])
         .order_by("-fecha", "-creado_en")
     )
+    categorias_presentes = []
+    for categoria in GASTO_CATEGORIAS + [gasto.categoria for gasto in gastos]:
+        if categoria not in categorias_presentes and any(
+            gasto.categoria == categoria for gasto in gastos
+        ):
+            categorias_presentes.append(categoria)
+    gastos_agrupados = [
+        {
+            "categoria": categoria,
+            "gastos": [gasto for gasto in gastos if gasto.categoria == categoria],
+            "subtotal": sum(
+                (gasto.monto for gasto in gastos if gasto.categoria == categoria),
+                Decimal("0"),
+            ),
+        }
+        for categoria in categorias_presentes
+    ]
     divisiones = (
         DivisionBienes.objects
         .filter(fecha__gte=month_ctx["start"], fecha__lt=month_ctx["end"])
@@ -323,6 +340,7 @@ def home(request):
 
     return render(request, "gastos/home.html", {
         "gastos": gastos,
+        "gastos_agrupados": gastos_agrupados,
         "divisiones": divisiones,
         "ym_value": month_ctx["ym_value"],
         "month_label": month_ctx["month_label"],

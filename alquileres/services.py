@@ -1,7 +1,11 @@
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Alquiler
+from cuentas.models import Actividad
+from prendas.models import Prenda
+
+from .models import Alquiler, AlquilerItem
 
 
 def fecha_referencia_pago_cierre(alquiler: Alquiler):
@@ -51,3 +55,60 @@ def regularizar_saldos_de_cerrados(usuario=None):
             registrar_saldo(alquiler, usuario)
 
     return actualizados
+
+
+@transaction.atomic
+def cerrar_alquiler(alquiler_id, usuario=None):
+    """Única operación persistente para cerrar un alquiler desde cualquier vista."""
+    from gastos.services import registrar_saldo
+
+    alquiler = (
+        Alquiler.objects.select_for_update()
+        .select_related("cerrado_por")
+        .get(pk=alquiler_id)
+    )
+    if alquiler.estado_alquiler == Alquiler.EST_CERRADO:
+        return alquiler, False
+
+    prenda_ids = list(
+        alquiler.items.select_for_update().values_list("prenda_id", flat=True)
+    )
+    alquiler.estado_alquiler = Alquiler.EST_CERRADO
+    alquiler.marcar_completamente_abonado()
+    alquiler.cerrado_en = timezone.now()
+    alquiler.cerrado_por = (
+        usuario if getattr(usuario, "is_authenticated", False) else None
+    )
+    alquiler.save(update_fields=[
+        "estado_alquiler", "estado_saldo", "saldo", "saldo_pagado_en",
+        "cerrado_en", "cerrado_por", "actualizado_en",
+    ])
+
+    # La clave única del movimiento garantiza que el saldo restante se cobre
+    # una sola vez, incluso si el cierre se vuelve a solicitar.
+    registrar_saldo(alquiler, usuario)
+
+    for prenda_id in set(prenda_ids):
+        tiene_otro_alquiler_activo = AlquilerItem.objects.filter(
+            prenda_id=prenda_id,
+            alquiler__estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
+        ).exists()
+        Prenda.objects.filter(pk=prenda_id).update(
+            estado=Prenda.E_RES if tiene_otro_alquiler_activo else Prenda.E_DISP
+        )
+
+    nombre = (
+        getattr(getattr(usuario, "perfil", None), "nombre", "")
+        or getattr(usuario, "get_full_name", lambda: "")()
+        or getattr(usuario, "username", "")
+    )
+    Actividad.objects.create(
+        usuario=usuario if getattr(usuario, "is_authenticated", False) else None,
+        usuario_nombre=nombre,
+        accion="Alquiler cerrado",
+        categoria=Actividad.DEVOLUCION,
+        tipo_objeto="Alquiler",
+        objeto_id=str(alquiler.pk),
+        referencia=f"Alquiler #{alquiler.pk}",
+    )
+    return alquiler, True

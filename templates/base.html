@@ -344,6 +344,20 @@
     })();
 
     (function () {
+      function preserveSubmitter(form, event) {
+        const submitter = event.submitter;
+        if (!submitter || !submitter.name) return;
+        let hidden = form.querySelector('input[data-submit-clone="' + submitter.name + '"]');
+        if (!hidden) {
+          hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.name = submitter.name;
+          hidden.dataset.submitClone = submitter.name;
+          form.appendChild(hidden);
+        }
+        hidden.value = submitter.value;
+      }
+
       const guardedForms = Array.from(document.querySelectorAll("#alqForm, .js-alq-edit-form"));
       guardedForms.forEach(function (form) {
         let dirty = false, submitting = false;
@@ -351,6 +365,7 @@
         form.addEventListener("change", function () { dirty = true; });
         form.addEventListener("submit", function (event) {
           if (submitting) { event.preventDefault(); return; }
+          preserveSubmitter(form, event);
           submitting = true; dirty = false;
           form.querySelectorAll("button[type='submit']").forEach(function (button) {
             button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = "Guardando…";
@@ -363,7 +378,8 @@
       });
       document.querySelectorAll("form").forEach(function (form) {
         if (guardedForms.includes(form) || form.dataset.submitGuard === "off") return;
-        form.addEventListener("submit", function () {
+        form.addEventListener("submit", function (event) {
+          preserveSubmitter(form, event);
           form.querySelectorAll("button[type='submit']").forEach(function (button) {
             button.disabled = true;
             if (!button.dataset.originalText) button.dataset.originalText = button.textContent;

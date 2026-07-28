@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -96,6 +97,14 @@ class Alquiler(models.Model):
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
+    cerrado_en = models.DateTimeField(null=True, blank=True)
+    cerrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="alquileres_cerrados",
+    )
 
     @classmethod
     def calcular_importes(cls, total_bruto, descuento_pct, sena):

@@ -88,7 +88,13 @@ LETRAS_XS_4XL = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
 AIRES_SACO_NUM = _nums(22, 76, 2)
 AIRES_CHAL_NUM = _nums(22, 70, 2)
 
-CAMISA_SACO_TALLES = _nums(2, 16, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(50, 74, 2)
+SACO_TALLES = _nums(2, 16, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(50, 74, 2)
+CAMISA_TALLES = (
+    _nums(2, 16, 2)
+    + ["XS", "S", "M", "L", "XL", "2XL", "3XL"]
+    + _nums(40, 80, 2)
+)
+CAMISA_SACO_TALLES = SACO_TALLES
 PANTALON_NUM = _nums(2, 74, 2)
 ZAPATOS_NUM = _nums(30, 50, 2)
 
@@ -135,9 +141,9 @@ def talle_options_for(categoria: str, marca: str):
             return AIRES_CHAL_NUM
         return _unique(GENERIC_TALLES + LETRAS_XS_4XL)
     if categoria == Prenda.C_SACO:
-        return CAMISA_SACO_TALLES
+        return SACO_TALLES
     if categoria == Prenda.C_CAMISA:
-        return CAMISA_SACO_TALLES
+        return CAMISA_TALLES
     return []
 
 
@@ -281,7 +287,12 @@ class PrendaForm(forms.ModelForm):
             return cleaned
 
         if cat == Prenda.C_CAMISA:
-            if talle not in CAMISA_SACO_TALLES:
+            talle_historico_sin_cambios = (
+                self.instance
+                and self.instance.pk
+                and talle == _norm(self.instance.talle)
+            )
+            if talle not in CAMISA_TALLES and not talle_historico_sin_cambios:
                 self.add_error("talle", "Para camisa, elegi un talle valido del desplegable.")
             return cleaned
 

@@ -86,8 +86,15 @@
       <span class="ab-pill">{{ gastos|length }} gasto{{ gastos|length|pluralize }}</span>
     </div>
 
-    <div class="ab-entity-list">
-      {% for g in gastos %}
+    <div class="ab-page-stack">
+      {% for grupo in gastos_agrupados %}
+      <section class="ab-stack">
+        <div class="ab-section-head">
+          <h3 class="ab-mini-title">{{ grupo.categoria }}</h3>
+          <span class="ab-pill">{{ grupo.gastos|length }} gasto{{ grupo.gastos|length|pluralize }}</span>
+        </div>
+        <div class="ab-entity-list">
+        {% for g in grupo.gastos %}
         <article class="ab-entity-card">
           <div class="ab-entity-card-head">
             <div>
@@ -128,6 +135,13 @@
             </div>
           </details>
         </article>
+        {% endfor %}
+        </div>
+        <div class="ab-summary-card">
+          <span class="ab-small">Subtotal {{ grupo.categoria }}</span>
+          <strong class="ab-num">${{ grupo.subtotal|miles0 }}</strong>
+        </div>
+      </section>
       {% empty %}
         <div class="ab-empty">No hay gastos cargados en {{ month_label }}.</div>
       {% endfor %}

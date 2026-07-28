@@ -147,6 +147,15 @@ class Prenda(models.Model):
         self.color = self.normalize_color_value(self.color, self.categoria)
         super().save(*args, **kwargs)
 
+    @classmethod
+    def incompletas(cls):
+        """Fuente única para Dashboard, tareas pendientes y Stock."""
+        return cls.objects.filter(origen="")
+
+    @property
+    def esta_completa(self):
+        return bool(self.origen)
+
     def __str__(self):
         extra = f" - {self.get_origen_display()}" if self.origen else ""
         return f"{self.codigo} - {self.get_categoria_display()} - {self.color} - {self.talle}{extra}".strip()
