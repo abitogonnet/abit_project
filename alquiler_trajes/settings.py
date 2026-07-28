@@ -99,12 +99,6 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
 
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
-if DATABASE_URL and not DEBUG and not AWS_STORAGE_BUCKET_NAME and "MEDIA_ROOT" not in os.environ:
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        "Configura AWS_STORAGE_BUCKET_NAME o un MEDIA_ROOT sobre Render Disk; "
-        "las fotos del catálogo no pueden guardarse en filesystem efímero."
-    )
 if AWS_STORAGE_BUCKET_NAME:
     INSTALLED_APPS.append("storages")
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
