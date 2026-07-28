@@ -65,6 +65,26 @@
 
   <section class="ab-section-card">
     <div class="ab-section-head">
+      <div><p class="ab-kicker">Visitas</p><h2 class="ab-mini-title">Efectividad de visitas</h2></div>
+      <span class="ab-pill">{{ month_label }}</span>
+    </div>
+    <div class="ab-conversion-layout">
+      <div class="ab-donut" style="--conversion: {{ visitas_conversion.conversion_css }};">
+        <div><strong>{{ visitas_conversion.conversion }}%</strong><span>Conversión</span></div>
+      </div>
+      <div class="ab-summary-grid ab-conversion-summary">
+        <div class="ab-summary-card"><span class="ab-small">Total de visitas consideradas</span><strong>{{ visitas_conversion.total }}</strong></div>
+        <div class="ab-summary-card"><span class="ab-small">Visitas que alquilaron</span><strong>{{ visitas_conversion.alquilaron }}</strong></div>
+        <div class="ab-summary-card"><span class="ab-small">Visitas que no alquilaron</span><strong>{{ visitas_conversion.no_alquilaron }}</strong></div>
+        {% if visitas_conversion.canceladas %}<div class="ab-summary-card"><span class="ab-small">Canceladas (excluidas)</span><strong>{{ visitas_conversion.canceladas }}</strong></div>{% endif %}
+      </div>
+    </div>
+    <div class="ab-chart-legend"><span><i class="is-converted"></i> Alquilaron</span><span><i class="is-not-converted"></i> No alquilaron</span></div>
+    <p class="ab-small">Solo incluye visitas cuya fecha y horario ya pasaron. Las futuras y canceladas no reducen la conversión.</p>
+  </section>
+
+  <section class="ab-section-card">
+    <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Ingresos</p>
         <h2 class="ab-mini-title">Cobros por metodo</h2>

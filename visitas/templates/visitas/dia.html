@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Agenda diaria</p><h1 class="ab-title">{{ fecha_seleccionada|date:"l d \\d\\e F"|title }}</h1></div></section>
+<div class="ab-actions"><a class="ab-btn2" href="{% url 'visitas:calendario' %}?mes={{ fecha_seleccionada|date:'Y-m' }}">Volver al calendario</a></div>
+{% if bloqueos %}<section class="ab-section-card"><strong>Bloqueos del día</strong>{% for b in bloqueos %}<p class="ab-small">{% if b.hora_inicio %}{{ b.hora_inicio|time:"H:i" }}–{{ b.hora_fin|time:"H:i" }}{% else %}Día completo{% endif %}{% if b.motivo %} · {{ b.motivo }}{% endif %}</p>{% endfor %}</section>{% endif %}
+<section class="ab-section-card">
+  {% for visita in visitas %}
+    <article class="ab-priority-card">
+      <div>
+        <h3>{{ visita.hora_visita|time:"H:i" }} — {{ visita.nombre }}</h3>
+        <p>{{ visita.cantidad_personas }} persona{{ visita.cantidad_personas|pluralize }} · Evento {{ visita.fecha_evento|date:"d/m/Y" }} · {{ visita.get_estado_display }}</p>
+        {% for referencia in visita.preferencias_ambos.all %}<p class="ab-small">Vio: {{ referencia.tela }} · {{ referencia.color }} · Saco {{ referencia.talle_saco }} · Pantalón {{ referencia.talle_pantalon }}</p>{% endfor %}
+      </div>
+      <div class="ab-actions">
+        <a class="ab-btn2" href="{% url 'visitas:detalle' visita.pk %}">Ver visita</a>
+        {% if visita.alquiler_id %}<a class="ab-btn" href="{% url 'alquileres:ver' %}?buscar={{ visita.alquiler_id }}">Ver alquiler</a>{% else %}<a class="ab-btn" href="{% url 'visitas:crear_alquiler' visita.pk %}">Crear alquiler</a>{% endif %}
+        {% if visita.recordatorio_whatsapp_url %}<a class="ab-btn2" href="{{ visita.recordatorio_whatsapp_url }}" target="_blank" rel="noopener">Enviar recordatorio</a>{% endif %}
+      </div>
+    </article>
+  {% empty %}<div class="ab-empty">No hay visitas para este día.</div>{% endfor %}
+</section>
+{% endblock %}

@@ -1,7 +1,9 @@
-from datetime import datetime, time
+import calendar
+from datetime import date, datetime, time, timedelta
 
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -322,6 +324,8 @@ def horarios_disponibles(request):
 def listar(request):
     hoy = timezone.localdate()
     alcance = request.GET.get("alcance", "proximas")
+    if alcance == "proximas":
+        return calendario_visitas(request)
     qs = Visita.objects.select_related("cliente", "alquiler")
     if alcance == "hoy":
         qs = qs.filter(fecha_visita=hoy)
@@ -338,6 +342,84 @@ def listar(request):
         "visitas_hoy": Visita.objects.filter(
             fecha_visita=hoy, estado=Visita.ESTADO_CONFIRMADA
         ).count(),
+    })
+
+
+def _mes_calendario(request):
+    raw = (request.GET.get("mes") or "").strip()
+    try:
+        year, month = (int(part) for part in raw.split("-", 1))
+        return date(year, month, 1)
+    except (TypeError, ValueError):
+        hoy = timezone.localdate()
+        return date(hoy.year, hoy.month, 1)
+
+
+def _sumar_mes(day, delta):
+    month_index = day.year * 12 + day.month - 1 + delta
+    return date(month_index // 12, month_index % 12 + 1, 1)
+
+
+def calendario_visitas(request):
+    hoy = timezone.localdate()
+    mes = _mes_calendario(request)
+    mes_siguiente = _sumar_mes(mes, 1)
+    conteos = dict(
+        Visita.objects.exclude(estado=Visita.ESTADO_CANCELADA)
+        .filter(fecha_visita__gte=mes, fecha_visita__lt=mes_siguiente)
+        .values("fecha_visita")
+        .annotate(total=Count("id"))
+        .values_list("fecha_visita", "total")
+    )
+    bloqueos = set(
+        BloqueoAgenda.objects.filter(
+            activo=True, fecha__gte=mes, fecha__lt=mes_siguiente
+        ).values_list("fecha", flat=True)
+    )
+    semanas = []
+    cal = calendar.Calendar(firstweekday=0)
+    for semana in cal.monthdatescalendar(mes.year, mes.month):
+        semanas.append([
+            {
+                "fecha": dia,
+                "en_mes": dia.month == mes.month,
+                "es_hoy": dia == hoy,
+                "total": conteos.get(dia, 0),
+                "bloqueado": dia in bloqueos,
+            }
+            for dia in semana
+        ])
+    return render(request, "visitas/calendario.html", {
+        "semanas": semanas,
+        "mes": mes,
+        "mes_anterior": _sumar_mes(mes, -1).strftime("%Y-%m"),
+        "mes_siguiente": mes_siguiente.strftime("%Y-%m"),
+        "visitas_hoy": Visita.objects.filter(
+            fecha_visita=hoy, estado=Visita.ESTADO_CONFIRMADA
+        ).count(),
+    })
+
+
+def dia(request, fecha):
+    try:
+        fecha_seleccionada = datetime.strptime(fecha, "%Y-%m-%d").date()
+    except ValueError:
+        from django.http import Http404
+        raise Http404
+    visitas = list(
+        Visita.objects.select_related("cliente", "alquiler")
+        .prefetch_related("preferencias_ambos")
+        .filter(fecha_visita=fecha_seleccionada)
+        .order_by("hora_visita", "pk")
+    )
+    for visita in visitas:
+        visita.recordatorio_whatsapp_url = _recordatorio_whatsapp(visita)
+    return render(request, "visitas/dia.html", {
+        "fecha_seleccionada": fecha_seleccionada,
+        "visitas": visitas,
+        "bloqueos": BloqueoAgenda.objects.filter(
+            fecha=fecha_seleccionada, activo=True
+        ).order_by("hora_inicio"),
     })
 
 

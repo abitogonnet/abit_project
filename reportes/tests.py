@@ -1,14 +1,42 @@
-from datetime import date
+from datetime import date, datetime, time
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from alquileres.models import Alquiler, AlquilerItem
 from gastos.models import Gasto
 from prendas.models import Prenda
+from visitas.models import Visita
+from .views import _visitas_conversion
 
 
 class ReportesViewsTests(TestCase):
+    def test_efectividad_excluye_futuras_y_canceladas(self):
+        alquiler = Alquiler.objects.create(
+            fecha_visita=date(2026, 7, 1), fecha_reserva=date(2026, 7, 1),
+            fecha_entrega=date(2026, 7, 2), fecha_devolucion=date(2026, 7, 3),
+            cliente_nombre="Cliente", cliente_telefono="1111",
+            persona1_nombre="Cliente", total_bruto=1, sena=1,
+        )
+        common = {
+            "dni": "12345678", "telefono": "2215555555",
+            "cantidad_personas": 1, "fecha_evento": date(2026, 7, 20),
+        }
+        Visita.objects.create(nombre="Alquiló", fecha_visita=date(2026, 7, 5), hora_visita=time(17), alquiler=alquiler, **common)
+        Visita.objects.create(nombre="No alquiló", fecha_visita=date(2026, 7, 6), hora_visita=time(17), **common)
+        Visita.objects.create(nombre="Futura", fecha_visita=date(2026, 7, 20), hora_visita=time(17), **common)
+        Visita.objects.create(nombre="Cancelada", fecha_visita=date(2026, 7, 7), hora_visita=time(17), estado=Visita.ESTADO_CANCELADA, **common)
+        result = _visitas_conversion(
+            date(2026, 7, 1), date(2026, 8, 1),
+            ahora=timezone.make_aware(datetime(2026, 7, 10, 12)),
+        )
+        self.assertEqual(result["total"], 2)
+        self.assertEqual(result["alquilaron"], 1)
+        self.assertEqual(result["no_alquilaron"], 1)
+        self.assertEqual(result["conversion"], 50.0)
+        self.assertEqual(result["canceladas"], 1)
+
     def _unlock_finanzas(self):
         session = self.client.session
         session["gastos_access_ok"] = True

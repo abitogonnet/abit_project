@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import unicodedata
 from decimal import Decimal
 
-from django.db.models import Max
+from django.db.models import Max, Q
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -14,6 +14,7 @@ from alquileres.services import regularizar_saldos_de_cerrados
 from gastos.access import require_finanzas_access
 from gastos.models import Gasto
 from prendas.models import Prenda
+from visitas.models import Visita
 
 
 MESES_ES = [
@@ -118,6 +119,35 @@ def _resolve_period(request):
     return period, start, end, weeks_n
 
 
+def _visitas_conversion(start, end, *, ahora=None):
+    ahora = ahora or timezone.localtime()
+    hoy = ahora.date()
+    hora_actual = ahora.time()
+    base = Visita.objects.filter(
+        fecha_visita__gte=start,
+        fecha_visita__lt=end,
+    )
+    canceladas = base.filter(estado=Visita.ESTADO_CANCELADA).count()
+    consideradas = base.exclude(
+        estado=Visita.ESTADO_CANCELADA
+    ).filter(
+        Q(fecha_visita__lt=hoy)
+        | Q(fecha_visita=hoy, hora_visita__lte=hora_actual)
+    )
+    alquilaron = consideradas.filter(alquiler__isnull=False).count()
+    no_alquilaron = consideradas.filter(alquiler__isnull=True).count()
+    total = alquilaron + no_alquilaron
+    conversion = round((alquilaron * 100) / total, 1) if total else 0
+    return {
+        "total": total,
+        "alquilaron": alquilaron,
+        "no_alquilaron": no_alquilaron,
+        "conversion": conversion,
+        "conversion_css": f"{conversion:.1f}",
+        "canceladas": canceladas,
+    }
+
+
 def _top_k_from_monthly(data, limit=8):
     items = sorted(data.items(), key=lambda item: (-item[1], item[0]))
     return items[:limit]
@@ -196,6 +226,7 @@ def home(request):
 
     regularizar_saldos_de_cerrados()
     period, start, end, weeks_n = _resolve_period(request)
+    visitas_conversion = _visitas_conversion(start, end)
 
     item_rows = (
         AlquilerItem.objects
@@ -444,6 +475,7 @@ def home(request):
         "ingresos": ingresos_ctx,
         "report": report,
         "summary": summary,
+        "visitas_conversion": visitas_conversion,
     })
 
 

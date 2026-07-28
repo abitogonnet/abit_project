@@ -5,8 +5,8 @@
   <aside class="ab-pagehero-panel"><strong>Visitas hoy: {{ visitas_hoy }}</strong></aside>
 </section>
 <div class="ab-actions">
-  <a class="ab-btn2" href="?alcance=hoy">Hoy</a>
-  <a class="ab-btn2" href="?alcance=proximas">Próximas</a>
+  <a class="ab-btn2" href="?alcance=hoy">Visitas de hoy</a>
+  <a class="ab-btn2" href="{% url 'visitas:calendario' %}">Próximas visitas</a>
   <a class="ab-btn2" href="?alcance=historial">Historial</a>
   <a class="ab-btn" href="{% url 'visitas:bloqueos' %}">Bloquear agenda</a>
 </div>
@@ -19,9 +19,12 @@
     </div>
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'visitas:detalle' visita.pk %}">Ver visita</a>
-      {% if visita.recordatorio_whatsapp_url %}
-        <a class="ab-btn2" href="{{ visita.recordatorio_whatsapp_url }}" target="_blank" rel="noopener">Enviar recordatorio</a>
+      {% if visita.alquiler_id %}
+        <a class="ab-btn" href="{% url 'alquileres:ver' %}?buscar={{ visita.alquiler_id }}">Ver alquiler</a>
+      {% else %}
+        <a class="ab-btn" href="{% url 'visitas:crear_alquiler' visita.pk %}">Crear alquiler</a>
       {% endif %}
+      {% if visita.recordatorio_whatsapp_url %}<a class="ab-btn2" href="{{ visita.recordatorio_whatsapp_url }}" target="_blank" rel="noopener">Enviar recordatorio</a>{% endif %}
     </div>
   </article>
   {% empty %}<div class="ab-empty">No hay visitas en este período.</div>{% endfor %}

@@ -2,8 +2,10 @@ from datetime import date, time, timedelta
 
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth.models import User
 
 from alquileres.models import Alquiler, Cliente
+from cuentas.models import PerfilUsuario
 from visitas.models import BloqueoAgenda, Visita
 from visitas.views import _capacidad_por_horario, _horario_admite_reserva, _recordatorio_whatsapp
 
@@ -82,3 +84,30 @@ class ReservaClienteTests(TestCase):
         session["visita_para_alquiler"] = visita.pk
         session.save()
         self.assertEqual(self.client.session["visita_para_alquiler"], visita.pk)
+
+
+class CalendarioVisitasTests(TestCase):
+    def setUp(self):
+        user = User.objects.create_user("agenda", password="test")
+        PerfilUsuario.objects.create(
+            user=user, nombre="Agenda", rol=PerfilUsuario.EMPLEADO,
+            debe_cambiar_password=False,
+        )
+        self.client.force_login(user)
+
+    def test_calendario_muestra_semana_completa_con_conteo_y_detalle(self):
+        fecha = date(2026, 8, 6)
+        for hora, nombre in [(time(17), "Juan"), (time(18, 30), "Pedro")]:
+            Visita.objects.create(
+                nombre=nombre, dni="12345678", telefono="2215555555",
+                cantidad_personas=1, fecha_evento=date(2026, 8, 20),
+                fecha_visita=fecha, hora_visita=hora,
+            )
+        response = self.client.get(reverse("visitas:calendario"), {"mes": "2026-08"})
+        self.assertContains(response, "Lunes")
+        self.assertContains(response, "Domingo")
+        self.assertContains(response, "2 visitas")
+        detail = self.client.get(reverse("visitas:dia", args=["2026-08-06"]))
+        self.assertContains(detail, "17:00 — Juan")
+        self.assertContains(detail, "18:30 — Pedro")
+        self.assertContains(detail, "Crear alquiler", count=2)
