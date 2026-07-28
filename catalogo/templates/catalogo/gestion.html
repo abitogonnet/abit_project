@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Contenido público</p><h1 class="ab-title">Catálogo</h1></div></section>
+{% for grupo in grupos %}
+<section class="ab-section-card">
+  <div class="ab-section-head"><h2 class="ab-mini-title">{{ grupo.label }}</h2><a class="ab-btn" href="{% url 'catalogo:crear' grupo.slug %}">Crear</a></div>
+  {% for item in grupo.items %}
+  <article class="ab-priority-card"><div><strong>{{ item }}</strong><p>{% if item.activo %}Publicado{% else %}Oculto{% endif %}</p></div>
+    <div class="ab-actions"><a class="ab-btn2" href="{% url 'catalogo:editar' grupo.slug item.pk %}">Editar</a><form method="post" action="{% url 'catalogo:publicar' grupo.slug item.pk %}">{% csrf_token %}<button class="ab-btn2">{% if item.activo %}Despublicar{% else %}Publicar{% endif %}</button></form></div>
+  </article>
+  {% empty %}<div class="ab-empty">Todavía no hay elementos.</div>{% endfor %}
+</section>
+{% endfor %}
+{% endblock %}

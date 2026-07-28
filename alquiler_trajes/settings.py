@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     "gastos",
     "reportes",
     "visitas",
+    "core",
+    "catalogo",
     "cuentas",
 ]
 
@@ -53,6 +55,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.context_processors.site_config",
             ],
         },
     },
@@ -92,11 +95,41 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
 
-if HAS_WHITENOISE:
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
+if DATABASE_URL and not DEBUG and not AWS_STORAGE_BUCKET_NAME and "MEDIA_ROOT" not in os.environ:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "Configura AWS_STORAGE_BUCKET_NAME o un MEDIA_ROOT sobre Render Disk; "
+        "las fotos del catálogo no pueden guardarse en filesystem efímero."
+    )
+if AWS_STORAGE_BUCKET_NAME:
+    INSTALLED_APPS.append("storages")
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
+    AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL")
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_S3_CUSTOM_DOMAIN")
     STORAGES = {
+        "default": {"BACKEND": "storages.backends.s3.S3Storage"},
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": (
+                "whitenoise.storage.CompressedManifestStaticFilesStorage"
+                if HAS_WHITENOISE else
+                "django.contrib.staticfiles.storage.StaticFilesStorage"
+            ),
+        },
+    }
+
+if HAS_WHITENOISE and not AWS_STORAGE_BUCKET_NAME:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         }
     }
     WHITENOISE_MANIFEST_STRICT = False

@@ -57,7 +57,9 @@ class NewWorkflowTests(TestCase):
     def test_dni_existente_reutiliza_cliente_y_actualiza_nombre(self):
         Cliente.objects.create(nombre="Juan Pérez", dni="40123456", telefono="2213540416")
         alquiler = self.alquiler(cliente_nombre="Juan Manuel Pérez")
-        self.assertTrue(_vincular_cliente(alquiler, "40123456"))
+        # Existir como Cliente (por ejemplo, por una visita web) no lo vuelve
+        # recurrente hasta que tenga al menos un alquiler previo válido.
+        self.assertFalse(_vincular_cliente(alquiler, "40123456"))
         alquiler.save(update_fields=["cliente"])
         self.assertEqual(Cliente.objects.count(), 1)
         self.assertEqual(alquiler.cliente.nombre, "Juan Manuel Pérez")

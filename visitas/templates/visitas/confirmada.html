@@ -1,0 +1,143 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Tu visita en ABITO quedó confirmada. Revisá día, horario y datos para probar tu traje.">
+  <title>Visita confirmada | ABITO</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/publico.css' %}">
+</head>
+<body class="reserve-page confirm-page">
+  <div class="scroll-progress" aria-hidden="true"></div>
+
+  <header class="site-header reserve-header">
+    <a class="brand" href="{% url 'publico:home' %}" aria-label="Volver al inicio de ABITO">
+      <img src="{% static 'img/logo_abito.png' %}" alt="" width="44" height="44">
+      <span>
+        <strong>ABITO</strong>
+        <small>Gonnet · La Plata</small>
+      </span>
+    </a>
+
+    <nav class="site-nav" aria-label="Navegación">
+      <a href="{% url 'publico:home' %}#catalogo">Trajes</a>
+      <a href="{% url 'publico:home' %}#como-funciona">Cómo funciona</a>
+      <a href="{% url 'publico:home' %}#faq">FAQ</a>
+    </nav>
+
+    <a class="header-cta" href="{% url 'publico:home' %}">Inicio</a>
+  </header>
+
+  <main class="reserve-experience confirm-experience">
+    <section class="reserve-intro confirm-intro" aria-labelledby="confirm-title">
+      <img class="reserve-bg" src="{% static 'img/hero_abito.jpg' %}" alt="">
+      <div class="reserve-shade" aria-hidden="true"></div>
+
+      <div class="reserve-intro-content">
+        <p class="eyebrow">Visita confirmada</p>
+        <h1 id="confirm-title">Tu reserva quedó registrada.</h1>
+        <p>
+          Ya tenemos tu solicitud en el sistema. Guardá el día y escribinos por WhatsApp si necesitás ajustar algo.
+        </p>
+      </div>
+    </section>
+
+    <section class="confirm-shell" aria-label="Detalle de visita confirmada">
+      <article class="confirm-card-premium">
+        <div class="confirm-mark" aria-hidden="true">✓</div>
+
+        <div>
+          <p class="eyebrow">Próximo paso</p>
+          <h2>Probate el look en ABITO.</h2>
+          <p class="confirm-message">
+            {% if site_config and site_config.mensaje_confirmacion %}
+              {{ site_config.mensaje_confirmacion }}
+            {% else %}
+              Tu visita quedó confirmada. Si necesitás reprogramar, escribinos por WhatsApp.
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="confirm-detail-grid">
+          <div>
+            <span>Nombre</span>
+            <strong>{{ visita.nombre }}</strong>
+          </div>
+          <div>
+            <span>Personas</span>
+            <strong>{{ visita.cantidad_personas }}</strong>
+          </div>
+          <div>
+            <span>Evento</span>
+            <strong>{{ visita.fecha_evento }}</strong>
+          </div>
+          <div>
+            <span>Visita</span>
+            <strong>{{ visita.fecha_visita }}</strong>
+          </div>
+          <div>
+            <span>Horario</span>
+            <strong>{{ visita.hora_visita|time:"H:i" }}</strong>
+          </div>
+        </div>
+
+        {% if visita.preferencias_ambos.all %}
+          <div class="confirm-preferences">
+            <p class="eyebrow">Ambos vistos en catálogo</p>
+            <div class="summary-preferences-list">
+              {% for preferencia in visita.preferencias_ambos.all %}
+                <p class="summary-preference-item">
+                  {{ preferencia.linea }} · {{ preferencia.tela }} · {{ preferencia.color }}
+                  · Saco {{ preferencia.talle_saco }} · Pantalón {{ preferencia.talle_pantalon }}
+                </p>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="address-card confirm-address-card">
+          <p class="address-label">Dirección para la visita</p>
+          <p class="address-value">
+            {% if site_config and site_config.direccion_post_reserva %}
+              {{ site_config.direccion_post_reserva }}
+            {% else %}
+              Cargá la dirección exacta desde la configuración del sitio en el admin.
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="detail-actions reserve-actions">
+          <a
+            class="btn btn-primary"
+            href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Escribir por WhatsApp
+          </a>
+          <a class="btn btn-secondary" href="{% url 'publico:home' %}">Volver al inicio</a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  {% include "includes/social_links.html" %}
+  <script>
+    function updatePageProgress() {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = max > 0 ? (window.scrollY / max) * 100 : 0;
+      document.querySelector(".scroll-progress").style.width = progress + "%";
+      document.querySelector(".site-header").classList.toggle("is-scrolled", window.scrollY > 24);
+    }
+
+    window.addEventListener("scroll", updatePageProgress, { passive: true });
+    window.addEventListener("resize", updatePageProgress);
+    document.addEventListener("DOMContentLoaded", updatePageProgress);
+  </script>
+</body>
+</html>

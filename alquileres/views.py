@@ -109,13 +109,13 @@ def home(request):
     visitas_hoy = 0
     visitas_semana = 0
     if Visita is not None:
-        ahora = timezone.localtime()
-        inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
-        fin_dia = inicio_dia + timedelta(days=1)
-        fin_semana = ahora + timedelta(days=7)
-        visitas_base = Visita.objects.exclude(estado=Visita.Estado.CANCELADA)
-        visitas_hoy = visitas_base.filter(inicio__gte=inicio_dia, inicio__lt=fin_dia).count()
-        visitas_semana = visitas_base.filter(inicio__gte=ahora, inicio__lt=fin_semana).count()
+        hoy_visitas = timezone.localdate()
+        fin_semana = hoy_visitas + timedelta(days=7)
+        visitas_base = Visita.objects.exclude(estado=Visita.ESTADO_CANCELADA)
+        visitas_hoy = visitas_base.filter(fecha_visita=hoy_visitas).count()
+        visitas_semana = visitas_base.filter(
+            fecha_visita__gte=hoy_visitas, fecha_visita__lte=fin_semana
+        ).count()
 
     kpis = [
         {
@@ -803,7 +803,11 @@ def _armar_mensaje_cliente(alq: Alquiler) -> str:
 
 def _vincular_cliente(alquiler, dni):
     cliente = Cliente.objects.filter(dni=dni).first()
-    recurrente = cliente is not None
+    recurrente = bool(
+        cliente and cliente.alquileres.exclude(
+            estado_alquiler=Alquiler.EST_CANCELADO
+        ).exists()
+    )
     if cliente is None:
         try:
             with transaction.atomic():
@@ -814,7 +818,9 @@ def _vincular_cliente(alquiler, dni):
                 )
         except IntegrityError:
             cliente = Cliente.objects.get(dni=dni)
-            recurrente = True
+            recurrente = cliente.alquileres.exclude(
+                estado_alquiler=Alquiler.EST_CANCELADO
+            ).exists()
     else:
         cambios = []
         if cliente.nombre != alquiler.cliente_nombre:
@@ -1110,6 +1116,14 @@ def crear(request):
     whatsapp_url = request.session.pop("ultimo_whatsapp_url", "")
     cliente_recurrente = request.session.pop("cliente_recurrente", False)
     disponibles = _disponibles_por_categoria()
+    visita_id = request.session.get("visita_para_alquiler")
+    visita_origen = (
+        Visita.objects.select_related("cliente", "alquiler").filter(pk=visita_id).first()
+        if Visita is not None and visita_id else None
+    )
+    if visita_origen and visita_origen.alquiler_id:
+        request.session.pop("visita_para_alquiler", None)
+        return redirect(f"{reverse('alquileres:ver')}?buscar={visita_origen.alquiler_id}")
     creation_token = request.session.get("alquiler_creation_token")
     if not creation_token:
         creation_token = secrets.token_urlsafe(24)
@@ -1143,6 +1157,13 @@ def crear(request):
                     cliente.save(update_fields=["saldo_a_favor"])
                     alquiler.saldo_a_favor_aplicado = credito
                 alquiler.save()
+                if visita_origen:
+                    visita_bloqueada = Visita.objects.select_for_update().get(pk=visita_origen.pk)
+                    if visita_bloqueada.alquiler_id:
+                        raise IntegrityError("La visita ya fue convertida en alquiler.")
+                    visita_bloqueada.alquiler = alquiler
+                    visita_bloqueada.estado = Visita.ESTADO_REALIZADA
+                    visita_bloqueada.save(update_fields=["alquiler", "estado", "updated_at"])
                 registrar_sena(alquiler, request.user)
                 if alquiler.saldo_a_favor_aplicado:
                     registrar_movimiento(
@@ -1163,6 +1184,7 @@ def crear(request):
                 request.session["ultimo_whatsapp_url"] = generar_enlace_whatsapp(alquiler.cliente_telefono, request.session["ultimo_mensaje_cliente"])
                 request.session["cliente_recurrente"] = recurrente
                 request.session.pop("alquiler_creation_token", None)
+                request.session.pop("visita_para_alquiler", None)
 
             registrar_actividad(request, "Creó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"Seña: ${alquiler.sena}")
 
@@ -1172,13 +1194,27 @@ def crear(request):
         messages.error(request, "Revisa los campos del formulario.")
     else:
         hoy = timezone.localdate()
+        initial = {
+            "fecha_reserva": hoy,
+            "fecha_entrega": hoy,
+            "fecha_devolucion": hoy,
+        }
+        if visita_origen:
+            initial.update({
+                "cliente_dni": visita_origen.dni,
+                "cliente_nombre": visita_origen.nombre,
+                "cliente_telefono": visita_origen.telefono,
+                "fecha_reserva": visita_origen.fecha_evento,
+                "fecha_entrega": visita_origen.fecha_evento,
+                "fecha_devolucion": visita_origen.fecha_evento,
+                "persona1_nombre": visita_origen.nombre,
+                "personas_visibles": visita_origen.cantidad_personas,
+            })
+            for numero in range(2, visita_origen.cantidad_personas + 1):
+                initial[f"persona{numero}_nombre"] = f"Persona {numero}"
         form = AlquilerForm(
             disponibles=disponibles,
-            initial={
-                "fecha_reserva": hoy,
-                "fecha_entrega": hoy,
-                "fecha_devolucion": hoy,
-            },
+            initial=initial,
         )
 
     return render(request, "alquileres/crear.html", {
@@ -1187,6 +1223,7 @@ def crear(request):
         "whatsapp_url": whatsapp_url,
         "cliente_recurrente": cliente_recurrente,
         "creation_token": creation_token,
+        "visita_origen": visita_origen,
     })
 
 

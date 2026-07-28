@@ -1,0 +1,655 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Alquiler de trajes en Gonnet, La Plata. Reservá una visita, probá talles y resolvé tu look para egresados, casamientos, fiestas y eventos formales.">
+  <title>ABITO | Alquiler de trajes para eventos en Gonnet</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/publico.css' %}">
+</head>
+<body>
+  <div class="scroll-progress" aria-hidden="true"></div>
+
+  <header class="site-header" data-reveal>
+    <a class="brand" href="#inicio" aria-label="ABITO inicio">
+      <img src="{% static 'img/logo_abito.png' %}" alt="" width="44" height="44">
+      <span>
+        <strong>ABITO</strong>
+        <small>Gonnet · La Plata</small>
+      </span>
+    </a>
+
+    <nav class="site-nav" aria-label="Navegación principal">
+      <a href="#catalogo">Trajes</a>
+      <a href="#como-funciona">Reserva</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <a class="header-cta" href="{% url 'visitas:reservar' %}">Reservar visita</a>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio" aria-labelledby="hero-title">
+      <img class="hero-bg" src="{% static 'img/hero_abito.jpg' %}" alt="Trajes ABITO para eventos formales">
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-content">
+        <p class="eyebrow" data-reveal>Alquiler de trajes · Prueba presencial</p>
+        <h1 id="hero-title" data-reveal>Alquilá un traje que te quede bien, sin comprar uno.</h1>
+        <p class="hero-copy" data-reveal>
+          Reservá tu visita, probátelo y salí con el look resuelto para egresados, casamientos, fiestas y noches importantes.
+        </p>
+
+        <div class="hero-actions" data-reveal>
+          <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar visita</a>
+          <a class="btn btn-secondary" href="#catalogo">Ver trajes</a>
+          <a
+            class="btn btn-ghost"
+            href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            WhatsApp
+          </a>
+        </div>
+
+        <div class="hero-proof" data-reveal>
+          <span>Precios visibles</span>
+          <span>Talles publicados</span>
+          <span>Dirección al confirmar</span>
+        </div>
+      </div>
+
+      <a class="hero-peek" href="#ocasiones" aria-label="Explorar ocasiones">
+        <span>Elegí tu ocasión</span>
+        <i aria-hidden="true"></i>
+      </a>
+    </section>
+
+    <section class="occasion-panel section-pad" id="ocasiones" aria-labelledby="occasion-title">
+      <div class="section-head" data-reveal>
+        <p class="eyebrow">No todos alquilan por lo mismo</p>
+        <h2 id="occasion-title">Decinos para qué lo necesitás y mirá qué conviene probar primero.</h2>
+      </div>
+
+      <div class="occasion-grid" role="list">
+        <button class="occasion-card is-active" type="button" data-occasion="egresados" data-reveal>
+          <span>Egresados</span>
+          <strong>Fotos, fiesta y una noche larga.</strong>
+        </button>
+        <button class="occasion-card" type="button" data-occasion="casamiento" data-reveal>
+          <span>Casamiento</span>
+          <strong>Elegante sin parecer disfrazado.</strong>
+        </button>
+        <button class="occasion-card" type="button" data-occasion="fiesta" data-reveal>
+          <span>Fiesta</span>
+          <strong>Un look prolijo, con actitud.</strong>
+        </button>
+        <button class="occasion-card" type="button" data-occasion="gala" data-reveal>
+          <span>Gala</span>
+          <strong>Más formal, mejor ajustado.</strong>
+        </button>
+      </div>
+
+      <article class="occasion-result" data-reveal>
+        <p id="occasion-kicker">Para egresados</p>
+        <h3 id="occasion-heading">Arrancá por importados oscuros o tonos fríos.</h3>
+        <p id="occasion-copy">Funcionan bien en fotos, se ven actuales y permiten sumar camisa o accesorio sin recargar.</p>
+        <a href="#catalogo" class="text-link">Ver looks recomendados</a>
+      </article>
+    </section>
+
+    <section class="catalog-section section-pad" id="catalogo" aria-labelledby="catalog-title">
+      <div class="section-head catalog-head" data-reveal>
+        <p class="eyebrow">Catálogo real</p>
+        <h2 id="catalog-title">Elegí el estilo. Nosotros te ayudamos con el ajuste.</h2>
+        <p>Mostramos solo categorías con contenido cargado. Menos opciones muertas, más decisiones simples.</p>
+      </div>
+
+      <div class="catalog-tools" data-reveal>
+        <div class="filter-group" aria-label="Filtrar catálogo">
+          <button class="filter-pill is-active" type="button" data-filter="all">Todos</button>
+          {% if trajes_importados %}
+            <button class="filter-pill" type="button" data-filter="importada">Línea importada</button>
+          {% endif %}
+          {% if trajes_nacionales %}
+            <button class="filter-pill" type="button" data-filter="nacional">Línea nacional</button>
+          {% endif %}
+          {% if camisas %}
+            <button class="filter-pill" type="button" data-filter="camisa">Camisas</button>
+          {% endif %}
+          {% if zapatos %}
+            <button class="filter-pill" type="button" data-filter="zapato">Zapatos</button>
+          {% endif %}
+          {% if combos %}
+            <button class="filter-pill" type="button" data-filter="combo">Combos</button>
+          {% endif %}
+        </div>
+        <p class="catalog-count" id="catalog-count">Looks disponibles</p>
+        <a class="btn btn-compact" href="{% url 'visitas:reservar' %}">Consultar talles</a>
+      </div>
+
+      <div class="product-grid" id="product-grid" aria-live="polite">
+        {% for item in trajes_importados %}
+          <article class="product-card is-entering" data-line="importada" style="--fabric:#17202f">
+            <div class="product-media">
+              <div class="image-fallback" aria-hidden="true"><strong>{{ item.tela }}</strong></div>
+              <img src="{{ item.foto_modelo.url }}" alt="Traje importado {{ item.tela }}" loading="lazy">
+              <span class="product-badge">Importada</span>
+            </div>
+            <div class="product-body">
+              <div class="product-top">
+                <div>
+                  <p class="product-kind">Ambo importado</p>
+                  <h3 class="product-name">{{ item.tela }}</h3>
+                </div>
+                <p class="product-price">${{ item.precio }}</p>
+              </div>
+              <div class="product-meta">
+                {% if item.talles_stock_saco %}<p><strong>Talles existentes en stock:</strong> saco {{ item.talles_stock_saco|join:" · " }}{% if item.talles_stock_pantalon %} · pantalón {{ item.talles_stock_pantalon|join:" · " }}{% endif %}</p>{% endif %}
+                {% for fila in item.talles.all %}
+                  <p>Color: {{ fila.color }} · Saco {{ fila.talle_saco }} · Pantalón {{ fila.talle_pantalon }}</p>
+                {% empty %}
+                  <p>Talles a confirmar en la visita.</p>
+                {% endfor %}
+              </div>
+              <div class="product-actions">
+                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
+                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+
+        {% for item in trajes_nacionales %}
+          <article class="product-card is-entering" data-line="nacional" style="--fabric:#253756">
+            <div class="product-media">
+              <div class="image-fallback" aria-hidden="true"><strong>{{ item.tela }}</strong></div>
+              <img src="{{ item.foto_modelo.url }}" alt="Traje nacional {{ item.tela }}" loading="lazy">
+              <span class="product-badge">Nacional</span>
+            </div>
+            <div class="product-body">
+              <div class="product-top">
+                <div>
+                  <p class="product-kind">Ambo nacional</p>
+                  <h3 class="product-name">{{ item.tela }}</h3>
+                </div>
+                <p class="product-price">${{ item.precio }}</p>
+              </div>
+              <div class="product-meta">
+                {% if item.talles_stock_saco %}<p><strong>Talles existentes en stock:</strong> saco {{ item.talles_stock_saco|join:" · " }}{% if item.talles_stock_pantalon %} · pantalón {{ item.talles_stock_pantalon|join:" · " }}{% endif %}</p>{% endif %}
+                {% for fila in item.talles.all %}
+                  <p>Color: {{ fila.color }} · Saco {{ fila.talle_saco }} · Pantalón {{ fila.talle_pantalon }}</p>
+                {% empty %}
+                  <p>Talles a confirmar en la visita.</p>
+                {% endfor %}
+              </div>
+              <div class="product-actions">
+                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
+                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+
+        {% for item in camisas %}
+          <article class="product-card is-entering" data-line="camisa" style="--fabric:#6f665b">
+            <div class="product-media">
+              <div class="image-fallback" aria-hidden="true"><strong>Camisa</strong></div>
+              <img src="{{ item.foto_modelo.url }}" alt="Camisa ABITO" loading="lazy">
+              <span class="product-badge">Camisa</span>
+            </div>
+            <div class="product-body">
+              <div class="product-top">
+                <div>
+                  <p class="product-kind">Complemento</p>
+                  <h3 class="product-name">Camisa</h3>
+                </div>
+                <p class="product-price">${{ item.precio }}</p>
+              </div>
+              <div class="product-meta">
+                {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
+                {% for fila in item.talles.all %}
+                  <p>Color: {{ fila.color }} · Talle {{ fila.talle }}</p>
+                {% endfor %}
+              </div>
+              <div class="product-actions">
+                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
+                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+
+        {% for item in zapatos %}
+          <article class="product-card is-entering" data-line="zapato" style="--fabric:#3b332b">
+            <div class="product-media">
+              <div class="image-fallback" aria-hidden="true"><strong>Zapatos</strong></div>
+              <img src="{{ item.foto_modelo.url }}" alt="Zapatos ABITO" loading="lazy">
+              <span class="product-badge">Zapatos</span>
+            </div>
+            <div class="product-body">
+              <div class="product-top">
+                <div>
+                  <p class="product-kind">Complemento</p>
+                  <h3 class="product-name">Zapatos</h3>
+                </div>
+                <p class="product-price">${{ item.precio }}</p>
+              </div>
+              <div class="product-meta">
+                {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
+                {% for fila in item.talles.all %}
+                  <p>Color: {{ fila.color }} · Talle {{ fila.talle }}</p>
+                {% endfor %}
+              </div>
+              <div class="product-actions">
+                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
+                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+
+        {% for combo in combos %}
+          <article class="product-card is-entering" data-line="combo" style="--fabric:#6f1f2c">
+            <div class="product-media">
+              <div class="image-fallback" aria-hidden="true"><strong>{{ combo.nombre }}</strong></div>
+              <img src="{{ combo.foto.url }}" alt="{{ combo.nombre }}" loading="lazy">
+              <span class="product-badge">Combo</span>
+            </div>
+            <div class="product-body">
+              <div class="product-top">
+                <div>
+                  <p class="product-kind">Look completo</p>
+                  <h3 class="product-name">{{ combo.nombre }}</h3>
+                </div>
+                <p class="product-price">Desde ${{ combo.precio_nacional }}</p>
+              </div>
+              <div class="product-meta">
+                {% if combo.descripcion %}<p>{{ combo.descripcion }}</p>{% endif %}
+                <p>Importada ${{ combo.precio_importado }} · Nacional ${{ combo.precio_nacional }} · Niños ${{ combo.precio_ninos }}</p>
+              </div>
+              <div class="product-actions">
+                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
+                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      <div class="catalog-empty" id="catalog-empty" hidden>
+        <p>No hay looks cargados para este filtro. Probá otra línea o reservá una visita para que ABITO te asesore.</p>
+        <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar visita</a>
+      </div>
+    </section>
+
+    <section class="benefits section-pad" aria-labelledby="benefits-title">
+      <div class="benefit-visual" data-reveal>
+        <img src="{% static 'img/logo_abito.png' %}" alt="" width="180" height="180">
+        <p>Probá, ajustá, reservá.</p>
+      </div>
+      <div class="benefit-copy">
+        <p class="eyebrow" data-reveal>Por qué alquilar en ABITO</p>
+        <h2 id="benefits-title" data-reveal>Comprás tranquilidad, no un traje que queda guardado.</h2>
+        <div class="benefit-list">
+          <article data-reveal>
+            <span>01</span>
+            <h3>Ves precios antes de ir</h3>
+            <p>Llegás con una idea clara de línea, presupuesto y opciones reales.</p>
+          </article>
+          <article data-reveal>
+            <span>02</span>
+            <h3>La prueba define el look</h3>
+            <p>No adivinás talle por internet: te lo probás y elegís con asistencia.</p>
+          </article>
+          <article data-reveal>
+            <span>03</span>
+            <h3>Resolución completa</h3>
+            <p>Saco, pantalón, camisa y accesorio pueden salir coordinados en una visita.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps section-pad" id="como-funciona" aria-labelledby="steps-title">
+      <div class="section-head" data-reveal>
+        <p class="eyebrow">Cómo funciona</p>
+        <h2 id="steps-title">Cuatro pasos, cero vueltas raras.</h2>
+      </div>
+
+      <div class="process-system" data-reveal>
+        <aside class="process-rail" aria-label="Secuencia de reserva">
+          <p class="process-status">Secuencia activa <span id="process-counter">01 / 04</span></p>
+          <div class="process-track" aria-hidden="true"><span id="process-progress"></span></div>
+          <div class="process-nav" role="tablist" aria-label="Pasos para alquilar">
+            <button class="process-tab is-active" type="button" data-step="0"><span>01</span>Mirar</button>
+            <button class="process-tab" type="button" data-step="1"><span>02</span>Reservar</button>
+            <button class="process-tab" type="button" data-step="2"><span>03</span>Probar</button>
+            <button class="process-tab" type="button" data-step="3"><span>04</span>Confirmar</button>
+          </div>
+        </aside>
+
+        <div class="process-cards">
+          <article class="process-card is-active" data-step-card="0">
+            <span>01</span>
+            <h3>Mirá el catálogo</h3>
+            <p>Explorás líneas, colores, talles y combos para llegar con una idea clara antes de escribir o reservar.</p>
+            <small>Continúa</small>
+          </article>
+          <article class="process-card" data-step-card="1">
+            <span>02</span>
+            <h3>Reservá tu visita</h3>
+            <p>Elegís un horario disponible y compartís los datos necesarios para coordinar la prueba presencial.</p>
+            <small>Continúa</small>
+          </article>
+          <article class="process-card" data-step-card="2">
+            <span>03</span>
+            <h3>Probalo en el local</h3>
+            <p>La dirección exacta se envía al confirmar. En la prueba se define talle, caída, camisa y accesorios.</p>
+            <small>Continúa</small>
+          </article>
+          <article class="process-card" data-step-card="3">
+            <span>04</span>
+            <h3>Salí con el look resuelto</h3>
+            <p>ABITO confirma los detalles finales por el canal oficial y dejás cerrada la elección para tu evento.</p>
+            <small>Sistema completo</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust section-pad" aria-label="Confianza ABITO">
+      <div class="trust-strip" data-reveal>
+        <strong>Gonnet · La Plata</strong>
+        <span>Visita presencial</span>
+        <span>Canal oficial por WhatsApp</span>
+        <span>Agenda con cupo validado</span>
+      </div>
+      <blockquote data-reveal>
+        “Reservá tu visita, probátelo y salí con el look resuelto.”
+      </blockquote>
+    </section>
+
+    <section class="faq section-pad" id="faq" aria-labelledby="faq-title">
+      <div class="section-head" data-reveal>
+        <p class="eyebrow">Preguntas frecuentes</p>
+        <h2 id="faq-title">Lo importante antes de reservar.</h2>
+      </div>
+
+      <div class="faq-list" data-reveal>
+        <details open>
+          <summary>¿Se puede alquilar online?</summary>
+          <p>No. La web muestra opciones y te lleva a una visita presencial, donde se define talle y look final.</p>
+        </details>
+        <details>
+          <summary>¿Se ve la dirección antes de reservar?</summary>
+          <p>No. La dirección exacta se comparte después de confirmar la visita.</p>
+        </details>
+        <details>
+          <summary>¿Qué pasa si un horario se ocupa?</summary>
+          <p>La agenda vuelve a validar el cupo al guardar, así no se confirma un turno sin lugar real.</p>
+        </details>
+        <details>
+          <summary>¿Hay combos con camisa?</summary>
+          <p>Sí. Cuando hay combos activos, la web los muestra con precios por línea.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="final-cta section-pad" id="reserva" aria-labelledby="final-title">
+      <div data-reveal>
+        <p class="eyebrow">Listo para probar</p>
+        <h2 id="final-title">Reservá tu visita y llegá al evento con el look resuelto.</h2>
+        <p>Contanos fecha, ocasión y estilo. ABITO te orienta con talles y disponibilidad.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar visita</a>
+          <a
+            class="btn btn-secondary"
+            href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Hablar por WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="sticky-conversion" aria-label="Accesos rápidos">
+    <a href="{% url 'visitas:reservar' %}">Reservar</a>
+    <a
+      href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      WhatsApp
+    </a>
+  </aside>
+
+  <dialog class="look-dialog" id="look-dialog" aria-labelledby="look-title">
+    <form method="dialog" class="dialog-shell look-shell">
+      <button class="dialog-close" value="cancel" aria-label="Cerrar detalle">×</button>
+      <div class="look-preview" id="look-preview" aria-hidden="true"></div>
+      <div>
+        <p class="eyebrow" id="look-kind">Línea</p>
+        <h2 id="look-title">Look ABITO</h2>
+        <p id="look-copy">Detalle del look seleccionado.</p>
+        <div class="look-meta">
+          <span id="look-price"></span>
+          <span id="look-sizes"></span>
+        </div>
+        <div class="dialog-actions">
+          <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar visita</a>
+          <a
+            class="btn btn-secondary"
+            href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            WhatsApp
+          </a>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const occasions = {
+      egresados: {
+        kicker: "Para egresados",
+        heading: "Arrancá por importados oscuros o tonos fríos.",
+        copy: "Funcionan bien en fotos, se ven actuales y permiten sumar camisa o accesorio sin recargar."
+      },
+      casamiento: {
+        kicker: "Para casamientos",
+        heading: "Negro, azul oscuro o gris topo son apuestas fuertes.",
+        copy: "Se ven formales, combinan fácil y dejan que la prueba presencial afine el calce."
+      },
+      fiesta: {
+        kicker: "Para fiestas",
+        heading: "Podés salir del básico sin perder elegancia.",
+        copy: "Azul Francia, petróleo o verde oscuro suman presencia para una noche importante."
+      },
+      gala: {
+        kicker: "Para gala",
+        heading: "Menos ruido, más calce.",
+        copy: "Priorizá línea importada, colores sobrios y combo completo si querés llegar con todo coordinado."
+      }
+    };
+
+    const productGrid = document.querySelector("#product-grid");
+    const catalogCount = document.querySelector("#catalog-count");
+    const catalogEmpty = document.querySelector("#catalog-empty");
+    const lookDialog = document.querySelector("#look-dialog");
+    const siteHeader = document.querySelector(".site-header");
+
+    function updateProgress() {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = max > 0 ? (window.scrollY / max) * 100 : 0;
+      document.querySelector(".scroll-progress").style.width = progress + "%";
+    }
+
+    function updateScrollState() {
+      updateProgress();
+      siteHeader.classList.toggle("is-scrolled", window.scrollY > 28);
+    }
+
+    function setFilter(filter) {
+      document.querySelectorAll(".filter-pill").forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.filter === filter);
+      });
+
+      let visible = 0;
+      document.querySelectorAll(".product-card").forEach((card, index) => {
+        const show = filter === "all" || card.dataset.line === filter;
+        card.hidden = !show;
+        if (show) {
+          visible += 1;
+          card.classList.add("is-entering");
+          window.setTimeout(() => card.classList.remove("is-entering"), index * 45);
+        }
+      });
+
+      catalogCount.textContent = visible + (visible === 1 ? " look disponible" : " looks disponibles");
+      catalogEmpty.hidden = visible !== 0;
+    }
+
+    function setOccasion(key) {
+      const data = occasions[key];
+      document.querySelector("#occasion-kicker").textContent = data.kicker;
+      document.querySelector("#occasion-heading").textContent = data.heading;
+      document.querySelector("#occasion-copy").textContent = data.copy;
+      document.querySelectorAll(".occasion-card").forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.occasion === key);
+      });
+    }
+
+    function setProcessStep(index) {
+      const counter = document.querySelector("#process-counter");
+      const progress = document.querySelector("#process-progress");
+      const total = document.querySelectorAll(".process-card").length;
+
+      counter.textContent = String(index + 1).padStart(2, "0") + " / " + String(total).padStart(2, "0");
+      progress.style.width = ((index + 1) / total) * 100 + "%";
+
+      document.querySelectorAll(".process-tab").forEach((button) => {
+        button.classList.toggle("is-active", Number(button.dataset.step) === index);
+      });
+      document.querySelectorAll(".process-card").forEach((card) => {
+        card.classList.toggle("is-active", Number(card.dataset.stepCard) === index);
+      });
+    }
+
+    function initProcessSequence() {
+      const cards = document.querySelectorAll(".process-card");
+
+      document.querySelectorAll(".process-tab").forEach((button) => {
+        button.addEventListener("click", () => {
+          const index = Number(button.dataset.step);
+          setProcessStep(index);
+          cards[index].scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      });
+
+      if (!("IntersectionObserver" in window)) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setProcessStep(Number(visible.target.dataset.stepCard));
+      }, { rootMargin: "-30% 0px -35% 0px", threshold: [0.25, 0.45, 0.65] });
+
+      cards.forEach((card) => observer.observe(card));
+    }
+
+    function initReveal() {
+      const nodes = document.querySelectorAll("[data-reveal]");
+      if (!("IntersectionObserver" in window)) {
+        nodes.forEach((node) => node.classList.add("is-visible"));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.14 });
+
+      nodes.forEach((node) => observer.observe(node));
+    }
+
+    function initProductTilt() {
+      if (window.matchMedia("(pointer: coarse)").matches) return;
+
+      productGrid.querySelectorAll(".product-card").forEach((card) => {
+        card.addEventListener("pointermove", (event) => {
+          const rect = card.getBoundingClientRect();
+          const x = (event.clientX - rect.left) / rect.width;
+          const y = (event.clientY - rect.top) / rect.height;
+          card.style.setProperty("--rx", ((0.5 - y) * 5).toFixed(2) + "deg");
+          card.style.setProperty("--ry", ((x - 0.5) * 5).toFixed(2) + "deg");
+          card.style.setProperty("--mx", (x * 100).toFixed(1) + "%");
+          card.style.setProperty("--my", (y * 100).toFixed(1) + "%");
+        });
+        card.addEventListener("pointerleave", () => {
+          card.style.setProperty("--rx", "0deg");
+          card.style.setProperty("--ry", "0deg");
+          card.style.setProperty("--mx", "50%");
+          card.style.setProperty("--my", "50%");
+        });
+      });
+    }
+
+    function openLook(card) {
+      const kind = card.querySelector(".product-kind")?.textContent.trim() || "Look ABITO";
+      const title = card.querySelector(".product-name")?.textContent.trim() || "Look ABITO";
+      const price = card.querySelector(".product-price")?.textContent.trim() || "Precio a confirmar";
+      const meta = Array.from(card.querySelectorAll(".product-meta p")).map((node) => node.textContent.trim()).join(" · ");
+      const fabric = getComputedStyle(card).getPropertyValue("--fabric") || "#24221e";
+
+      document.querySelector("#look-kind").textContent = kind;
+      document.querySelector("#look-title").textContent = title;
+      document.querySelector("#look-copy").textContent = meta || "Consultá disponibilidad y calce en una visita presencial.";
+      document.querySelector("#look-price").textContent = price;
+      document.querySelector("#look-sizes").textContent = meta || "Talles a confirmar";
+      document.querySelector("#look-preview").style.setProperty("--look-fabric", fabric);
+
+      if (typeof lookDialog.showModal === "function") lookDialog.showModal();
+    }
+
+    document.querySelectorAll(".filter-pill").forEach((button) => {
+      button.addEventListener("click", () => setFilter(button.dataset.filter));
+    });
+    document.querySelectorAll(".occasion-card").forEach((button) => {
+      button.addEventListener("click", () => setOccasion(button.dataset.occasion));
+    });
+    document.querySelectorAll("[data-detail]").forEach((button) => {
+      button.addEventListener("click", () => openLook(button.closest(".product-card")));
+    });
+    lookDialog.addEventListener("click", (event) => {
+      if (event.target === lookDialog) lookDialog.close();
+    });
+
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setFilter("all");
+      initReveal();
+      initProcessSequence();
+      initProductTilt();
+      updateScrollState();
+    });
+  </script>
+</body>
+</html>

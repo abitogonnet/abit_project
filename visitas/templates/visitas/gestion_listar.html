@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight">
+  <div><p class="ab-kicker">Agenda comercial</p><h1 class="ab-title">Visitas</h1></div>
+  <aside class="ab-pagehero-panel"><strong>Visitas hoy: {{ visitas_hoy }}</strong></aside>
+</section>
+<div class="ab-actions">
+  <a class="ab-btn2" href="?alcance=hoy">Hoy</a>
+  <a class="ab-btn2" href="?alcance=proximas">Próximas</a>
+  <a class="ab-btn2" href="?alcance=historial">Historial</a>
+  <a class="ab-btn" href="{% url 'visitas:bloqueos' %}">Bloquear agenda</a>
+</div>
+<section class="ab-section-card">
+  {% for visita in visitas %}
+  <article class="ab-priority-card">
+    <div>
+      <h3>{{ visita.fecha_visita|date:"d/m/Y" }} {{ visita.hora_visita|time:"H:i" }} — {{ visita.nombre }}</h3>
+      <p>DNI {{ visita.dni }} · {{ visita.cantidad_personas }} persona{{ visita.cantidad_personas|pluralize }} · {{ visita.get_estado_display }}</p>
+    </div>
+    <a class="ab-btn2" href="{% url 'visitas:detalle' visita.pk %}">Ver visita</a>
+  </article>
+  {% empty %}<div class="ab-empty">No hay visitas en este período.</div>{% endfor %}
+</section>
+{% endblock %}

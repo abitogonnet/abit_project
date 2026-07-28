@@ -8,7 +8,10 @@ from .models import PerfilUsuario
 
 
 class AccesoAbitoMiddleware:
-    PUBLIC_NAMES = {"cuentas:login", "cuentas:configuracion_inicial"}
+    PUBLIC_NAMES = {
+        "home", "publico:home", "cuentas:login", "cuentas:configuracion_inicial",
+        "visitas:reservar", "visitas:confirmada", "visitas:horarios_disponibles",
+    }
     FINANCE_NAMES = {"gastos:home", "gastos:crear", "gastos:division_bienes", "gastos:movimientos", "reportes:home", "reportes:exportar_excel"}
 
     def __init__(self, get_response):
@@ -21,7 +24,8 @@ class AccesoAbitoMiddleware:
         except Resolver404:
             name = None
         static_url = settings.STATIC_URL or "/static/"
-        if not request.path_info.startswith(static_url) and name not in self.PUBLIC_NAMES:
+        media_url = settings.MEDIA_URL or "/media/"
+        if not request.path_info.startswith((static_url, media_url)) and name not in self.PUBLIC_NAMES:
             if not request.user.is_authenticated:
                 return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
             if rol_de(request.user) == PerfilUsuario.COSTURERA:

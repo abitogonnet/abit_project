@@ -41,6 +41,8 @@
         <button class="ab-global-btn secondary" type="button" data-go-back>Atras</button>
           <a class="ab-global-btn secondary" href="{% url 'cuentas:actividad' %}">Registro de actividad</a>
           <a class="ab-global-btn secondary" href="{% url 'alquileres:clientes' %}">Clientes</a>
+          <a class="ab-global-btn secondary" href="{% url 'visitas:listar' %}">Visitas</a>
+          {% if user.perfil.rol != 'EMPLEADO' %}<a class="ab-global-btn secondary" href="{% url 'catalogo:gestion' %}">Catálogo</a>{% endif %}
           {% if user.perfil.rol == 'PROPIETARIO' %}<a class="ab-global-btn secondary" href="{% url 'cuentas:usuarios' %}">Usuarios</a>{% endif %}
           <details class="ab-user-menu"><summary>{{ user.perfil.nombre|default:user.username }} ▾</summary><div class="ab-user-dropdown"><a href="{% url 'cuentas:cambiar_password' %}">Modificar contraseña</a><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cambiar usuario</button></form><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form></div></details>
         {% endif %}

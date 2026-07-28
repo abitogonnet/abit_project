@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Catálogo</p><h1 class="ab-title">{% if objeto %}Editar{% else %}Crear{% endif %} {{ tipo }}</h1></div></section>
+<section class="ab-section-card">
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<div id="image-previews" class="ab-actions"></div><button class="ab-btn" type="submit">Guardar</button></form>
+</section>
+<script>
+document.querySelectorAll('input[type="file"][accept*="image"]').forEach(function(input) {
+  input.addEventListener("change", function() {
+    const box = document.getElementById("image-previews"); box.innerHTML = "";
+    Array.from(input.files || []).forEach(function(file) {
+      const img = document.createElement("img"); img.src = URL.createObjectURL(file);
+      img.alt = "Vista previa"; img.style.cssText = "max-width:180px;max-height:180px;object-fit:cover;border-radius:12px";
+      box.appendChild(img);
+    });
+  });
+});
+</script>
+{% endblock %}

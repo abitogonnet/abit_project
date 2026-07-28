@@ -1,0 +1,976 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Reservá una visita en ABITO para probar trajes de alquiler para egresados, casamientos, fiestas y eventos formales.">
+  <title>Reservar visita | ABITO</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/publico.css' %}">
+</head>
+<body class="reserve-page" data-initial-step="{{ initial_step|default:'1' }}">
+  <div class="scroll-progress" aria-hidden="true"></div>
+
+  <header class="site-header reserve-header">
+    <a class="brand" href="{% url 'publico:home' %}" aria-label="Volver al inicio de ABITO">
+      <img src="{% static 'img/logo_abito.png' %}" alt="" width="44" height="44">
+      <span>
+        <strong>ABITO</strong>
+        <small>Gonnet · La Plata</small>
+      </span>
+    </a>
+
+    <nav class="site-nav" aria-label="Navegación de reserva">
+      <a href="{% url 'publico:home' %}#catalogo">Trajes</a>
+      <a href="{% url 'publico:home' %}#como-funciona">Cómo funciona</a>
+      <a href="{% url 'publico:home' %}#faq">FAQ</a>
+    </nav>
+
+    <a
+      class="header-cta"
+      href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      WhatsApp
+    </a>
+  </header>
+
+  <main class="reserve-experience">
+    <section class="reserve-intro" aria-labelledby="reserve-title">
+      <img class="reserve-bg" src="{% static 'img/hero_abito.jpg' %}" alt="">
+      <div class="reserve-shade" aria-hidden="true"></div>
+
+      <div class="reserve-intro-content">
+        <p class="eyebrow">Reserva presencial</p>
+        <h1 id="reserve-title">Probate el traje. Dejá el look resuelto.</h1>
+        <p>
+          Elegí fecha, horario y contanos si ya viste un ambo del catálogo. ABITO valida cupo real y prepara la visita para que no pierdas tiempo.
+        </p>
+
+        <div class="reserve-proof">
+          <span>Agenda con cupo</span>
+          <span>Lunes a viernes</span>
+          <span>Dirección al confirmar</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="reserve-workspace" aria-label="Formulario de reserva">
+      <aside class="reserve-rail" aria-label="Progreso de reserva">
+        <p class="process-status">Reserva activa <span id="reserve-progress-label">01 / 05</span></p>
+        <div class="process-track reserve-track" aria-hidden="true"><span id="reserve-progress-bar"></span></div>
+
+        <div class="reserve-step-list">
+          <button class="reserve-step is-active" type="button" id="pill-1" data-step-jump="1">
+            <span>01</span>
+            <strong>Evento</strong>
+            <small>Personas y fecha</small>
+          </button>
+          <button class="reserve-step" type="button" id="pill-2" data-step-jump="2">
+            <span>02</span>
+            <strong>Día</strong>
+            <small>Visita dentro de los 30 días</small>
+          </button>
+          <button class="reserve-step" type="button" id="pill-3" data-step-jump="3">
+            <span>03</span>
+            <strong>Horario</strong>
+            <small>Cupos disponibles</small>
+          </button>
+          <button class="reserve-step" type="button" id="pill-4" data-step-jump="4">
+            <span>04</span>
+            <strong>Prendas</strong>
+            <small>Catálogo visto</small>
+          </button>
+          <button class="reserve-step" type="button" id="pill-5" data-step-jump="5">
+            <span>05</span>
+            <strong>Confirmación</strong>
+            <small>Datos finales</small>
+          </button>
+        </div>
+
+        <div class="reserve-live-card" aria-live="polite">
+          <p class="eyebrow">Tu visita</p>
+          <dl>
+            <div>
+              <dt>Evento</dt>
+              <dd id="sideEvento">Sin fecha</dd>
+            </div>
+            <div>
+              <dt>Visita</dt>
+              <dd id="sideVisita">Sin día</dd>
+            </div>
+            <div>
+              <dt>Horario</dt>
+              <dd id="sideHora">Sin horario</dd>
+            </div>
+          </dl>
+        </div>
+      </aside>
+
+      <section class="reserve-panel" aria-labelledby="reserve-panel-title">
+        <div class="reserve-panel-head">
+          <p class="eyebrow" id="reserve-step-kicker">Paso 01</p>
+          <h2 id="reserve-panel-title">Contanos para qué fecha necesitás el traje.</h2>
+          <p id="reserve-step-copy">Con eso calculamos desde cuándo podés venir a probarte y qué horarios tienen cupo.</p>
+        </div>
+
+        <form method="post" id="reservaForm" class="reserve-flow" novalidate>
+          {% csrf_token %}
+          {{ form.hora_visita }}
+
+          {% if form.non_field_errors or form.errors %}
+            <div class="form-errors reserve-system-errors">
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="step-panel reserve-panel-step" id="step-1">
+            <div class="reserve-field-grid">
+              <div class="form-group">
+                <label for="{{ form.cantidad_personas.id_for_label }}">Cantidad de personas</label>
+                {{ form.cantidad_personas }}
+                {% for error in form.cantidad_personas.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              </div>
+
+              <div class="form-group">
+                <label for="{{ form.fecha_evento.id_for_label }}">Fecha del evento</label>
+                {{ form.fecha_evento }}
+                {% for error in form.fecha_evento.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="reserve-note-grid">
+              <article>
+                <span>Horario</span>
+                <strong>17:00 a 20:00</strong>
+                <p>Lunes a viernes, con turnos cada 30 minutos.</p>
+              </article>
+              <article>
+                <span>Regla de agenda</span>
+                <strong>Últimos 30 días</strong>
+                <p>La visita se reserva cerca del evento para definir mejor el talle.</p>
+              </article>
+            </div>
+
+            <div id="step1Message" class="step-inline-message" hidden></div>
+
+            <div class="detail-actions reserve-actions">
+              <button type="button" class="btn btn-primary btn-reset" onclick="goToStep2()">
+                Elegir día de visita
+              </button>
+              <a href="{% url 'publico:home' %}#catalogo" class="btn btn-secondary">Volver al catálogo</a>
+            </div>
+          </div>
+
+          <div class="step-panel reserve-panel-step" id="step-2" hidden>
+            <div class="reserve-tip-box">
+              Elegí un día hábil entre el inicio de la ventana permitida y la fecha del evento. La web ajusta el rango automáticamente.
+            </div>
+
+            <div class="form-group">
+              <label for="{{ form.fecha_visita.id_for_label }}">Día para la visita</label>
+              {{ form.fecha_visita }}
+              {% for error in form.fecha_visita.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            </div>
+
+            <div id="step2Message" class="step-inline-message" hidden></div>
+
+            <div class="detail-actions reserve-actions">
+              <button type="button" class="btn btn-secondary btn-reset" onclick="prevStep(1)">Volver</button>
+              <button type="button" class="btn btn-primary btn-reset" onclick="goToStep3()">Ver horarios</button>
+            </div>
+          </div>
+
+          <div class="step-panel reserve-panel-step" id="step-3" hidden>
+            <div class="reserve-tip-box">
+              Mostramos solo horarios con cupo para la cantidad de personas elegida. Si son 3, el sistema reserva más capacidad.
+            </div>
+
+            <div class="form-group">
+              <label>Horario disponible</label>
+              <div id="horariosWrap" class="horarios-wrap time-slot-grid" aria-live="polite"></div>
+              <p id="horariosEmpty" class="horarios-empty" hidden>No hay horarios disponibles para esa fecha.</p>
+              <div id="step3Message" class="step-inline-message" hidden></div>
+              {% for error in form.hora_visita.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            </div>
+
+            <div class="detail-actions reserve-actions">
+              <button type="button" class="btn btn-secondary btn-reset" onclick="prevStep(2)">Volver</button>
+              <button type="button" class="btn btn-primary btn-reset" onclick="goToStep4()">Continuar</button>
+            </div>
+          </div>
+
+          <div class="step-panel reserve-panel-step" id="step-4" hidden>
+            <div class="form-group reserve-catalog-field">
+              <label for="{{ form.vio_prendas_catalogo.id_for_label }}">¿Viste alguna prenda en el catálogo?</label>
+              <div class="catalog-choice-grid" role="group" aria-label="Prendas vistas en catálogo">
+                <button class="catalog-choice" type="button" data-catalog-value="no">
+                  <span>No todavía</span>
+                  <small>Prefiero que me asesoren en la visita.</small>
+                </button>
+                <button class="catalog-choice" type="button" data-catalog-value="si">
+                  <span>Sí, quiero indicar ambos</span>
+                  <small>Dejás modelo, color y talles tentativos.</small>
+                </button>
+              </div>
+              <div class="reserve-select-hidden">
+                {{ form.vio_prendas_catalogo }}
+              </div>
+              {% for error in form.vio_prendas_catalogo.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            </div>
+
+            <div id="preferenciasWrap" class="preferences-stack" hidden>
+              <div class="preference-card">
+                <p class="preference-title">Ambo 1</p>
+
+                <div class="form-group">
+                  <label for="{{ form.preferencia_1_traje.id_for_label }}">Modelo</label>
+                  {{ form.preferencia_1_traje }}
+                  {% for error in form.preferencia_1_traje.errors %}
+                    <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+
+                <div class="form-group">
+                  <label for="{{ form.preferencia_1_color.id_for_label }}">Color</label>
+                  {{ form.preferencia_1_color }}
+                  {% for error in form.preferencia_1_color.errors %}
+                    <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+
+                <div class="preference-size-grid">
+                  <div class="form-group">
+                    <label for="{{ form.preferencia_1_talle_saco.id_for_label }}">Talle de saco</label>
+                    {{ form.preferencia_1_talle_saco }}
+                    {% for error in form.preferencia_1_talle_saco.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+
+                  <div class="form-group">
+                    <label for="{{ form.preferencia_1_talle_pantalon.id_for_label }}">Talle de pantalón</label>
+                    {{ form.preferencia_1_talle_pantalon }}
+                    {% for error in form.preferencia_1_talle_pantalon.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="preference-card">
+                <p class="preference-title">Ambo 2</p>
+
+                <div class="form-group">
+                  <label for="{{ form.preferencia_2_traje.id_for_label }}">Modelo</label>
+                  {{ form.preferencia_2_traje }}
+                  {% for error in form.preferencia_2_traje.errors %}
+                    <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+
+                <div class="form-group">
+                  <label for="{{ form.preferencia_2_color.id_for_label }}">Color</label>
+                  {{ form.preferencia_2_color }}
+                  {% for error in form.preferencia_2_color.errors %}
+                    <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+
+                <div class="preference-size-grid">
+                  <div class="form-group">
+                    <label for="{{ form.preferencia_2_talle_saco.id_for_label }}">Talle de saco</label>
+                    {{ form.preferencia_2_talle_saco }}
+                    {% for error in form.preferencia_2_talle_saco.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+
+                  <div class="form-group">
+                    <label for="{{ form.preferencia_2_talle_pantalon.id_for_label }}">Talle de pantalón</label>
+                    {{ form.preferencia_2_talle_pantalon }}
+                    {% for error in form.preferencia_2_talle_pantalon.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="preference-card">
+                <p class="preference-title">Ambo 3</p>
+
+                <div class="form-group">
+                  <label for="{{ form.preferencia_3_traje.id_for_label }}">Modelo</label>
+                  {{ form.preferencia_3_traje }}
+                  {% for error in form.preferencia_3_traje.errors %}
+                    <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+
+                <div class="form-group">
+                  <label for="{{ form.preferencia_3_color.id_for_label }}">Color</label>
+                  {{ form.preferencia_3_color }}
+                  {% for error in form.preferencia_3_color.errors %}
+                    <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+
+                <div class="preference-size-grid">
+                  <div class="form-group">
+                    <label for="{{ form.preferencia_3_talle_saco.id_for_label }}">Talle de saco</label>
+                    {{ form.preferencia_3_talle_saco }}
+                    {% for error in form.preferencia_3_talle_saco.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+
+                  <div class="form-group">
+                    <label for="{{ form.preferencia_3_talle_pantalon.id_for_label }}">Talle de pantalón</label>
+                    {{ form.preferencia_3_talle_pantalon }}
+                    {% for error in form.preferencia_3_talle_pantalon.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="step4Message" class="step-inline-message" hidden></div>
+
+            <div class="detail-actions reserve-actions">
+              <button type="button" class="btn btn-secondary btn-reset" onclick="prevStep(3)">Volver</button>
+              <button type="button" class="btn btn-primary btn-reset" onclick="goToStep5()">Revisar datos</button>
+            </div>
+          </div>
+
+          <div class="step-panel reserve-panel-step" id="step-5" hidden>
+            <div class="reserve-field-grid reserve-field-grid-three">
+              <div class="form-group">
+                <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+                {{ form.nombre }}
+                {% for error in form.nombre.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              </div>
+
+              <div class="form-group">
+                <label for="{{ form.telefono.id_for_label }}">Celular</label>
+                {{ form.telefono }}
+                {% for error in form.telefono.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              </div>
+
+              <div class="form-group">
+                <label for="{{ form.dni.id_for_label }}">DNI</label>
+                {{ form.dni }}
+                {% for error in form.dni.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="reserve-summary" id="summaryBox">
+              <div><strong>Personas</strong><span id="summaryPersonas">-</span></div>
+              <div><strong>Evento</strong><span id="summaryEvento">-</span></div>
+              <div><strong>Visita</strong><span id="summaryVisita">-</span></div>
+              <div><strong>Horario</strong><span id="summaryHora">-</span></div>
+              <div><strong>Catálogo</strong><span id="summaryPrendas">No</span></div>
+            </div>
+
+            <div class="reserve-summary summary-ambos" id="summaryAmbosBox" hidden>
+              <p><strong>Ambos elegidos</strong></p>
+              <div id="summaryAmbosList" class="summary-preferences-list"></div>
+            </div>
+
+            <div id="step5Message" class="step-inline-message" hidden></div>
+
+            <div class="detail-actions reserve-actions">
+              <button type="button" class="btn btn-secondary btn-reset" onclick="prevStep(4)">Volver</button>
+              <button type="submit" class="btn btn-primary btn-reset">Confirmar visita</button>
+            </div>
+          </div>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  {% include "includes/social_links.html" %}
+  {{ preferencias_catalogo|json_script:"catalogoPreferenciasData" }}
+
+  <script>
+    const INITIAL_STEP = Number(document.body.dataset.initialStep || 1);
+    const HORARIOS_URL = "{% url 'visitas:horarios_disponibles' %}";
+    const CATALOGO_PREFERENCIAS = JSON.parse(
+      document.getElementById("catalogoPreferenciasData").textContent
+    );
+
+    const stepMeta = {
+      1: {
+        kicker: "Paso 01",
+        title: "Contanos para qué fecha necesitás el traje.",
+        copy: "Con eso calculamos desde cuándo podés venir a probarte y qué horarios tienen cupo."
+      },
+      2: {
+        kicker: "Paso 02",
+        title: "Elegí un día para venir a probarte.",
+        copy: "La visita se reserva dentro de los últimos 30 días previos al evento."
+      },
+      3: {
+        kicker: "Paso 03",
+        title: "Reservá un horario con cupo real.",
+        copy: "Mostramos horarios disponibles según fecha, cupo y cantidad de personas."
+      },
+      4: {
+        kicker: "Paso 04",
+        title: "Decinos si ya venís con un look en mente.",
+        copy: "Si viste prendas en el catálogo, podés dejarlas indicadas para preparar mejor la visita."
+      },
+      5: {
+        kicker: "Paso 05",
+        title: "Confirmá tus datos y cerrá la visita.",
+        copy: "La visita queda registrada con fecha, horario y preferencias para que ABITO la prepare."
+      }
+    };
+
+    function updatePageProgress() {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = max > 0 ? (window.scrollY / max) * 100 : 0;
+      const progressBar = document.querySelector(".scroll-progress");
+      const header = document.querySelector(".site-header");
+
+      if (progressBar) progressBar.style.width = progress + "%";
+      if (header) header.classList.toggle("is-scrolled", window.scrollY > 24);
+    }
+
+    function setActivePill(step) {
+      const total = 5;
+
+      for (let index = 1; index <= total; index++) {
+        const pill = document.getElementById(`pill-${index}`);
+        pill.classList.toggle("is-active", index === step);
+        pill.classList.toggle("is-complete", index < step);
+        pill.disabled = index > step;
+      }
+
+      document.getElementById("reserve-progress-label").textContent =
+        String(step).padStart(2, "0") + " / 05";
+      document.getElementById("reserve-progress-bar").style.width = (step / total) * 100 + "%";
+    }
+
+    function setPanelCopy(step) {
+      const meta = stepMeta[step];
+      document.getElementById("reserve-step-kicker").textContent = meta.kicker;
+      document.getElementById("reserve-panel-title").textContent = meta.title;
+      document.getElementById("reserve-step-copy").textContent = meta.copy;
+    }
+
+    function showStep(step) {
+      for (let index = 1; index <= 5; index++) {
+        const panel = document.getElementById(`step-${index}`);
+        panel.hidden = index !== step;
+        panel.style.display = index === step ? "block" : "none";
+      }
+
+      setActivePill(step);
+      setPanelCopy(step);
+      updateMiniSummary();
+
+      const panel = document.querySelector(".reserve-panel");
+      if (panel && window.matchMedia("(max-width: 900px)").matches) {
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function prevStep(step) {
+      showStep(step);
+    }
+
+    function showInlineMessage(id, text) {
+      const box = document.getElementById(id);
+      if (!box) return;
+      box.textContent = text;
+      box.hidden = false;
+      box.style.display = "block";
+    }
+
+    function clearInlineMessage(id) {
+      const box = document.getElementById(id);
+      if (!box) return;
+      box.textContent = "";
+      box.hidden = true;
+      box.style.display = "none";
+    }
+
+    function formatDateToInput(dateObj) {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatDateHuman(value) {
+      if (!value) return "Sin fecha";
+
+      const parts = value.split("-");
+      if (parts.length !== 3) return value;
+
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function getSelectedPersonas() {
+      return document.getElementById("id_cantidad_personas").value;
+    }
+
+    function getSelectedEvento() {
+      return document.getElementById("id_fecha_evento").value;
+    }
+
+    function getSelectedVisita() {
+      return document.getElementById("id_fecha_visita").value;
+    }
+
+    function updateMiniSummary() {
+      const evento = document.getElementById("id_fecha_evento")?.value || "";
+      const visita = document.getElementById("id_fecha_visita")?.value || "";
+      const hora = document.getElementById("id_hora_visita")?.value || "";
+
+      document.getElementById("sideEvento").textContent = evento ? formatDateHuman(evento) : "Sin fecha";
+      document.getElementById("sideVisita").textContent = visita ? formatDateHuman(visita) : "Sin día";
+      document.getElementById("sideHora").textContent = hora || "Sin horario";
+    }
+
+    function updateVisitDateLimits() {
+      const evento = document.getElementById("id_fecha_evento");
+      const visita = document.getElementById("id_fecha_visita");
+
+      if (!evento.value) return false;
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      const fechaEvento = new Date(`${evento.value}T00:00:00`);
+      const minPorEvento = new Date(fechaEvento);
+      minPorEvento.setDate(minPorEvento.getDate() - 30);
+
+      const minReal = minPorEvento > hoy ? minPorEvento : hoy;
+
+      visita.min = formatDateToInput(minReal);
+      visita.max = formatDateToInput(fechaEvento);
+
+      if (visita.value) {
+        const fechaActualVisita = new Date(`${visita.value}T00:00:00`);
+        if (fechaActualVisita < minReal || fechaActualVisita > fechaEvento) {
+          visita.value = "";
+        }
+      }
+
+      return true;
+    }
+
+    function goToStep2() {
+      const personas = getSelectedPersonas();
+      const evento = getSelectedEvento();
+
+      clearInlineMessage("step1Message");
+
+      if (!personas) {
+        showInlineMessage("step1Message", "Elegí la cantidad de personas.");
+        return;
+      }
+
+      if (!evento) {
+        showInlineMessage("step1Message", "Elegí la fecha del evento.");
+        return;
+      }
+
+      if (!updateVisitDateLimits()) {
+        showInlineMessage("step1Message", "Primero elegí la fecha del evento.");
+        return;
+      }
+
+      clearInlineMessage("step2Message");
+      showStep(2);
+    }
+
+    function esDiaHabil(fechaTexto) {
+      const fecha = new Date(`${fechaTexto}T00:00:00`);
+      const dia = fecha.getDay();
+      return dia >= 1 && dia <= 5;
+    }
+
+    async function goToStep3() {
+      const fechaVisita = getSelectedVisita();
+
+      clearInlineMessage("step2Message");
+      clearInlineMessage("step3Message");
+
+      if (!fechaVisita) {
+        showInlineMessage("step2Message", "Elegí un día para la visita.");
+        return;
+      }
+
+      if (!esDiaHabil(fechaVisita)) {
+        showInlineMessage("step2Message", "ABITO atiende visitas de lunes a viernes.");
+        return;
+      }
+
+      await cargarHorarios();
+      showStep(3);
+    }
+
+    function goToStep4() {
+      const hora = document.getElementById("id_hora_visita").value;
+
+      clearInlineMessage("step3Message");
+
+      if (!hora) {
+        showInlineMessage("step3Message", "Elegí un horario disponible para continuar.");
+        return;
+      }
+
+      updatePreferenciasVisibility();
+      showStep(4);
+    }
+
+    function preferenciasIncompletas() {
+      for (let index = 1; index <= 3; index++) {
+        const traje = document.getElementById(`id_preferencia_${index}_traje`).value;
+        const color = document.getElementById(`id_preferencia_${index}_color`).value;
+        const talleSaco = document.getElementById(`id_preferencia_${index}_talle_saco`).value.trim();
+        const tallePantalon = document.getElementById(`id_preferencia_${index}_talle_pantalon`).value.trim();
+
+        if (traje && (!color || !talleSaco || !tallePantalon)) {
+          return "Completá color, talle de saco y talle de pantalón para el ambo que elegiste.";
+        }
+
+        if (!traje && (color || talleSaco || tallePantalon)) {
+          return "Primero elegí el ambo y después completá color y talles.";
+        }
+      }
+
+      return "";
+    }
+
+    function goToStep5() {
+      const vioPrendas = document.getElementById("id_vio_prendas_catalogo").value;
+      const mensajePreferencias = preferenciasIncompletas();
+
+      clearInlineMessage("step4Message");
+
+      if (!vioPrendas) {
+        showInlineMessage("step4Message", "Indicanos si viste alguna prenda en el catálogo.");
+        return;
+      }
+
+      if (mensajePreferencias) {
+        showInlineMessage("step4Message", mensajePreferencias);
+        return;
+      }
+
+      if (vioPrendas === "si" && !hayAlgunaPreferenciaCompleta()) {
+        showInlineMessage("step4Message", "Si viste prendas, elegí al menos un ambo con sus talles.");
+        return;
+      }
+
+      fillSummary();
+      showStep(5);
+    }
+
+    function updateCatalogChoiceButtons() {
+      const value = document.getElementById("id_vio_prendas_catalogo").value;
+
+      document.querySelectorAll(".catalog-choice").forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.catalogValue === value);
+      });
+    }
+
+    function updatePreferenciasVisibility() {
+      const vioPrendas = document.getElementById("id_vio_prendas_catalogo");
+      const wrap = document.getElementById("preferenciasWrap");
+      const show = vioPrendas.value === "si";
+
+      wrap.hidden = !show;
+      wrap.style.display = show ? "grid" : "none";
+      updateCatalogChoiceButtons();
+    }
+
+    function getTrajeData(trajeId) {
+      return CATALOGO_PREFERENCIAS.find(function(item) {
+        return String(item.id) === String(trajeId);
+      });
+    }
+
+    function updateColorOptions(index) {
+      const trajeSelect = document.getElementById(`id_preferencia_${index}_traje`);
+      const colorSelect = document.getElementById(`id_preferencia_${index}_color`);
+      const previousValue = colorSelect.dataset.currentValue || colorSelect.value || "";
+      const trajeData = getTrajeData(trajeSelect.value);
+
+      colorSelect.innerHTML = "";
+
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Elegí un color";
+      colorSelect.appendChild(defaultOption);
+
+      if (trajeData) {
+        trajeData.colores.forEach(function(color) {
+          const option = document.createElement("option");
+          option.value = color;
+          option.textContent = color;
+          if (String(color) === String(previousValue)) option.selected = true;
+          colorSelect.appendChild(option);
+        });
+      }
+
+      colorSelect.dataset.currentValue = colorSelect.value || "";
+    }
+
+    function hayAlgunaPreferenciaCompleta() {
+      for (let index = 1; index <= 3; index++) {
+        const traje = document.getElementById(`id_preferencia_${index}_traje`).value;
+        const color = document.getElementById(`id_preferencia_${index}_color`).value;
+        const talleSaco = document.getElementById(`id_preferencia_${index}_talle_saco`).value.trim();
+        const tallePantalon = document.getElementById(`id_preferencia_${index}_talle_pantalon`).value.trim();
+
+        if (traje && color && talleSaco && tallePantalon) return true;
+      }
+
+      return false;
+    }
+
+    function fillSummary() {
+      const personas = document.getElementById("id_cantidad_personas");
+      const evento = document.getElementById("id_fecha_evento");
+      const visita = document.getElementById("id_fecha_visita");
+      const hora = document.getElementById("id_hora_visita");
+      const vioPrendas = document.getElementById("id_vio_prendas_catalogo");
+      const ambosBox = document.getElementById("summaryAmbosBox");
+      const ambosList = document.getElementById("summaryAmbosList");
+
+      document.getElementById("summaryPersonas").textContent =
+        personas.value ? personas.options[personas.selectedIndex].text : "-";
+      document.getElementById("summaryEvento").textContent = formatDateHuman(evento.value);
+      document.getElementById("summaryVisita").textContent = formatDateHuman(visita.value);
+      document.getElementById("summaryHora").textContent = hora.value || "-";
+      document.getElementById("summaryPrendas").textContent =
+        vioPrendas.value === "si" ? "Sí" : "No";
+
+      ambosList.innerHTML = "";
+
+      if (vioPrendas.value !== "si") {
+        ambosBox.hidden = true;
+        ambosBox.style.display = "none";
+        return;
+      }
+
+      for (let index = 1; index <= 3; index++) {
+        const trajeSelect = document.getElementById(`id_preferencia_${index}_traje`);
+        const colorSelect = document.getElementById(`id_preferencia_${index}_color`);
+        const talleSaco = document.getElementById(`id_preferencia_${index}_talle_saco`).value.trim();
+        const tallePantalon = document.getElementById(`id_preferencia_${index}_talle_pantalon`).value.trim();
+
+        if (!trajeSelect.value || !colorSelect.value || !talleSaco || !tallePantalon) continue;
+
+        const item = document.createElement("p");
+        item.className = "summary-preference-item";
+        item.textContent = `${trajeSelect.options[trajeSelect.selectedIndex].text} · ${colorSelect.value} · Saco ${talleSaco} · Pantalón ${tallePantalon}`;
+        ambosList.appendChild(item);
+      }
+
+      const show = Boolean(ambosList.children.length);
+      ambosBox.hidden = !show;
+      ambosBox.style.display = show ? "grid" : "none";
+    }
+
+    function seleccionarHorario(horario) {
+      const hiddenInput = document.getElementById("id_hora_visita");
+      hiddenInput.value = horario;
+
+      clearInlineMessage("step3Message");
+
+      document.querySelectorAll(".time-slot").forEach(function(button) {
+        button.classList.toggle("is-active", button.dataset.hora === horario);
+      });
+
+      updateMiniSummary();
+    }
+
+    function renderHorarios(horarios) {
+      const wrap = document.getElementById("horariosWrap");
+      const empty = document.getElementById("horariosEmpty");
+      const hiddenInput = document.getElementById("id_hora_visita");
+
+      wrap.innerHTML = "";
+
+      let valorActual = hiddenInput.value || "";
+      if (valorActual.length >= 5) {
+        valorActual = valorActual.slice(0, 5);
+        hiddenInput.value = valorActual;
+      }
+
+      if (!horarios.length) {
+        hiddenInput.value = "";
+        empty.hidden = false;
+        empty.style.display = "block";
+        updateMiniSummary();
+        return;
+      }
+
+      empty.hidden = true;
+      empty.style.display = "none";
+
+      horarios.forEach(function(horario) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "time-slot";
+        button.dataset.hora = horario;
+        button.innerHTML = `<strong>${horario}</strong><small>Disponible</small>`;
+
+        if (horario === valorActual) button.classList.add("is-active");
+
+        button.addEventListener("click", function() {
+          seleccionarHorario(horario);
+        });
+
+        wrap.appendChild(button);
+      });
+
+      if (valorActual && !horarios.includes(valorActual)) {
+        hiddenInput.value = "";
+        showInlineMessage("step3Message", "El horario elegido ya no tiene cupo. Elegí otro.");
+      }
+
+      updateMiniSummary();
+    }
+
+    async function cargarHorarios() {
+      const fecha = getSelectedVisita();
+      const personas = getSelectedPersonas();
+
+      clearInlineMessage("step3Message");
+
+      if (!fecha || !personas) {
+        renderHorarios([]);
+        return;
+      }
+
+      try {
+        const query = `?fecha=${encodeURIComponent(fecha)}&personas=${encodeURIComponent(personas)}`;
+        const response = await fetch(`${HORARIOS_URL}${query}`);
+        const data = await response.json();
+        renderHorarios(data.horarios || []);
+      } catch (error) {
+        renderHorarios([]);
+        showInlineMessage("step3Message", "No se pudieron cargar los horarios. Probá nuevamente.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function() {
+      const inputEvento = document.getElementById("id_fecha_evento");
+      const inputVisita = document.getElementById("id_fecha_visita");
+      const inputPersonas = document.getElementById("id_cantidad_personas");
+      const hiddenHora = document.getElementById("id_hora_visita");
+      const vioPrendas = document.getElementById("id_vio_prendas_catalogo");
+
+      if (hiddenHora.value && hiddenHora.value.length >= 5) {
+        hiddenHora.value = hiddenHora.value.slice(0, 5);
+      }
+
+      for (let index = 1; index <= 3; index++) {
+        const trajeSelect = document.getElementById(`id_preferencia_${index}_traje`);
+        const colorSelect = document.getElementById(`id_preferencia_${index}_color`);
+
+        colorSelect.dataset.currentValue = colorSelect.value || "";
+        updateColorOptions(index);
+
+        trajeSelect.addEventListener("change", function() {
+          colorSelect.dataset.currentValue = "";
+          updateColorOptions(index);
+        });
+
+        colorSelect.addEventListener("change", function() {
+          colorSelect.dataset.currentValue = colorSelect.value || "";
+        });
+      }
+
+      inputEvento.addEventListener("change", function() {
+        updateVisitDateLimits();
+        inputVisita.value = "";
+        hiddenHora.value = "";
+        clearInlineMessage("step1Message");
+        clearInlineMessage("step2Message");
+        clearInlineMessage("step3Message");
+        renderHorarios([]);
+        updateMiniSummary();
+      });
+
+      inputVisita.addEventListener("change", function() {
+        hiddenHora.value = "";
+        clearInlineMessage("step2Message");
+        clearInlineMessage("step3Message");
+        renderHorarios([]);
+        updateMiniSummary();
+      });
+
+      inputPersonas.addEventListener("change", function() {
+        hiddenHora.value = "";
+        clearInlineMessage("step3Message");
+        renderHorarios([]);
+      });
+
+      vioPrendas.addEventListener("change", updatePreferenciasVisibility);
+
+      document.querySelectorAll(".catalog-choice").forEach((button) => {
+        button.addEventListener("click", function() {
+          vioPrendas.value = button.dataset.catalogValue;
+          clearInlineMessage("step4Message");
+          updatePreferenciasVisibility();
+        });
+      });
+
+      document.querySelectorAll(".reserve-step").forEach((button) => {
+        button.addEventListener("click", function() {
+          if (!button.disabled) showStep(Number(button.dataset.stepJump));
+        });
+      });
+
+      window.addEventListener("scroll", updatePageProgress, { passive: true });
+      window.addEventListener("resize", updatePageProgress);
+
+      updatePreferenciasVisibility();
+      updateVisitDateLimits();
+
+      if (INITIAL_STEP >= 3) await cargarHorarios();
+      if (INITIAL_STEP === 5) fillSummary();
+
+      showStep(INITIAL_STEP);
+      updatePageProgress();
+    });
+  </script>
+</body>
+</html>

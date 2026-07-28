@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight">
+  <div><p class="ab-kicker">Visita #{{ visita.pk }}</p><h1 class="ab-title">{{ visita.nombre }}</h1>
+  <p>{{ visita.fecha_visita|date:"d/m/Y" }} {{ visita.hora_visita|time:"H:i" }} · Evento {{ visita.fecha_evento|date:"d/m/Y" }}</p></div>
+</section>
+<section class="ab-dashboard-grid">
+  <div class="ab-section-card">
+    <h2 class="ab-mini-title">Cliente</h2>
+    <p><strong>DNI:</strong> {{ visita.dni }}<br><strong>Celular:</strong> {{ visita.telefono }}<br><strong>Personas:</strong> {{ visita.cantidad_personas }}</p>
+    {% if visita.alquiler %}
+      <a class="ab-btn" href="{% url 'alquileres:ver' %}?buscar={{ visita.alquiler_id }}">Ver alquiler</a>
+    {% else %}
+      <a class="ab-btn" href="{% url 'visitas:crear_alquiler' visita.pk %}">Crear alquiler</a>
+    {% endif %}
+  </div>
+  <div class="ab-section-card">
+    <h2 class="ab-mini-title">Referencia del catálogo</h2>
+    {% for p in visita.preferencias_ambos.all %}
+      <p><strong>{{ p.linea }} · {{ p.tela }}</strong><br>{{ p.color }} · Saco {{ p.talle_saco }} · Pantalón {{ p.talle_pantalon }}</p>
+    {% empty %}<p class="ab-small">No indicó prendas. Esta información nunca reserva stock.</p>{% endfor %}
+  </div>
+</section>
+<section class="ab-section-card">
+  <form method="post">{% csrf_token %}{{ form.as_p }}<button class="ab-btn" type="submit">Guardar seguimiento</button></form>
+</section>
+{% endblock %}

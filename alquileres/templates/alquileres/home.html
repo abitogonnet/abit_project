@@ -35,6 +35,15 @@
 </section>
 
 <section class="ab-home-top-grid">
+  <div class="ab-section-card ab-home-primary-card">
+    <div class="ab-section-head"><div><h2 class="ab-mini-title">Visitas</h2></div></div>
+    <div class="ab-home-button-grid">
+      <a class="ab-home-menu-btn" href="{% url 'visitas:listar' %}?alcance=hoy"><strong>Visitas hoy</strong><span>{{ visitas_hoy }}</span></a>
+      <a class="ab-home-menu-btn" href="{% url 'visitas:listar' %}"><strong>Próximas visitas</strong><span>{{ visitas_semana }} esta semana</span></a>
+      <a class="ab-home-menu-btn" href="{% url 'visitas:bloqueos' %}"><strong>Bloquear agenda</strong><span>Administrar</span></a>
+      {% if user.perfil.rol != 'EMPLEADO' %}<a class="ab-home-menu-btn" href="{% url 'catalogo:gestion' %}"><strong>Catálogo</strong><span>Administrar web</span></a>{% endif %}
+    </div>
+  </div>
   <div class="ab-section-card ab-home-primary-card ab-home-primary-card-rentals" id="menu-alquileres">
     <div class="ab-section-head">
       <div>
