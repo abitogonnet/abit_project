@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments and local configuration
+.venv/
+venv/
+alquiler_env/
+.env
+.env.*
+
+# Django generated/runtime data
+db.sqlite3
+db.*.sqlite3
+media/
+staticfiles/
+
+# Tooling and operating system files
+.coverage
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local synchronization and backup folders
+.tmp_remote_compare/
+.backup_github_sync_*/

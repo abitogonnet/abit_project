@@ -138,6 +138,7 @@ WEEKLY_REPORT_RECIPIENTS = {
     "Bauti": os.environ.get("WEEKLY_REPORT_BAUTI", "5492215383164"),
     "Tadeo": os.environ.get("WEEKLY_REPORT_TADEO", "5492216710491"),
 }
+SITE_CONFIG_CACHE_SECONDS = int(os.environ.get("SITE_CONFIG_CACHE_SECONDS", "60"))
 
 LOGIN_URL = "cuentas:login"
 LOGIN_REDIRECT_URL = "alquileres:home"

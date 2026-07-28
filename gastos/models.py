@@ -37,6 +37,12 @@ class MovimientoFinanciero(models.Model):
 
     class Meta:
         ordering = ["-fecha_hora", "-id"]
+        indexes = [
+            models.Index(
+                fields=["informativo", "fecha_hora"],
+                name="gastos_mov_info_fecha_idx",
+            ),
+        ]
 
 
 class InformeFinancieroSemanal(models.Model):

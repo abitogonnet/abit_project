@@ -309,7 +309,6 @@ def home(request):
         .order_by("-fecha", "-creado_en")
     )
 
-    resumen_cuenta = _resumen_cuenta(start=month_ctx["start"], end=month_ctx["end"])
     hoy = timezone.localdate()
     mes_actual_inicio = _start_of_month(hoy)
     mes_actual_fin = _first_day_next_month(mes_actual_inicio)
@@ -325,10 +324,6 @@ def home(request):
     return render(request, "gastos/home.html", {
         "gastos": gastos,
         "divisiones": divisiones,
-        "total_gastos_general": resumen_cuenta["total_gastos_cuenta"],
-        "total_gastos_mes": resumen_cuenta["total_gastos_periodo"],
-        "total_div_general": resumen_cuenta["total_dividido_cuenta"],
-        "total_div_mes": resumen_cuenta["total_dividido_periodo"],
         "ym_value": month_ctx["ym_value"],
         "month_label": month_ctx["month_label"],
         "finanzas_cards": [
@@ -337,7 +332,6 @@ def home(request):
             {"label": "A ENTRAR ESTA SEMANA", "value": _saldos_pendientes_resto_semana(hoy)},
             {"label": "GASTOS DEL MES", "value": gastos_mes_actual},
         ],
-        **resumen_cuenta,
     })
 
 
