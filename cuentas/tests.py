@@ -9,9 +9,14 @@ from .models import Actividad, PerfilUsuario
 
 @override_settings(SECURE_SSL_REDIRECT=False)
 class AccesoTests(TestCase):
-    def crear_usuario(self, username, rol):
+    def crear_usuario(self, username, rol, *, debe_cambiar_password=False):
         user = User.objects.create_user(username, password="ClaveSegura-2026!")
-        PerfilUsuario.objects.create(user=user, nombre=username.title(), rol=rol)
+        PerfilUsuario.objects.create(
+            user=user,
+            nombre=username.title(),
+            rol=rol,
+            debe_cambiar_password=debe_cambiar_password,
+        )
         return user
 
     def test_sin_login_redirige_home_y_stock(self):
@@ -80,6 +85,27 @@ class AccesoTests(TestCase):
         self.assertTrue(user.check_password("NuevaClave-2026!"))
         self.assertFalse(user.perfil.debe_cambiar_password)
         self.assertIn("_auth_user_id", self.client.session)
+
+    def test_password_pendiente_redirige_sin_bucle_y_permite_salir(self):
+        user = self.crear_usuario(
+            "pendiente",
+            PerfilUsuario.EMPLEADO,
+            debe_cambiar_password=True,
+        )
+        response = self.client.post(reverse("cuentas:login"), {
+            "username": "pendiente",
+            "password": "ClaveSegura-2026!",
+        })
+        self.assertRedirects(response, reverse("cuentas:cambiar_password"))
+        self.assertEqual(self.client.get(reverse("cuentas:cambiar_password")).status_code, 200)
+        self.assertRedirects(
+            self.client.get(reverse("alquileres:home")),
+            reverse("cuentas:cambiar_password"),
+        )
+        self.assertRedirects(
+            self.client.post(reverse("cuentas:logout")),
+            reverse("cuentas:login"),
+        )
 
     def test_logout_post_invalida_sesion(self):
         user = self.crear_usuario("lucas", PerfilUsuario.EMPLEADO)
