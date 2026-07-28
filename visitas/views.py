@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from alquileres.models import Cliente
+from alquileres.whatsapp import generar_enlace_whatsapp
 from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
 
@@ -25,6 +26,17 @@ HORARIOS_BASE = [
 ]
 
 HORARIOS_INDEX = {hora: idx for idx, hora in enumerate(HORARIOS_BASE)}
+
+
+def _recordatorio_whatsapp(visita):
+    if visita.fecha_visita != timezone.localdate() or not visita.hora_visita:
+        return ""
+    horario = visita.hora_visita.strftime("%H:%M")
+    mensaje = (
+        f"Hola, te hablo de Abito para confirmar el turno de hoy a las {horario}. "
+        "Recordá asistir de manera puntual."
+    )
+    return generar_enlace_whatsapp(visita.telefono, mensaje)
 
 
 def _fmt_hora(hora):
@@ -317,8 +329,11 @@ def listar(request):
         qs = qs.filter(fecha_visita__lt=hoy)
     else:
         qs = qs.filter(fecha_visita__gte=hoy)
+    visitas = list(qs.order_by("fecha_visita", "hora_visita"))
+    for visita in visitas:
+        visita.recordatorio_whatsapp_url = _recordatorio_whatsapp(visita)
     return render(request, "visitas/gestion_listar.html", {
-        "visitas": qs.order_by("fecha_visita", "hora_visita"),
+        "visitas": visitas,
         "alcance": alcance,
         "visitas_hoy": Visita.objects.filter(
             fecha_visita=hoy, estado=Visita.ESTADO_CONFIRMADA
@@ -340,6 +355,7 @@ def detalle(request, pk):
             return redirect("visitas:detalle", pk=pk)
     else:
         form = VisitaInternaForm(instance=visita)
+    visita.recordatorio_whatsapp_url = _recordatorio_whatsapp(visita)
     return render(request, "visitas/detalle.html", {"visita": visita, "form": form})
 
 

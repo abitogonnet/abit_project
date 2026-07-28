@@ -5,10 +5,20 @@ from django.urls import reverse
 
 from alquileres.models import Alquiler, Cliente
 from visitas.models import BloqueoAgenda, Visita
-from visitas.views import _capacidad_por_horario, _horario_admite_reserva
+from visitas.views import _capacidad_por_horario, _horario_admite_reserva, _recordatorio_whatsapp
 
 
 class CuposTests(TestCase):
+    def test_recordatorio_de_visita_incluye_horario(self):
+        visita = Visita(
+            fecha_visita=date.today(), hora_visita=time(18, 30),
+            telefono="2215555555",
+        )
+        enlace = _recordatorio_whatsapp(visita)
+        self.assertIn("wa.me/5492215555555", enlace)
+        self.assertIn("18%3A30", enlace)
+        self.assertIn("puntual", enlace)
+
     def test_tres_personas_consumen_dos_bloques(self):
         fecha = date.today() + timedelta(days=1)
         Visita.objects.create(

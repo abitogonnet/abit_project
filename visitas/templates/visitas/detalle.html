@@ -13,6 +13,9 @@
     {% else %}
       <a class="ab-btn" href="{% url 'visitas:crear_alquiler' visita.pk %}">Crear alquiler</a>
     {% endif %}
+    {% if visita.recordatorio_whatsapp_url %}
+      <a class="ab-btn2" href="{{ visita.recordatorio_whatsapp_url }}" target="_blank" rel="noopener">Enviar recordatorio</a>
+    {% endif %}
   </div>
   <div class="ab-section-card">
     <h2 class="ab-mini-title">Referencia del catálogo</h2>

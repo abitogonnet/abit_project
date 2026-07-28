@@ -17,7 +17,12 @@
       <h3>{{ visita.fecha_visita|date:"d/m/Y" }} {{ visita.hora_visita|time:"H:i" }} — {{ visita.nombre }}</h3>
       <p>DNI {{ visita.dni }} · {{ visita.cantidad_personas }} persona{{ visita.cantidad_personas|pluralize }} · {{ visita.get_estado_display }}</p>
     </div>
-    <a class="ab-btn2" href="{% url 'visitas:detalle' visita.pk %}">Ver visita</a>
+    <div class="ab-actions">
+      <a class="ab-btn2" href="{% url 'visitas:detalle' visita.pk %}">Ver visita</a>
+      {% if visita.recordatorio_whatsapp_url %}
+        <a class="ab-btn2" href="{{ visita.recordatorio_whatsapp_url }}" target="_blank" rel="noopener">Enviar recordatorio</a>
+      {% endif %}
+    </div>
   </article>
   {% empty %}<div class="ab-empty">No hay visitas en este período.</div>{% endfor %}
 </section>
