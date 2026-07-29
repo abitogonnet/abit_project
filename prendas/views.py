@@ -3,6 +3,7 @@ from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from .forms import (
@@ -27,6 +28,8 @@ from .forms import (
 )
 from .models import Color, Prenda
 from cuentas.models import Actividad
+from cuentas.access import roles_requeridos
+from cuentas.models import PerfilUsuario
 from cuentas.services import registrar_actividad
 
 
@@ -271,6 +274,62 @@ def editar_prenda(request, pk):
         prenda=prenda,
     )
     return render(request, "prendas/crear.html", ctx)
+
+
+@roles_requeridos(
+    PerfilUsuario.PROPIETARIO,
+    PerfilUsuario.ADMINISTRADOR,
+    PerfilUsuario.EMPLEADO,
+)
+def detalle_prenda(request, pk):
+    from alquileres.models import Alquiler, AlquilerItem
+
+    prenda = get_object_or_404(Prenda, pk=pk)
+    items = list(
+        AlquilerItem.objects
+        .filter(prenda=prenda)
+        .select_related("alquiler")
+        .order_by("-alquiler__fecha_entrega", "-alquiler__id", "id")
+    )
+
+    usos = []
+    alquileres_vistos = set()
+    for item in items:
+        alquiler = item.alquiler
+        if alquiler.pk in alquileres_vistos:
+            continue
+        alquileres_vistos.add(alquiler.pk)
+        persona = alquiler.persona_nombre(item.persona_num).strip()
+        usos.append({
+            "alquiler": alquiler,
+            "persona": persona or alquiler.cliente_nombre,
+            "persona_exacta": bool(persona),
+            "ver_url": (
+                f"{reverse('alquileres:ver')}?buscar={alquiler.pk}"
+                f"#alquiler-{alquiler.pk}"
+            ),
+            "es_actual": alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS,
+            "cuenta_como_uso": alquiler.estado_alquiler in {
+                Alquiler.EST_ENTREGADO,
+                Alquiler.EST_CERRADO,
+            },
+        })
+
+    usos_actuales = [uso for uso in usos if uso["es_actual"]]
+    usos_historicos = sum(1 for uso in usos if uso["cuenta_como_uso"])
+    categorias_sin_origen = {
+        Prenda.C_CAMISA,
+        Prenda.C_CORBATA,
+        Prenda.C_CINTURON,
+        Prenda.C_ZAPATOS,
+    }
+    return render(request, "prendas/detalle.html", {
+        "prenda": prenda,
+        "usos": usos,
+        "usos_actuales": usos_actuales,
+        "usos_historicos": usos_historicos,
+        "mostrar_origen": prenda.categoria not in categorias_sin_origen,
+    })
 
 
 @require_http_methods(["GET", "POST"])

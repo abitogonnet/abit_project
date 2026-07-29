@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Stock · Detalle de prenda</p>
+    <h1 class="ab-title">{{ prenda.codigo }}</h1>
+    <div class="ab-chip-row" style="margin-top: 18px;">
+      <span class="ab-chip">{{ prenda.get_categoria_display }}</span>
+      <span class="ab-chip">{{ prenda.get_estado_display }}</span>
+      <span class="ab-chip">Usos históricos: {{ usos_historicos }}</span>
+    </div>
+  </div>
+  <aside class="ab-pagehero-panel">
+    <div class="ab-actions">
+      <a class="ab-btn2" href="{% url 'prendas:stock' %}">Volver a Stock</a>
+      <a class="ab-btn" href="{% url 'prendas:editar' prenda.id %}">Modificar prenda</a>
+    </div>
+  </aside>
+</section>
+
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Información actual</p>
+        <h2 class="ab-mini-title">Datos de la prenda</h2>
+      </div>
+    </div>
+    <div class="ab-detail-summary-grid">
+      <div class="ab-detail-summary-card"><span class="ab-spec-label">Código</span><strong>{{ prenda.codigo }}</strong></div>
+      <div class="ab-detail-summary-card"><span class="ab-spec-label">Tipo</span><strong>{{ prenda.get_categoria_display }}</strong></div>
+      {% if prenda.marca %}<div class="ab-detail-summary-card"><span class="ab-spec-label">Marca</span><strong>{{ prenda.marca }}</strong></div>{% endif %}
+      {% if prenda.color %}<div class="ab-detail-summary-card"><span class="ab-spec-label">Color</span><strong>{{ prenda.color }}</strong></div>{% endif %}
+      {% if prenda.talle %}<div class="ab-detail-summary-card"><span class="ab-spec-label">Talle</span><strong>{{ prenda.talle }}</strong></div>{% endif %}
+      {% if mostrar_origen and prenda.origen %}<div class="ab-detail-summary-card"><span class="ab-spec-label">Origen</span><strong>{{ prenda.get_origen_display }}</strong></div>{% endif %}
+      <div class="ab-detail-summary-card"><span class="ab-spec-label">Estado</span><strong>{{ prenda.get_estado_display }}</strong></div>
+    </div>
+  </section>
+
+  {% if usos_actuales %}
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Uso actual</p>
+        <h2 class="ab-mini-title">Por qué no está disponible</h2>
+      </div>
+      <span class="ab-pill">{{ usos_actuales|length }} reserva{{ usos_actuales|length|pluralize }}</span>
+    </div>
+    <div class="ab-entity-list">
+      {% for uso in usos_actuales %}
+      <article class="ab-entity-card">
+        <div class="ab-entity-card-head">
+          <div>
+            <p class="ab-entity-card-eyebrow">{{ uso.alquiler.get_estado_alquiler_display }}</p>
+            <h3 class="ab-entity-card-title">{{ uso.persona }}</h3>
+            {% if not uso.persona_exacta %}<p class="ab-small">Cliente responsable; la persona exacta no está identificada.</p>{% endif %}
+          </div>
+        </div>
+        <div class="ab-entity-metrics">
+          <div class="ab-metric-chip"><span>Entrega</span><strong>{{ uso.alquiler.fecha_entrega|date:"d/m/Y" }}</strong></div>
+          <div class="ab-metric-chip"><span>Devolución prevista</span><strong>{{ uso.alquiler.fecha_devolucion|date:"d/m/Y" }}</strong></div>
+        </div>
+        <div class="ab-actions"><a class="ab-btn" href="{{ uso.ver_url }}">Ver alquiler</a></div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="ab-section-card">
+    <div class="ab-section-head">
+      <div>
+        <p class="ab-kicker">Historial de uso</p>
+        <h2 class="ab-mini-title">Del uso más reciente al más antiguo</h2>
+      </div>
+      <span class="ab-pill">{{ usos|length }} registro{{ usos|length|pluralize }}</span>
+    </div>
+    <div class="ab-entity-list">
+      {% for uso in usos %}
+      <article class="ab-entity-card">
+        <div class="ab-entity-card-head">
+          <div>
+            <p class="ab-entity-card-eyebrow">Alquiler #{{ uso.alquiler.id }}</p>
+            <h3 class="ab-entity-card-title">{{ uso.persona }}</h3>
+            {% if not uso.persona_exacta %}<p class="ab-small">Cliente responsable; la persona exacta no está identificada.</p>{% endif %}
+          </div>
+          <span class="ab-badge {% if uso.alquiler.estado_alquiler == 'CANCELADO' %}danger{% elif uso.es_actual %}warn{% else %}ok{% endif %}">
+            {{ uso.alquiler.get_estado_alquiler_display }}
+          </span>
+        </div>
+        <div class="ab-entity-metrics">
+          <div class="ab-metric-chip">
+            <span>Período</span>
+            <strong>{{ uso.alquiler.fecha_entrega|date:"d/m/Y" }} → {{ uso.alquiler.fecha_devolucion|date:"d/m/Y" }}</strong>
+          </div>
+        </div>
+        {% if uso.alquiler.estado_alquiler == 'CANCELADO' %}
+          <div class="ab-inline-note">Reserva cancelada; no se cuenta como uso histórico efectivo.</div>
+        {% endif %}
+        <div class="ab-actions"><a class="ab-btn2" href="{{ uso.ver_url }}">Ver alquiler</a></div>
+      </article>
+      {% empty %}
+      <div class="ab-empty">Esta prenda todavía no tiene historial de uso.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

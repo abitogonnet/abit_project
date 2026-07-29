@@ -154,7 +154,9 @@
           <div class="ab-entity-card-head">
             <div>
               <p class="ab-entity-card-eyebrow">{{ p.get_categoria_display }}</p>
-              <h3 class="ab-entity-card-title">{{ p.codigo }}</h3>
+              <h3 class="ab-entity-card-title">
+                <a href="{% url 'prendas:detalle' p.id %}">{{ p.codigo }}</a>
+              </h3>
               <p class="ab-entity-card-subtitle">{{ p.marca|default:"Sin marca" }}</p>
             </div>
             <div class="ab-status-stack">
@@ -205,6 +207,7 @@
               <label class="ab-lab">&nbsp;</label>
               <div class="ab-actions">
                 <button class="ab-btn2" type="submit" name="accion" value="actualizar">Guardar estado</button>
+                <a class="ab-btn2" href="{% url 'prendas:detalle' p.id %}">Ver historial</a>
                 <a class="ab-btn" href="{% url 'prendas:editar' p.id %}">Modificar</a>
                 <button class="ab-btn-danger" type="submit" name="accion" value="eliminar" onclick="return confirm('Se va a eliminar la prenda {{ p.codigo }}. Continuar?');">Eliminar</button>
               </div>
