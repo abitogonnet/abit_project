@@ -184,11 +184,32 @@ MODEL_FORMS.update({
 })
 
 
-class TrajeForm(MODEL_FORMS["traje"]):
+class TrajeForm(CatalogoModelForm):
     imagenes_galeria = MultipleCatalogImageField(
         required=False,
         label="Imágenes adicionales / galería",
     )
+
+    class Meta:
+        model = Traje
+        fields = [
+            "tela",
+            "descripcion",
+            "linea",
+            "color_stock",
+            "precio",
+            "foto_modelo",
+            "foto_colgado",
+            "activo",
+        ]
+        labels = {
+            "tela": "Nombre / modelo y tela",
+            "color_stock": "Color stock",
+            "precio": "Precio del traje",
+            "foto_modelo": "Foto principal",
+            "foto_colgado": "Foto colgado",
+            "activo": "Publicado",
+        }
 
     def save(self, commit=True):
         instance = super().save(commit=commit)

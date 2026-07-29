@@ -12,8 +12,10 @@ from PIL import Image
 from catalogo.forms import IMAGE_ERROR, MODEL_FORMS
 from catalogo.image_utils import MAX_IMAGE_DIMENSION, normalize_uploaded_image
 from catalogo.media_repair import normalize_stored_image_name, repair_catalog_media
-from catalogo.models import Combo, ImagenTraje, TalleColorTraje, Traje
+from catalogo.models import Combo, ImagenTraje, Traje
+from catalogo.stock_sizes import actualizar_talles_traje, talles_stock_para_color
 from core.models import ConfiguracionSitio
+from prendas.models import Color, Prenda
 
 
 class ConfiguracionVisitasAdminTests(TestCase):
@@ -157,7 +159,6 @@ class CatalogoMobileImageUploadTests(TestCase):
             "descripcion": "Traje de prueba",
             "precio": "120000.00",
             "activo": "on",
-            "variantes": "Gris Perla | 48 | 42\nAzul | 50 | 44",
         }
 
     def test_acepta_jpg_jpeg_png_webp_heic_y_heif_por_contenido(self):
@@ -264,7 +265,6 @@ class CatalogoMobileImageUploadTests(TestCase):
         traje = form.save()
 
         self.assertEqual(Traje.objects.count(), 1)
-        self.assertEqual(TalleColorTraje.objects.filter(traje=traje).count(), 2)
         self.assertEqual(ImagenTraje.objects.filter(traje=traje).count(), 2)
         self.assertTrue(traje.foto_modelo.name.endswith(".jpg"))
         self.assertTrue(traje.foto_colgado.name.endswith(".jpg"))
@@ -286,3 +286,153 @@ class CatalogoMobileImageUploadTests(TestCase):
         self.assertContains(response, 'enctype="multipart/form-data"', html=False)
         self.assertContains(response, 'name="imagenes_galeria"', html=False)
         self.assertContains(response, "multiple", html=False)
+        self.assertNotContains(response, "variantes", html=False)
+        self.assertNotContains(response, "Formato de variante inválido")
+        self.assertContains(response, "Talles detectados en Stock")
+
+
+class CatalogoStockSizeTests(TestCase):
+    def setUp(self):
+        self.color_topo = Color.objects.get(
+            clave_normalizada=Color.normalizar_clave("Gris Topo")
+        )
+
+    def prenda(self, codigo, categoria, talle, estado=Prenda.E_DISP, color="Gris Topo"):
+        return Prenda.objects.create(
+            codigo=codigo,
+            categoria=categoria,
+            color=color,
+            talle=talle,
+            estado=estado,
+        )
+
+    def traje(self, color=None):
+        traje = Traje.objects.create(
+            linea=Traje.LINEA_NACIONAL,
+            foto_modelo="trajes/modelo.jpg",
+            foto_colgado="trajes/colgado.jpg",
+            tela="Modelo Topo",
+            descripcion="Descripción comercial",
+            precio="120000",
+            color_stock=color or self.color_topo,
+        )
+        actualizar_talles_traje(traje)
+        return traje
+
+    def test_talles_distintos_ordenados_incluyen_estados_temporales(self):
+        self.prenda("SA-T-1", Prenda.C_SACO, "XL")
+        self.prenda("SA-T-2", Prenda.C_SACO, "M", Prenda.E_RES)
+        self.prenda("SA-T-3", Prenda.C_SACO, "L", Prenda.E_ENT)
+        self.prenda("SA-T-4", Prenda.C_SACO, "L", Prenda.E_LAV)
+        self.prenda("PA-T-1", Prenda.C_PANTALON, "50")
+        self.prenda("PA-T-2", Prenda.C_PANTALON, "42", Prenda.E_RES)
+        self.prenda("PA-T-3", Prenda.C_PANTALON, "44", Prenda.E_ENT)
+        self.prenda("PA-T-4", Prenda.C_PANTALON, "44", Prenda.E_LAV)
+
+        talles = talles_stock_para_color(self.color_topo)
+
+        self.assertEqual(talles["sacos"], ["M", "L", "XL"])
+        self.assertEqual(talles["pantalones"], ["42", "44", "50"])
+
+    def test_unica_unidad_danada_no_publica_talle_pero_otra_util_si(self):
+        self.prenda("SA-D-1", Prenda.C_SACO, "S", Prenda.E_DAN)
+        self.prenda("SA-D-2", Prenda.C_SACO, "M", Prenda.E_DAN)
+        self.prenda("SA-D-3", Prenda.C_SACO, "M", Prenda.E_RES)
+
+        talles = talles_stock_para_color(self.color_topo)
+
+        self.assertEqual(talles["sacos"], ["M"])
+
+    def test_color_sin_una_categoria_devuelve_lista_vacia_y_endpoint_200(self):
+        self.prenda("PA-S-1", Prenda.C_PANTALON, "42")
+        user = get_user_model().objects.create_superuser(
+            username="stock-preview",
+            password="secret123",
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(
+            reverse("catalogo:talles_stock"),
+            {"color_id": self.color_topo.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"sacos": [], "pantalones": ["42"]})
+
+    def test_nuevo_talle_actualiza_traje_sin_editarlo(self):
+        self.prenda("SA-N-1", Prenda.C_SACO, "M")
+        traje = self.traje()
+        self.assertEqual(traje.talles_saco_stock, ["M"])
+
+        self.prenda("SA-N-2", Prenda.C_SACO, "3XL")
+
+        traje.refresh_from_db()
+        self.assertEqual(traje.talles_saco_stock, ["M", "3XL"])
+
+    def test_gris_oscuro_y_gris_topo_comparten_talles(self):
+        color_oscuro = (
+            Color.objects.filter(
+                clave_normalizada=Color.normalizar_clave("Gris Oscuro")
+            ).first()
+            or Color.objects.create(nombre="Gris Oscuro")
+        )
+        self.prenda(
+            "SA-G-1",
+            Prenda.C_SACO,
+            "L",
+            color="gris oscuro",
+        )
+
+        talles_topo = talles_stock_para_color(self.color_topo)
+        talles_oscuro = talles_stock_para_color(color_oscuro)
+
+        self.assertEqual(talles_topo["sacos"], ["L"])
+        self.assertEqual(talles_oscuro["sacos"], ["L"])
+
+    def test_formulario_crea_y_edita_traje_sin_variantes_manual(self):
+        self.prenda("SA-F-1", Prenda.C_SACO, "L")
+        self.prenda("PA-F-1", Prenda.C_PANTALON, "44")
+        form_class = MODEL_FORMS["traje"]
+        data = {
+            "linea": Traje.LINEA_NACIONAL,
+            "tela": "Modelo automático",
+            "descripcion": "Texto comercial",
+            "color_stock": str(self.color_topo.pk),
+            "precio": "130000",
+            "activo": "on",
+        }
+        files = {
+            "foto_modelo": CatalogoMobileImageUploadTests().image_upload(
+                "principal.jpg", "JPEG"
+            ),
+            "foto_colgado": CatalogoMobileImageUploadTests().image_upload(
+                "detalle.jpg", "JPEG"
+            ),
+        }
+
+        form = form_class(data, files)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        traje = form.save()
+        self.assertEqual(traje.talles_saco_stock, ["L"])
+        self.assertEqual(traje.talles_pantalon_stock, ["44"])
+
+        color_azul = Color.objects.get(
+            clave_normalizada=Color.normalizar_clave("Azul Oscuro")
+        )
+        self.prenda(
+            "SA-F-2",
+            Prenda.C_SACO,
+            "XL",
+            color="Azul Oscuro",
+        )
+        edit_data = data | {
+            "color_stock": str(color_azul.pk),
+            "precio": "140000",
+        }
+        edit_form = form_class(edit_data, instance=traje)
+        self.assertTrue(edit_form.is_valid(), edit_form.errors.as_json())
+        edit_form.save()
+        traje.refresh_from_db()
+        self.assertEqual(traje.color_stock, color_azul)
+        self.assertEqual(traje.talles_saco_stock, ["XL"])
+        self.assertEqual(traje.talles_pantalon_stock, [])

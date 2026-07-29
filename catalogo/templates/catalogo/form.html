@@ -2,9 +2,67 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Catálogo</p><h1 class="ab-title">{% if objeto %}Editar{% else %}Crear{% endif %} {{ tipo }}</h1></div></section>
 <section class="ab-section-card">
-  <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<div id="image-previews" class="ab-actions"></div><button class="ab-btn" type="submit">Guardar</button></form>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in form %}
+      <p>
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+        {{ field.errors }}
+      </p>
+      {% if tipo == "traje" and field.name == "color_stock" %}
+        <div
+          id="stock-size-preview"
+          class="ab-priority-card"
+          data-url="{% url 'catalogo:talles_stock' %}"
+        >
+          <div>
+            <strong>Talles detectados en Stock</strong>
+            <p id="stock-sacos">Seleccioná un color.</p>
+            <p id="stock-pantalones"></p>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+    <div id="image-previews" class="ab-actions"></div>
+    <button class="ab-btn" type="submit">{% if tipo == "traje" %}Guardar traje{% else %}Guardar{% endif %}</button>
+  </form>
 </section>
 <script>
+const stockColor = document.getElementById("id_color_stock");
+const stockPreview = document.getElementById("stock-size-preview");
+async function refreshStockSizes() {
+  if (!stockColor || !stockPreview) return;
+  const sacos = document.getElementById("stock-sacos");
+  const pantalones = document.getElementById("stock-pantalones");
+  if (!stockColor.value) {
+    sacos.textContent = "Seleccioná un color.";
+    pantalones.textContent = "";
+    return;
+  }
+  try {
+    const response = await fetch(
+      stockPreview.dataset.url + "?color_id=" + encodeURIComponent(stockColor.value),
+      {headers: {"X-Requested-With": "XMLHttpRequest"}}
+    );
+    if (!response.ok) throw new Error("No se pudieron consultar los talles.");
+    const data = await response.json();
+    sacos.textContent = data.sacos.length
+      ? "Sacos: " + data.sacos.join(" · ")
+      : "No hay sacos cargados en Stock para este color.";
+    pantalones.textContent = data.pantalones.length
+      ? "Pantalones: " + data.pantalones.join(" · ")
+      : "No hay pantalones cargados en Stock para este color.";
+  } catch (_error) {
+    sacos.textContent = "No pudimos consultar los talles en este momento.";
+    pantalones.textContent = "";
+  }
+}
+if (stockColor) {
+  stockColor.addEventListener("change", refreshStockSizes);
+  refreshStockSizes();
+}
 document.querySelectorAll('input[type="file"][accept*="image"]').forEach(function(input) {
   input.addEventListener("change", function() {
     const box = document.getElementById("image-previews"); box.innerHTML = "";

@@ -2,13 +2,15 @@ import logging
 
 from django.contrib import messages
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from cuentas.access import roles_requeridos
 from cuentas.models import PerfilUsuario
 
 from .forms import MODEL_FORMS
-from .models import Camisa, Chaleco, Cinturon, Combo, Corbata, Traje, Zapato
+from .models import Camisa, Chaleco, Cinturon, Color, Combo, Corbata, Traje, Zapato
+from .stock_sizes import talles_stock_para_color
 
 logger = logging.getLogger(__name__)
 
@@ -55,3 +57,10 @@ def publicar(request, tipo, pk):
         objeto.save(update_fields=["activo"])
         messages.success(request, "Publicación actualizada.")
     return redirect("catalogo:gestion")
+
+
+@permitido
+def talles_stock(request):
+    color_id = request.GET.get("color_id")
+    color = Color.objects.filter(pk=color_id).first() if color_id else None
+    return JsonResponse(talles_stock_para_color(color))

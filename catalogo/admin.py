@@ -55,12 +55,22 @@ class TrajeAdmin(BaseCatalogAdmin):
     list_display = ("id", "linea", "tela", "precio", "activo", "creado")
     list_filter = ("linea", "activo")
     search_fields = ("tela", "descripcion")
-    inlines = [TalleColorTrajeInline, ImagenTrajeInline]
+    inlines = [ImagenTrajeInline]
+    readonly_fields = ("talles_saco_stock", "talles_pantalon_stock")
     fieldsets = (
         (
             "Datos principales",
             {
-                "fields": ("linea", "tela", "descripcion", "precio", "activo"),
+                "fields": (
+                    "linea",
+                    "tela",
+                    "descripcion",
+                    "color_stock",
+                    "talles_saco_stock",
+                    "talles_pantalon_stock",
+                    "precio",
+                    "activo",
+                ),
             },
         ),
         (

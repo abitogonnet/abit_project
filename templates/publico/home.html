@@ -155,12 +155,10 @@
                     {% endfor %}
                   </div>
                 {% endif %}
-                {% if item.colores_catalogo %}
-                  <p><strong>Colores disponibles:</strong> {{ item.colores_catalogo|join:" · " }}</p>
-                  <p><strong>Talles disponibles:</strong> saco {{ item.talles_saco_catalogo|join:" · " }} · pantalón {{ item.talles_pantalon_catalogo|join:" · " }}</p>
-                {% else %}
-                  <p>Talles a confirmar en la visita.</p>
-                {% endif %}
+                {% if item.color_stock %}<p><strong>Color:</strong> {{ item.color_stock.nombre }}</p>{% endif %}
+                <p><strong>Talles disponibles</strong></p>
+                <p><strong>Saco:</strong> {% if item.talles_saco_stock %}{{ item.talles_saco_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
+                <p><strong>Pantalón:</strong> {% if item.talles_pantalon_stock %}{{ item.talles_pantalon_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
                 <p><strong>Traje solo</strong><br>Saco + pantalón · ${{ item.precio }}</p>
                 {% for combo in combos %}
                   <p><strong>{{ combo.nombre }}</strong><br>{% if combo.descripcion %}{{ combo.descripcion }} · {% endif %}${{ combo.precio_importado }}</p>
@@ -198,12 +196,10 @@
                     {% endfor %}
                   </div>
                 {% endif %}
-                {% if item.colores_catalogo %}
-                  <p><strong>Colores disponibles:</strong> {{ item.colores_catalogo|join:" · " }}</p>
-                  <p><strong>Talles disponibles:</strong> saco {{ item.talles_saco_catalogo|join:" · " }} · pantalón {{ item.talles_pantalon_catalogo|join:" · " }}</p>
-                {% else %}
-                  <p>Talles a confirmar en la visita.</p>
-                {% endif %}
+                {% if item.color_stock %}<p><strong>Color:</strong> {{ item.color_stock.nombre }}</p>{% endif %}
+                <p><strong>Talles disponibles</strong></p>
+                <p><strong>Saco:</strong> {% if item.talles_saco_stock %}{{ item.talles_saco_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
+                <p><strong>Pantalón:</strong> {% if item.talles_pantalon_stock %}{{ item.talles_pantalon_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
                 <p><strong>Traje solo</strong><br>Saco + pantalón · ${{ item.precio }}</p>
                 {% for combo in combos %}
                   <p><strong>{{ combo.nombre }}</strong><br>{% if combo.descripcion %}{{ combo.descripcion }} · {% endif %}${{ combo.precio_nacional }}</p>

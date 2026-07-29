@@ -2,7 +2,9 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from catalogo.models import Combo, TalleColorTraje, Traje
+from catalogo.models import Combo, Traje
+from catalogo.stock_sizes import actualizar_talles_traje
+from prendas.models import Color, Prenda
 from .models import ConfiguracionSitio
 
 
@@ -62,20 +64,31 @@ class HomeConversionTests(TestCase):
         self.assertNotContains(response, 'data-filter="zapato"', html=False)
         self.assertNotContains(response, 'data-filter="combo"', html=False)
 
-    def test_catalogo_muestra_traje_y_sus_combos_sin_consultar_stock(self):
+    def test_catalogo_muestra_talles_cacheados_y_sus_combos(self):
+        color = Color.objects.get(
+            clave_normalizada=Color.normalizar_clave("Gris Perla")
+        )
+        Prenda.objects.create(
+            codigo="SA-PUB-1",
+            categoria=Prenda.C_SACO,
+            color="Gris Perla",
+            talle="M",
+        )
+        Prenda.objects.create(
+            codigo="PA-PUB-1",
+            categoria=Prenda.C_PANTALON,
+            color="Gris Perla",
+            talle="42",
+        )
         traje = Traje.objects.create(
             linea=Traje.LINEA_NACIONAL,
             foto_modelo="trajes/modelo.jpg",
             foto_colgado="trajes/colgado.jpg",
             tela="Gris Perla",
             precio="100000.00",
+            color_stock=color,
         )
-        TalleColorTraje.objects.create(
-            traje=traje,
-            color="Gris perla",
-            talle_saco="48",
-            talle_pantalon="42",
-        )
+        actualizar_talles_traje(traje)
         Combo.objects.create(
             nombre="Combo 1",
             foto="combos/combo.jpg",
@@ -89,8 +102,9 @@ class HomeConversionTests(TestCase):
         response = self.client.get(reverse("home"))
 
         self.assertContains(response, "Traje nacional")
-        self.assertContains(response, "Colores disponibles:")
-        self.assertContains(response, "Gris perla")
+        self.assertContains(response, "<strong>Color:</strong> Gris Perla", html=True)
+        self.assertContains(response, "<strong>Saco:</strong> M", html=True)
+        self.assertContains(response, "<strong>Pantalón:</strong> 42", html=True)
         self.assertContains(response, "Traje solo")
         self.assertContains(response, "Saco + pantalón")
         self.assertContains(response, "Combo 1")

@@ -7,32 +7,20 @@ from catalogo.models import (
 )
 
 
-def _preparar_trajes_catalogo(trajes):
-    trajes = list(trajes)
-    for traje in trajes:
-        filas = list(traje.talles.all())
-        traje.colores_catalogo = list(dict.fromkeys(fila.color for fila in filas))
-        traje.talles_saco_catalogo = list(
-            dict.fromkeys(fila.talle_saco for fila in filas)
-        )
-        traje.talles_pantalon_catalogo = list(
-            dict.fromkeys(fila.talle_pantalon for fila in filas)
-        )
-    return trajes
-
-
 def home(request):
-    trajes_importados = _preparar_trajes_catalogo(
+    trajes_importados = (
         Traje.objects
         .filter(linea=Traje.LINEA_IMPORTADA, activo=True)
-        .prefetch_related("talles", "imagenes_galeria")
+        .select_related("color_stock")
+        .prefetch_related("imagenes_galeria")
         .order_by("-creado")
     )
 
-    trajes_nacionales = _preparar_trajes_catalogo(
+    trajes_nacionales = (
         Traje.objects
         .filter(linea=Traje.LINEA_NACIONAL, activo=True)
-        .prefetch_related("talles", "imagenes_galeria")
+        .select_related("color_stock")
+        .prefetch_related("imagenes_galeria")
         .order_by("-creado")
     )
 

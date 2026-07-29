@@ -52,6 +52,8 @@ class Traje(NormalizedImageFieldsMixin):
     )
     descripcion = models.TextField(blank=True, default="")
     precio = models.DecimalField(max_digits=10, decimal_places=2)
+    talles_saco_stock = models.JSONField(default=list, blank=True)
+    talles_pantalon_stock = models.JSONField(default=list, blank=True)
     activo = models.BooleanField(default=True)
     creado = models.DateTimeField(auto_now_add=True)
     normalized_image_fields = ("foto_modelo", "foto_colgado")
