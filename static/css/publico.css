@@ -1427,6 +1427,19 @@ details p {
   transform: translateY(0);
 }
 
+.product-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 10px;
+}
+
+.product-gallery img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
 .site-header[data-reveal] {
   transform: translate(-50%, 18px);
 }

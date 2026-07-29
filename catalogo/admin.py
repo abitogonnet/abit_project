@@ -9,6 +9,7 @@ from .models import (
     Combo,
     ConfiguracionVisitas,
     Corbata,
+    ImagenTraje,
     TalleColorCamisa,
     TalleColorChaleco,
     TalleColorTraje,
@@ -26,6 +27,11 @@ class BaseCatalogAdmin(admin.ModelAdmin):
 
 class TalleColorTrajeInline(admin.TabularInline):
     model = TalleColorTraje
+    extra = 1
+
+
+class ImagenTrajeInline(admin.TabularInline):
+    model = ImagenTraje
     extra = 1
 
 
@@ -49,7 +55,7 @@ class TrajeAdmin(BaseCatalogAdmin):
     list_display = ("id", "linea", "tela", "precio", "activo", "creado")
     list_filter = ("linea", "activo")
     search_fields = ("tela", "descripcion")
-    inlines = [TalleColorTrajeInline]
+    inlines = [TalleColorTrajeInline, ImagenTrajeInline]
     fieldsets = (
         (
             "Datos principales",

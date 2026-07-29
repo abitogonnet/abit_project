@@ -15,6 +15,9 @@ class NormalizedImageFieldsMixin(models.Model):
         for field_name in self.normalized_image_fields:
             image_field = getattr(self, field_name, None)
             if image_field and not getattr(image_field, "_committed", True):
+                source = getattr(image_field, "file", image_field)
+                if getattr(source, "_catalog_normalized", False):
+                    continue
                 setattr(
                     self,
                     field_name,
@@ -75,6 +78,24 @@ class TalleColorTraje(models.Model):
 
     def __str__(self):
         return f"{self.color} | Saco {self.talle_saco} | Pantalon {self.talle_pantalon}"
+
+
+class ImagenTraje(NormalizedImageFieldsMixin):
+    traje = models.ForeignKey(
+        Traje,
+        on_delete=models.CASCADE,
+        related_name="imagenes_galeria",
+    )
+    imagen = models.ImageField(upload_to="trajes/galeria/")
+    orden = models.PositiveIntegerField(default=0)
+    creada = models.DateTimeField(auto_now_add=True)
+    normalized_image_fields = ("imagen",)
+
+    class Meta:
+        ordering = ["orden", "id"]
+
+    def __str__(self):
+        return f"Imagen de {self.traje}"
 
 
 class Chaleco(NormalizedImageFieldsMixin):

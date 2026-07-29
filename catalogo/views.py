@@ -1,4 +1,7 @@
+import logging
+
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 
 from cuentas.access import roles_requeridos
@@ -6,6 +9,8 @@ from cuentas.models import PerfilUsuario
 
 from .forms import MODEL_FORMS
 from .models import Camisa, Chaleco, Cinturon, Combo, Corbata, Traje, Zapato
+
+logger = logging.getLogger(__name__)
 
 MODELOS = {
     model._meta.model_name: model
@@ -32,7 +37,8 @@ def editar(request, tipo, pk=None):
     instance = get_object_or_404(model, pk=pk) if pk else None
     form = MODEL_FORMS[tipo](request.POST or None, request.FILES or None, instance=instance)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        with transaction.atomic():
+            form.save()
         messages.success(request, "Producto guardado y actualizado en el catálogo público.")
         return redirect("catalogo:gestion")
     return render(request, "catalogo/form.html", {

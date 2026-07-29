@@ -148,6 +148,13 @@
               </div>
               <div class="product-meta">
                 {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
+                {% if item.imagenes_galeria.all %}
+                  <div class="product-gallery" aria-label="Galería de {{ item.tela }}">
+                    {% for foto in item.imagenes_galeria.all %}
+                      <img src="{{ foto.imagen.url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
+                    {% endfor %}
+                  </div>
+                {% endif %}
                 {% if item.colores_catalogo %}
                   <p><strong>Colores disponibles:</strong> {{ item.colores_catalogo|join:" · " }}</p>
                   <p><strong>Talles disponibles:</strong> saco {{ item.talles_saco_catalogo|join:" · " }} · pantalón {{ item.talles_pantalon_catalogo|join:" · " }}</p>
@@ -184,6 +191,13 @@
               </div>
               <div class="product-meta">
                 {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
+                {% if item.imagenes_galeria.all %}
+                  <div class="product-gallery" aria-label="Galería de {{ item.tela }}">
+                    {% for foto in item.imagenes_galeria.all %}
+                      <img src="{{ foto.imagen.url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
+                    {% endfor %}
+                  </div>
+                {% endif %}
                 {% if item.colores_catalogo %}
                   <p><strong>Colores disponibles:</strong> {{ item.colores_catalogo|join:" · " }}</p>
                   <p><strong>Talles disponibles:</strong> saco {{ item.talles_saco_catalogo|join:" · " }} · pantalón {{ item.talles_pantalon_catalogo|join:" · " }}</p>

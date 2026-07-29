@@ -2,7 +2,6 @@ import os
 from importlib.util import find_spec
 from pathlib import Path
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 HAS_WHITENOISE = find_spec("whitenoise") is not None
 
@@ -96,7 +95,8 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
-MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
+MEDIA_ROOT_ENV = os.environ.get("MEDIA_ROOT", "").strip()
+MEDIA_ROOT = Path(MEDIA_ROOT_ENV) if MEDIA_ROOT_ENV else BASE_DIR / "media"
 
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
 if AWS_STORAGE_BUCKET_NAME:

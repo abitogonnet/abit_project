@@ -6,6 +6,8 @@ class CatalogoConfig(AppConfig):
     name = "catalogo"
 
     def ready(self):
+        from . import checks  # noqa: F401
+
         try:
             from pillow_heif import register_heif_opener
         except ImportError:

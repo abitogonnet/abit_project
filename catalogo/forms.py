@@ -1,30 +1,106 @@
+import logging
+
 from django import forms
 
-from .models import Camisa, Chaleco, Cinturon, Combo, Corbata, Traje, Zapato
+from .image_utils import normalize_uploaded_image
+from .models import (
+    Camisa,
+    Chaleco,
+    Cinturon,
+    Combo,
+    Corbata,
+    ImagenTraje,
+    TalleColorCamisa,
+    TalleColorChaleco,
+    TalleColorTraje,
+    TalleColorZapato,
+    Traje,
+    Zapato,
+)
+
+logger = logging.getLogger(__name__)
+
+IMAGE_ERROR = (
+    "No pudimos procesar esta imagen. Probá con otra foto o con un archivo "
+    "JPG, PNG, WEBP, HEIC o HEIF."
+)
+IMAGE_ACCEPT = (
+    "image/jpeg,image/png,image/webp,image/heic,image/heif,"
+    ".jpg,.jpeg,.png,.webp,.heic,.heif"
+)
+
+
+class CatalogImageField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault(
+            "widget",
+            forms.ClearableFileInput(
+                attrs={"class": "ab-inp", "accept": IMAGE_ACCEPT}
+            ),
+        )
+        super().__init__(*args, **kwargs)
+
+    def to_python(self, data):
+        uploaded = super().to_python(data)
+        if uploaded is None:
+            return None
+        try:
+            return normalize_uploaded_image(
+                uploaded,
+                fallback_name=self.label or "imagen-catalogo",
+            )
+        except Exception:
+            logger.exception(
+                "No se pudo procesar imagen de catálogo: nombre=%r tamaño=%r "
+                "content_type=%r campo=%r",
+                getattr(uploaded, "name", ""),
+                getattr(uploaded, "size", None),
+                getattr(uploaded, "content_type", ""),
+                self.label,
+            )
+            raise forms.ValidationError(
+                f"{getattr(uploaded, 'name', 'archivo')}: {IMAGE_ERROR}",
+                code="invalid_catalog_image",
+            )
+
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleCatalogImageField(forms.Field):
+    widget = MultipleFileInput(
+        attrs={"class": "ab-inp", "accept": IMAGE_ACCEPT}
+    )
+
+    def clean(self, data):
+        files = data if isinstance(data, (list, tuple)) else ([data] if data else [])
+        cleaned = []
+        errors = []
+        image_field = CatalogImageField(required=True, label=self.label)
+        for uploaded in files:
+            try:
+                cleaned.append(image_field.clean(uploaded))
+            except forms.ValidationError as exc:
+                errors.extend(exc.error_list)
+        if errors:
+            raise forms.ValidationError(errors)
+        return cleaned
 
 
 class CatalogoModelForm(forms.ModelForm):
-    MAX_IMAGE_BYTES = 8 * 1024 * 1024
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault("class", "ab-inp")
+        for name, field in list(self.fields.items()):
             if isinstance(field, forms.ImageField):
-                field.widget.attrs.update({"accept": "image/jpeg,image/png,image/webp,image/heic,image/heif"})
-
-    def clean(self):
-        cleaned = super().clean()
-        for name, field in self.fields.items():
-            if not isinstance(field, forms.ImageField):
-                continue
-            image = cleaned.get(name)
-            if image and getattr(image, "size", 0) > self.MAX_IMAGE_BYTES:
-                self.add_error(name, "La imagen supera el máximo de 8 MB.")
-            content_type = getattr(image, "content_type", "")
-            if image and content_type and not content_type.startswith("image/"):
-                self.add_error(name, "El archivo debe ser una imagen válida.")
-        return cleaned
+                self.fields[name] = CatalogImageField(
+                    required=field.required,
+                    label=field.label,
+                    help_text=field.help_text,
+                    initial=field.initial,
+                )
+                field = self.fields[name]
+            field.widget.attrs.setdefault("class", "ab-inp")
 
 
 class ConVariantesForm(CatalogoModelForm):
@@ -32,7 +108,7 @@ class ConVariantesForm(CatalogoModelForm):
         required=False,
         label="Colores y talles (una variante por línea, separados con |)",
         widget=forms.Textarea(attrs={"class": "ab-inp", "rows": 6}),
-        help_text="Ambos: Color | talle saco | talle pantalón. Otros: Color | talle.",
+        help_text="Trajes: Color | talle saco | talle pantalón. Otros: Color | talle.",
     )
     related_model = None
     related_fields = ()
@@ -47,12 +123,16 @@ class ConVariantesForm(CatalogoModelForm):
 
     def clean_variantes(self):
         rows = []
-        for number, raw in enumerate((self.cleaned_data.get("variantes") or "").splitlines(), 1):
+        for number, raw in enumerate(
+            (self.cleaned_data.get("variantes") or "").splitlines(), 1
+        ):
             if not raw.strip():
                 continue
             values = [part.strip() for part in raw.split("|")]
             if len(values) != len(self.related_fields) or not all(values):
-                raise forms.ValidationError(f"Revisá la línea {number}: formato de variante inválido.")
+                raise forms.ValidationError(
+                    f"Revisá la línea {number}: formato de variante inválido."
+                )
             rows.append(dict(zip(self.related_fields, values)))
         return rows
 
@@ -60,10 +140,9 @@ class ConVariantesForm(CatalogoModelForm):
         instance = super().save(commit=commit)
         if commit:
             instance.talles.all().delete()
+            parent_field = self.related_model._meta.fields[1].name
             self.related_model.objects.bulk_create([
-                self.related_model(**{self.related_model._meta.get_field(
-                    self.related_model._meta.fields[1].name
-                ).name: instance}, **row)
+                self.related_model(**{parent_field: instance}, **row)
                 for row in self.cleaned_data["variantes"]
             ])
         return instance
@@ -75,14 +154,6 @@ def form_for(model):
         (CatalogoModelForm,),
         {"Meta": type("Meta", (), {"model": model, "fields": "__all__"})},
     )
-
-
-MODEL_FORMS = {
-    model._meta.model_name: form_for(model)
-    for model in (Traje, Chaleco, Cinturon, Corbata, Camisa, Zapato, Combo)
-}
-
-from .models import TalleColorCamisa, TalleColorChaleco, TalleColorTraje, TalleColorZapato
 
 
 def variant_form(model, related_model, fields):
@@ -97,9 +168,41 @@ def variant_form(model, related_model, fields):
     )
 
 
+MODEL_FORMS = {
+    model._meta.model_name: form_for(model)
+    for model in (Traje, Chaleco, Cinturon, Corbata, Camisa, Zapato, Combo)
+}
 MODEL_FORMS.update({
-    "traje": variant_form(Traje, TalleColorTraje, ("color", "talle_saco", "talle_pantalon")),
+    "traje": variant_form(
+        Traje,
+        TalleColorTraje,
+        ("color", "talle_saco", "talle_pantalon"),
+    ),
     "chaleco": variant_form(Chaleco, TalleColorChaleco, ("color", "talle")),
     "camisa": variant_form(Camisa, TalleColorCamisa, ("color", "talle")),
     "zapato": variant_form(Zapato, TalleColorZapato, ("color", "talle")),
 })
+
+
+class TrajeForm(MODEL_FORMS["traje"]):
+    imagenes_galeria = MultipleCatalogImageField(
+        required=False,
+        label="Imágenes adicionales / galería",
+    )
+
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        if commit:
+            inicio = instance.imagenes_galeria.count()
+            for index, image in enumerate(
+                self.cleaned_data.get("imagenes_galeria") or []
+            ):
+                ImagenTraje.objects.create(
+                    traje=instance,
+                    imagen=image,
+                    orden=inicio + index,
+                )
+        return instance
+
+
+MODEL_FORMS["traje"] = TrajeForm

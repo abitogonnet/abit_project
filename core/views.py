@@ -25,14 +25,14 @@ def home(request):
     trajes_importados = _preparar_trajes_catalogo(
         Traje.objects
         .filter(linea=Traje.LINEA_IMPORTADA, activo=True)
-        .prefetch_related("talles")
+        .prefetch_related("talles", "imagenes_galeria")
         .order_by("-creado")
     )
 
     trajes_nacionales = _preparar_trajes_catalogo(
         Traje.objects
         .filter(linea=Traje.LINEA_NACIONAL, activo=True)
-        .prefetch_related("talles")
+        .prefetch_related("talles", "imagenes_galeria")
         .order_by("-creado")
     )
 
