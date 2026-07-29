@@ -272,9 +272,9 @@ def _persona_has_content(name_field, prenda_rows):
 
 def _personas_visibles_solicitadas(form) -> int:
     if not form.is_bound:
-        return 1
-
-    raw_value = (form.data.get(form.add_prefix("personas_visibles")) or "").strip()
+        raw_value = str(form.initial.get("personas_visibles", 1) or "1").strip()
+    else:
+        raw_value = (form.data.get(form.add_prefix("personas_visibles")) or "").strip()
     if not raw_value.isdigit():
         return 1
 

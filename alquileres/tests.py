@@ -13,6 +13,48 @@ from .views import _armar_mensaje_cliente, _armar_mensaje_ruedos
 
 
 class AlquileresViewsTests(TestCase):
+    def _disponibles_vacios(self):
+        return {short: [] for short in SHORT_POR_CATEGORIA.values()}
+
+    def test_formulario_manual_inicia_solo_con_persona_principal(self):
+        form = AlquilerForm(disponibles=self._disponibles_vacios())
+
+        visibles = [
+            section["number"]
+            for section in form.persona_sections
+            if section["visible"]
+        ]
+
+        self.assertEqual(visibles, [1])
+
+    def test_formulario_desde_visita_precarga_solo_personas_solicitadas(self):
+        form = AlquilerForm(
+            disponibles=self._disponibles_vacios(),
+            initial={"personas_visibles": 3},
+        )
+
+        visibles = [
+            section["number"]
+            for section in form.persona_sections
+            if section["visible"]
+        ]
+
+        self.assertEqual(visibles, [1, 2, 3])
+
+    def test_formulario_invalido_conserva_personas_agregadas(self):
+        form = AlquilerForm(
+            {"personas_visibles": "2"},
+            disponibles=self._disponibles_vacios(),
+        )
+
+        visibles = [
+            section["number"]
+            for section in form.persona_sections
+            if section["visible"]
+        ]
+
+        self.assertEqual(visibles, [1, 2])
+
     def _base_payload(self):
         payload = {
             "fecha_reserva": "2026-04-16",

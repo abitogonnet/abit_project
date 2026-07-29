@@ -122,6 +122,7 @@
 
       <div class="ab-person-grid-modern">
         {% for section in form.persona_sections %}
+          {% if section.visible %}
           <section
             class="ab-person-section"
             data-persona-section
@@ -175,6 +176,11 @@
             </div>
             </div>
           </section>
+          {% else %}
+            <template data-persona-template data-persona-number="{{ section.number }}">
+              {% include "alquileres/_persona_crear.html" with section=section %}
+            </template>
+          {% endif %}
         {% endfor %}
       </div>
     </section>
@@ -307,14 +313,15 @@
 
     const draftKey = "abito:alquiler:create-draft";
     const visiblePeopleField = document.getElementById("id_personas_visibles");
-    const personaSections = Array.from(form.querySelectorAll("[data-persona-section]"));
+    const personaGrid = form.querySelector(".ab-person-grid-modern");
+    let personaSections = Array.from(form.querySelectorAll("[data-persona-section]"));
     const addPersonaButton = document.querySelector("[data-add-persona]");
     const addPersonaLabel = document.querySelector("[data-add-persona-label]");
     const copyButton = document.querySelector("[data-copy-message]");
     const messageBox = document.getElementById("msgBox");
     const stepButtons = Array.from(document.querySelectorAll("[data-step-target]"));
     const stepCards = Array.from(document.querySelectorAll("[data-step-card]"));
-    const maxPersonas = personaSections.length || 1;
+    const maxPersonas = 6;
 
     function restoreDraft() {
       if (form.dataset.draftClear === "1") {
@@ -332,6 +339,8 @@
         sessionStorage.removeItem(draftKey);
         return;
       }
+
+      ensurePersonaSections(Number(draft.personas_visibles || "1"));
 
       Array.from(form.elements).forEach(function (field) {
         if (!field.name || field.name === "csrfmiddlewaretoken") return;
@@ -446,9 +455,39 @@
     }
 
     function visiblePersonaCount() {
-      return personaSections.filter(function (section) {
-        return !section.hidden;
-      }).length || 1;
+      return personaSections.length || 1;
+    }
+
+    function appendPersonaSection(number) {
+      if (!personaGrid || personaSections.some(function (section) {
+        return Number(section.dataset.personaNumber) === number;
+      })) return null;
+
+      const template = form.querySelector(
+        `template[data-persona-template][data-persona-number="${number}"]`
+      );
+      if (!template) return null;
+
+      personaGrid.appendChild(template.content.cloneNode(true));
+      const section = personaGrid.querySelector(
+        `[data-persona-section][data-persona-number="${number}"]`
+      );
+      if (!section) return null;
+
+      personaSections.push(section);
+      personaSections.sort(function (left, right) {
+        return Number(left.dataset.personaNumber) - Number(right.dataset.personaNumber);
+      });
+      bindPersonaSection(section);
+      return section;
+    }
+
+    function ensurePersonaSections(count) {
+      const requestedCount = Math.max(1, Math.min(Number(count) || 1, maxPersonas));
+      for (let number = 2; number <= requestedCount; number += 1) {
+        appendPersonaSection(number);
+      }
+      return requestedCount;
     }
 
     function personaHasData(section) {
@@ -470,7 +509,7 @@
     }
 
     function inferVisiblePersonas() {
-      let highestVisible = 1;
+      let highestVisible = personaSections.length || 1;
       personaSections.forEach(function (section) {
         const number = Number(section.dataset.personaNumber || "1");
         if (personaHasData(section)) {
@@ -482,11 +521,7 @@
     }
 
     function syncPersonaSections(count) {
-      const visibleCount = Math.max(1, Math.min(count, maxPersonas));
-      personaSections.forEach(function (section) {
-        const sectionNumber = Number(section.dataset.personaNumber || "1");
-        section.hidden = sectionNumber > visibleCount;
-      });
+      const visibleCount = ensurePersonaSections(count);
 
       if (visiblePeopleField) {
         visiblePeopleField.value = visibleCount;
@@ -533,9 +568,6 @@
       const saldo = Math.max(totalFinal - sena - credito, 0);
       const personasActivas = visiblePersonaCount();
       const prendasTotales = personaSections
-        .filter(function (section) {
-          return !section.hidden;
-        })
         .reduce(function (totalSeleccionadas, section) {
           return totalSeleccionadas + countSelectedInSection(section);
         }, 0);
@@ -592,12 +624,6 @@
       });
     });
 
-    document.querySelectorAll(".js-code-filter").forEach(function (input) {
-      input.addEventListener("input", function () {
-        filterCodeSelect(input);
-      });
-    });
-
     form.querySelectorAll("input, select").forEach(function (field) {
       field.addEventListener("input", updateSummary);
       field.addEventListener("change", updateSummary);
@@ -607,6 +633,11 @@
       addPersonaButton.addEventListener("click", function () {
         const nextCount = visiblePersonaCount() + 1;
         syncPersonaSections(nextCount);
+        const newSection = personaSections[personaSections.length - 1];
+        const newContent = newSection && newSection.querySelector("[data-persona-content]");
+        const newArrow = newSection && newSection.querySelector("[data-persona-arrow]");
+        if (newContent) newContent.hidden = false;
+        if (newArrow) newArrow.textContent = "▼";
         saveDraft();
       });
     }
@@ -652,12 +683,21 @@
       }, 350);
     });
 
-    personaSections.forEach(function (section) {
+    function bindPersonaSection(section) {
+      if (section.dataset.personaBound === "1") return;
+      section.dataset.personaBound = "1";
       const toggle = section.querySelector("[data-persona-toggle]");
       const content = section.querySelector("[data-persona-content]");
       const arrow = section.querySelector("[data-persona-arrow]");
       const title = section.querySelector("[data-persona-title]");
       const name = section.querySelector("input[name*='persona'][name$='_nombre']");
+      section.querySelectorAll(".js-code-filter").forEach(function (input) {
+        input.addEventListener("input", function () {
+          filterCodeSelect(input);
+        });
+      });
+      section.addEventListener("input", updateSummary);
+      section.addEventListener("change", updateSummary);
       if (!toggle || !content) return;
       function syncTitle() { if (title) title.textContent = name && name.value ? "— " + name.value : ""; }
       toggle.addEventListener("click", function () {
@@ -665,7 +705,9 @@
       });
       if (name) name.addEventListener("input", syncTitle);
       syncTitle();
-    });
+    }
+
+    personaSections.forEach(bindPersonaSection);
 
     const prendaDialog = document.querySelector("[data-prenda-dialog]");
     const prendaFrame = document.querySelector("[data-prenda-frame]");

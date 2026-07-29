@@ -1,0 +1,47 @@
+<section class="ab-person-section" data-persona-section data-persona-number="{{ section.number }}">
+  <div class="ab-person-section-head">
+    <button class="ab-btn2" type="button" data-persona-toggle><span data-persona-arrow>▼</span> Persona {{ section.number }} <span data-persona-title></span></button>
+    <span class="ab-chip">{{ section.badge }}</span>
+  </div>
+  <div data-persona-content>
+    <div class="ab-field">
+      <label class="ab-lab" for="{{ section.name_field.id_for_label }}">Nombre persona {{ section.number }}</label>
+      {{ section.name_field }}
+      {% if section.name_field.errors %}<div class="ab-field-errors">{{ section.name_field.errors }}</div>{% endif %}
+    </div>
+    <div class="ab-prenda-grid">
+      {% for row in section.prenda_rows %}
+        <article class="ab-prenda-card">
+          <div class="ab-prenda-card-head">
+            <strong>{{ row.label }}</strong>
+            <span class="ab-pill">{{ row.prefix }}-</span>
+          </div>
+          <div class="ab-field">
+            <label class="ab-lab" for="{{ row.numero.id_for_label }}">Codigo</label>
+            {{ row.numero }}
+            {% if row.numero.errors %}<div class="ab-field-errors">{{ row.numero.errors }}</div>{% endif %}
+          </div>
+          <div class="ab-field">
+            <label class="ab-lab" for="{{ row.select.id_for_label }}">Prenda exacta</label>
+            {{ row.select }}
+            {% if row.select.errors %}<div class="ab-field-errors">{{ row.select.errors }}</div>{% endif %}
+          </div>
+          {% if row.ruedo_valor %}
+            <div class="ab-grid">
+              <div class="col-6 ab-field">
+                <label class="ab-lab" for="{{ row.ruedo_valor.id_for_label }}">Ruedo</label>
+                {{ row.ruedo_valor }}
+                {% if row.ruedo_valor.errors %}<div class="ab-field-errors">{{ row.ruedo_valor.errors }}</div>{% endif %}
+              </div>
+              <div class="col-6 ab-field">
+                <label class="ab-lab" for="{{ row.ruedo_tipo.id_for_label }}">Tipo</label>
+                {{ row.ruedo_tipo }}
+                {% if row.ruedo_tipo.errors %}<div class="ab-field-errors">{{ row.ruedo_tipo.errors }}</div>{% endif %}
+              </div>
+            </div>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
