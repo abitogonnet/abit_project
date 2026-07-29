@@ -64,7 +64,7 @@ class HomeConversionTests(TestCase):
         self.assertNotContains(response, 'data-filter="zapato"', html=False)
         self.assertNotContains(response, 'data-filter="combo"', html=False)
 
-    def test_catalogo_muestra_talles_cacheados_y_sus_combos(self):
+    def test_catalogo_separa_trajes_y_combos(self):
         color = Color.objects.get(
             clave_normalizada=Color.normalizar_clave("Gris Perla")
         )
@@ -102,12 +102,16 @@ class HomeConversionTests(TestCase):
         response = self.client.get(reverse("home"))
 
         self.assertContains(response, "Traje nacional")
-        self.assertContains(response, "<strong>Color:</strong> Gris Perla", html=True)
-        self.assertContains(response, "<strong>Saco:</strong> M", html=True)
-        self.assertContains(response, "<strong>Pantalón:</strong> 42", html=True)
-        self.assertContains(response, "Traje solo")
-        self.assertContains(response, "Saco + pantalón")
+        self.assertContains(response, '<span>Color</span>', html=True)
+        self.assertContains(response, "<strong>Gris Perla</strong>", html=True)
+        self.assertContains(response, '<span>Saco</span>', html=True)
+        self.assertContains(response, '<span>Pantalón</span>', html=True)
+        self.assertContains(response, "$100.000")
         self.assertContains(response, "Combo 1")
         self.assertContains(response, "Traje + camisa")
+        self.assertContains(response, 'data-product-type="traje"', html=False)
+        self.assertContains(response, 'data-product-type="combo"', html=False)
+        self.assertContains(response, 'data-filter="combo"', html=False)
+        self.assertNotContains(response, "Traje solo")
+        self.assertNotContains(response, 'join(" · ")', html=False)
         self.assertNotContains(response, "Ambo nacional")
-        self.assertNotContains(response, 'data-filter="combo"', html=False)

@@ -832,26 +832,87 @@ details p {
   line-height: 1;
 }
 .look-shell { grid-template-columns: 1fr; }
-.look-preview {
-  min-height: 260px;
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(184, 144, 80, 0.2), rgba(111, 31, 44, 0.2)),
-    linear-gradient(150deg, var(--look-fabric, #24221e), #11110f);
-}
-.look-meta {
-  display: flex;
-  flex-wrap: wrap;
+.product-facts {
+  display: grid;
   gap: 8px;
-  margin: 18px 0 0;
 }
-.look-meta span {
+.product-fact {
+  display: grid;
+  gap: 3px;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fffdf8;
+}
+.product-fact span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.product-fact strong {
   color: var(--ink);
   font-weight: 800;
+}
+.look-shell {
+  max-height: min(92vh, 900px);
+  overflow: auto;
+}
+.detail-product {
+  display: grid;
+  gap: 18px;
+}
+.detail-product-media {
+  overflow: hidden;
+  min-height: 280px;
+  border-radius: 8px;
+  background: #ece8df;
+}
+.detail-product-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 480px;
+  object-fit: cover;
+}
+.detail-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.detail-gallery img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  object-fit: cover;
+}
+.detail-product-copy {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+.detail-facts {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 0;
+}
+.detail-facts div {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.detail-facts dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.detail-facts dd {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-weight: 800;
+  line-height: 1.45;
 }
 .dialog-actions {
   display: grid;
@@ -1693,11 +1754,15 @@ details p {
   .confirm-detail-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
-  .look-shell {
-    grid-template-columns: 0.82fr 1fr;
-    align-items: stretch;
+  .detail-product {
+    grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1.1fr);
+    align-items: start;
   }
-  .look-preview { min-height: 100%; }
+  .detail-gallery { grid-column: 1; }
+  .detail-product-copy {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
   .benefits {
     grid-template-columns: 0.8fr 1.2fr;
     align-items: center;

@@ -126,6 +126,9 @@
           {% if zapatos %}
             <button class="filter-pill" type="button" data-filter="zapato">Zapatos</button>
           {% endif %}
+          {% if combos %}
+            <button class="filter-pill" type="button" data-filter="combo">Combos</button>
+          {% endif %}
         </div>
         <p class="catalog-count" id="catalog-count">Looks disponibles</p>
         <a class="btn btn-compact" href="{% url 'visitas:reservar' %}">Consultar talles</a>
@@ -133,85 +136,11 @@
 
       <div class="product-grid" id="product-grid" aria-live="polite">
         {% for item in trajes_importados %}
-          <article class="product-card is-entering" data-line="importada" style="--fabric:#17202f">
-            <div class="product-media">
-              <div class="image-fallback" aria-hidden="true"><strong>{{ item.tela }}</strong></div>
-              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Traje importado {{ item.tela }}" loading="lazy">
-              <span class="product-badge">Importada</span>
-            </div>
-            <div class="product-body">
-              <div class="product-top">
-                <div>
-                  <p class="product-kind">Traje importado</p>
-                  <h3 class="product-name">{{ item.tela }}</h3>
-                </div>
-                <p class="product-price">${{ item.precio }}</p>
-              </div>
-              <div class="product-meta">
-                {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
-                {% if item.imagenes_galeria.all %}
-                  <div class="product-gallery" aria-label="Galería de {{ item.tela }}">
-                    {% for foto in item.imagenes_galeria.all %}
-                      <img src="{{ foto.imagen|catalog_image_url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
-                    {% endfor %}
-                  </div>
-                {% endif %}
-                {% if item.color_stock %}<p><strong>Color:</strong> {{ item.color_stock.nombre }}</p>{% endif %}
-                <p><strong>Talles disponibles</strong></p>
-                <p><strong>Saco:</strong> {% if item.talles_saco_stock %}{{ item.talles_saco_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
-                <p><strong>Pantalón:</strong> {% if item.talles_pantalon_stock %}{{ item.talles_pantalon_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
-                <p><strong>Traje solo</strong><br>Saco + pantalón · ${{ item.precio }}</p>
-                {% for combo in combos %}
-                  <p><strong>{{ combo.nombre }}</strong><br>{% if combo.descripcion %}{{ combo.descripcion }} · {% endif %}${{ combo.precio_importado }}</p>
-                {% endfor %}
-              </div>
-              <div class="product-actions">
-                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
-                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
-              </div>
-            </div>
-          </article>
+          {% include "publico/_traje_card.html" with item=item line_slug="importada" line_label="Importada" fabric="#17202f" %}
         {% endfor %}
 
         {% for item in trajes_nacionales %}
-          <article class="product-card is-entering" data-line="nacional" style="--fabric:#253756">
-            <div class="product-media">
-              <div class="image-fallback" aria-hidden="true"><strong>{{ item.tela }}</strong></div>
-              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Traje nacional {{ item.tela }}" loading="lazy">
-              <span class="product-badge">Nacional</span>
-            </div>
-            <div class="product-body">
-              <div class="product-top">
-                <div>
-                  <p class="product-kind">Traje nacional</p>
-                  <h3 class="product-name">{{ item.tela }}</h3>
-                </div>
-                <p class="product-price">${{ item.precio }}</p>
-              </div>
-              <div class="product-meta">
-                {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
-                {% if item.imagenes_galeria.all %}
-                  <div class="product-gallery" aria-label="Galería de {{ item.tela }}">
-                    {% for foto in item.imagenes_galeria.all %}
-                      <img src="{{ foto.imagen|catalog_image_url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
-                    {% endfor %}
-                  </div>
-                {% endif %}
-                {% if item.color_stock %}<p><strong>Color:</strong> {{ item.color_stock.nombre }}</p>{% endif %}
-                <p><strong>Talles disponibles</strong></p>
-                <p><strong>Saco:</strong> {% if item.talles_saco_stock %}{{ item.talles_saco_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
-                <p><strong>Pantalón:</strong> {% if item.talles_pantalon_stock %}{{ item.talles_pantalon_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</p>
-                <p><strong>Traje solo</strong><br>Saco + pantalón · ${{ item.precio }}</p>
-                {% for combo in combos %}
-                  <p><strong>{{ combo.nombre }}</strong><br>{% if combo.descripcion %}{{ combo.descripcion }} · {% endif %}${{ combo.precio_nacional }}</p>
-                {% endfor %}
-              </div>
-              <div class="product-actions">
-                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
-                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
-              </div>
-            </div>
-          </article>
+          {% include "publico/_traje_card.html" with item=item line_slug="nacional" line_label="Nacional" fabric="#253756" %}
         {% endfor %}
 
         {% for item in camisas %}
@@ -227,7 +156,7 @@
                   <p class="product-kind">Complemento</p>
                   <h3 class="product-name">Camisa</h3>
                 </div>
-                <p class="product-price">${{ item.precio }}</p>
+                <p class="product-price">{{ item.precio|ars_currency }}</p>
               </div>
               <div class="product-meta">
                 {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
@@ -240,6 +169,20 @@
                 <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
               </div>
             </div>
+            <template data-product-detail>
+              <article class="detail-product">
+                <div class="detail-product-media"><img src="{{ item.foto_modelo|catalog_image_url }}" alt="Camisa ABITO"></div>
+                <div class="detail-product-copy">
+                  <p class="product-kind">Complemento</p>
+                  <h2>Camisa</h2>
+                  <dl class="detail-facts">
+                    {% if item.descripcion %}<div><dt>Descripción</dt><dd>{{ item.descripcion }}</dd></div>{% endif %}
+                    {% for fila in item.talles.all %}<div><dt>Color y talle</dt><dd>{{ fila.color }} · {{ fila.talle }}</dd></div>{% endfor %}
+                    <div><dt>Precio</dt><dd>{{ item.precio|ars_currency }}</dd></div>
+                  </dl>
+                </div>
+              </article>
+            </template>
           </article>
         {% endfor %}
 
@@ -256,7 +199,7 @@
                   <p class="product-kind">Complemento</p>
                   <h3 class="product-name">Zapatos</h3>
                 </div>
-                <p class="product-price">${{ item.precio }}</p>
+                <p class="product-price">{{ item.precio|ars_currency }}</p>
               </div>
               <div class="product-meta">
                 {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
@@ -269,7 +212,25 @@
                 <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
               </div>
             </div>
+            <template data-product-detail>
+              <article class="detail-product">
+                <div class="detail-product-media"><img src="{{ item.foto_modelo|catalog_image_url }}" alt="Zapatos ABITO"></div>
+                <div class="detail-product-copy">
+                  <p class="product-kind">Complemento</p>
+                  <h2>Zapatos</h2>
+                  <dl class="detail-facts">
+                    {% if item.descripcion %}<div><dt>Descripción</dt><dd>{{ item.descripcion }}</dd></div>{% endif %}
+                    {% for fila in item.talles.all %}<div><dt>Color y talle</dt><dd>{{ fila.color }} · {{ fila.talle }}</dd></div>{% endfor %}
+                    <div><dt>Precio</dt><dd>{{ item.precio|ars_currency }}</dd></div>
+                  </dl>
+                </div>
+              </article>
+            </template>
           </article>
+        {% endfor %}
+
+        {% for combo in combos %}
+          {% include "publico/_combo_card.html" with combo=combo %}
         {% endfor %}
 
       </div>
@@ -388,7 +349,7 @@
         </details>
         <details>
           <summary>¿Hay combos con camisa?</summary>
-          <p>Sí. Cada traje muestra debajo los combos activos, qué prendas incluyen y su precio.</p>
+          <p>Sí. Los combos aparecen como productos independientes e indican qué prendas incluyen y su precio.</p>
         </details>
       </div>
     </section>
@@ -424,29 +385,20 @@
     </a>
   </aside>
 
-  <dialog class="look-dialog" id="look-dialog" aria-labelledby="look-title">
+  <dialog class="look-dialog" id="look-dialog" aria-label="Detalle del producto">
     <form method="dialog" class="dialog-shell look-shell">
       <button class="dialog-close" value="cancel" aria-label="Cerrar detalle">×</button>
-      <div class="look-preview" id="look-preview" aria-hidden="true"></div>
-      <div>
-        <p class="eyebrow" id="look-kind">Línea</p>
-        <h2 id="look-title">Look ABITO</h2>
-        <p id="look-copy">Detalle del look seleccionado.</p>
-        <div class="look-meta">
-          <span id="look-price"></span>
-          <span id="look-sizes"></span>
-        </div>
-        <div class="dialog-actions">
-          <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar visita</a>
-          <a
-            class="btn btn-secondary"
-            href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            WhatsApp
-          </a>
-        </div>
+      <div id="look-content"></div>
+      <div class="dialog-actions">
+        <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar visita</a>
+        <a
+          class="btn btn-secondary"
+          href="{% if site_config and site_config.whatsapp_url %}{{ site_config.whatsapp_url }}{% else %}https://wa.me/message/IXNVRCQIC6YFF1{% endif %}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          WhatsApp
+        </a>
       </div>
     </form>
   </dialog>
@@ -603,18 +555,10 @@
     }
 
     function openLook(card) {
-      const kind = card.querySelector(".product-kind")?.textContent.trim() || "Look ABITO";
-      const title = card.querySelector(".product-name")?.textContent.trim() || "Look ABITO";
-      const price = card.querySelector(".product-price")?.textContent.trim() || "Precio a confirmar";
-      const meta = Array.from(card.querySelectorAll(".product-meta p")).map((node) => node.textContent.trim()).join(" · ");
-      const fabric = getComputedStyle(card).getPropertyValue("--fabric") || "#24221e";
-
-      document.querySelector("#look-kind").textContent = kind;
-      document.querySelector("#look-title").textContent = title;
-      document.querySelector("#look-copy").textContent = meta || "Consultá disponibilidad y calce en una visita presencial.";
-      document.querySelector("#look-price").textContent = price;
-      document.querySelector("#look-sizes").textContent = meta || "Talles a confirmar";
-      document.querySelector("#look-preview").style.setProperty("--look-fabric", fabric);
+      const source = card.querySelector("template[data-product-detail]");
+      const target = document.querySelector("#look-content");
+      if (!source || !target) return;
+      target.replaceChildren(source.content.cloneNode(true));
 
       if (typeof lookDialog.showModal === "function") lookDialog.showModal();
     }

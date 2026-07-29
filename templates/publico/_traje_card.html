@@ -1,0 +1,104 @@
+{% load catalog_images %}
+<article
+  class="product-card is-entering"
+  data-line="{{ line_slug }}"
+  data-product-type="traje"
+  style="--fabric:{{ fabric }}"
+>
+  <div class="product-media">
+    <img
+      src="{{ item.foto_modelo|catalog_image_url }}"
+      alt="Traje {{ line_label|lower }} {{ item.tela }}"
+      loading="lazy"
+    >
+    <span class="product-badge">{{ line_label }}</span>
+  </div>
+
+  <div class="product-body">
+    <div class="product-top">
+      <div>
+        <p class="product-kind">Traje {{ line_label|lower }}</p>
+        <h3 class="product-name">{{ item.tela }}</h3>
+      </div>
+      <p class="product-price">{{ item.precio|ars_currency }}</p>
+    </div>
+
+    <div class="product-meta product-facts">
+      {% if item.color_stock %}
+        <div class="product-fact">
+          <span>Color</span>
+          <strong>{{ item.color_stock.nombre }}</strong>
+        </div>
+      {% endif %}
+      <div class="product-fact">
+        <span>Saco</span>
+        <strong>
+          {% if item.talles_saco_stock %}
+            {{ item.talles_saco_stock|join:" · " }}
+          {% else %}
+            A confirmar
+          {% endif %}
+        </strong>
+      </div>
+      <div class="product-fact">
+        <span>Pantalón</span>
+        <strong>
+          {% if item.talles_pantalon_stock %}
+            {{ item.talles_pantalon_stock|join:" · " }}
+          {% else %}
+            A confirmar
+          {% endif %}
+        </strong>
+      </div>
+    </div>
+
+    <div class="product-actions">
+      <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
+      <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
+    </div>
+  </div>
+
+  <template data-product-detail>
+    <article class="detail-product">
+      <div class="detail-product-media">
+        <img
+          src="{{ item.foto_modelo|catalog_image_url }}"
+          alt="Traje {{ item.tela }}"
+        >
+      </div>
+      {% if item.foto_colgado or item.imagenes_galeria.all %}
+        <div class="detail-gallery">
+          {% if item.foto_colgado %}
+            <img src="{{ item.foto_colgado|catalog_image_url }}" alt="{{ item.tela }} colgado">
+          {% endif %}
+          {% for foto in item.imagenes_galeria.all %}
+            <img src="{{ foto.imagen|catalog_image_url }}" alt="{{ item.tela }} — foto adicional">
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="detail-product-copy">
+        <p class="product-kind">Traje {{ line_label|lower }}</p>
+        <h2>{{ item.tela }}</h2>
+
+        <dl class="detail-facts">
+          {% if item.color_stock %}
+            <div><dt>Color</dt><dd>{{ item.color_stock.nombre }}</dd></div>
+          {% endif %}
+          <div>
+            <dt>Talles de saco</dt>
+            <dd>{% if item.talles_saco_stock %}{{ item.talles_saco_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Talles de pantalón</dt>
+            <dd>{% if item.talles_pantalon_stock %}{{ item.talles_pantalon_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</dd>
+          </div>
+          {% if item.descripcion %}
+            <div><dt>Descripción</dt><dd>{{ item.descripcion }}</dd></div>
+          {% endif %}
+          <div><dt>Precio</dt><dd>{{ item.precio|ars_currency }}</dd></div>
+        </dl>
+      </div>
+    </article>
+  </template>
+</article>
