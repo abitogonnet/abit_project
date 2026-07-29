@@ -44,6 +44,7 @@ class CatalogLogicTests(TestCase):
             Prenda.C_ZAPATOS: (Prenda.O_NAC, "40", "Negro"),
             Prenda.C_CINTURON: (Prenda.O_NAC, "Adulto", "Negro"),
             Prenda.C_CORBATA: (Prenda.O_NAC, "Adulto", "A rayas"),
+            Prenda.C_CHALECO: (Prenda.O_NAC, "M", "Negro"),
         }
         for categoria, (origen, talle, color) in casos.items():
             form = PrendaForm(self.payload(

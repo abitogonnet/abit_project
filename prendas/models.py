@@ -76,6 +76,7 @@ class Prenda(models.Model):
         C_ZAPATOS: O_NAC,
         C_CINTURON: O_NAC,
         C_CORBATA: O_NAC,
+        C_CHALECO: O_NAC,
     }
 
     codigo = models.CharField(max_length=10, unique=True, db_index=True)

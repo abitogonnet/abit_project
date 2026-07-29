@@ -16,6 +16,7 @@ class PrendaFormTests(TestCase):
             Prenda.C_ZAPATOS: Prenda.O_NAC,
             Prenda.C_CINTURON: Prenda.O_NAC,
             Prenda.C_CORBATA: Prenda.O_NAC,
+            Prenda.C_CHALECO: Prenda.O_NAC,
         }
         for index, (categoria, origen_esperado) in enumerate(casos.items(), start=1):
             prenda = Prenda.objects.create(

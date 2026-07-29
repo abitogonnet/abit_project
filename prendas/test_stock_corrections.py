@@ -75,3 +75,14 @@ class StockCorrectionsTests(TestCase):
 
         self.assertContains(response, 'id="origenField" style="display:none"')
         self.assertEqual(prenda.origen, Prenda.O_IMP)
+
+    def test_editar_chaleco_oculta_selector_y_mantiene_origen_nacional(self):
+        prenda = Prenda.objects.create(
+            codigo="CH-AUTO", categoria=Prenda.C_CHALECO, marca="Boiler",
+            color="Negro", talle="M", origen=Prenda.O_IMP,
+        )
+
+        response = self.client.get(reverse("prendas:editar", args=[prenda.pk]))
+
+        self.assertContains(response, 'id="origenField" style="display:none"')
+        self.assertEqual(prenda.origen, Prenda.O_NAC)

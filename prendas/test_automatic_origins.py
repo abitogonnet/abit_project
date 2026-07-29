@@ -35,3 +35,30 @@ class AutomaticOriginMigrationTests(TestCase):
                 categoria__in=Prenda.ORIGEN_AUTOMATICO_POR_CATEGORIA,
             ).exists()
         )
+
+    def test_migracion_de_chalecos_es_idempotente_y_solo_cambia_origen(self):
+        prenda = Prenda(
+            codigo="CH-992",
+            categoria=Prenda.C_CHALECO,
+            marca="Boiler",
+            color="Negro",
+            talle="M",
+            estado=Prenda.E_LAV,
+            origen=Prenda.O_IMP,
+            notas="No modificar",
+        )
+        Prenda.objects.bulk_create([prenda])
+        normalizar = import_module(
+            "prendas.migrations.0009_normalize_chaleco_origin"
+        ).normalizar_origen_chalecos
+
+        normalizar(apps, None)
+        normalizar(apps, None)
+
+        prenda = Prenda.objects.get(codigo="CH-992")
+        self.assertEqual(prenda.origen, Prenda.O_NAC)
+        self.assertEqual(prenda.marca, "Boiler")
+        self.assertEqual(prenda.color, "Negro")
+        self.assertEqual(prenda.talle, "M")
+        self.assertEqual(prenda.estado, Prenda.E_LAV)
+        self.assertEqual(prenda.notas, "No modificar")
