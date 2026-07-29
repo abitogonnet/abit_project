@@ -112,3 +112,18 @@ class AccesoTests(TestCase):
         self.client.force_login(user)
         self.assertRedirects(self.client.post(reverse("cuentas:logout")), reverse("cuentas:login"))
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_layout_autenticado_incluye_menu_mobile_completo(self):
+        propietario = self.crear_usuario("mobile", PerfilUsuario.PROPIETARIO)
+        self.client.force_login(propietario)
+
+        response = self.client.get(reverse("alquileres:home"))
+
+        self.assertContains(response, 'name="viewport" content="width=device-width, initial-scale=1"')
+        self.assertContains(response, 'class="ab-mobile-nav"')
+        self.assertContains(response, ">Menú<")
+        self.assertContains(response, "Registro de actividad")
+        self.assertContains(response, "Clientes")
+        self.assertContains(response, "Visitas")
+        self.assertContains(response, "Catálogo")
+        self.assertContains(response, "Usuarios")

@@ -23,6 +23,32 @@
 <body class="ab-page">
   <div class="ab-app" data-app-shell>
     <main class="ab-main">
+      {% if user.is_authenticated %}
+        <nav class="ab-mobile-nav" aria-label="Navegación principal">
+          <a class="ab-mobile-nav-brand" href="{% if user.perfil.rol == 'COSTURERA' %}{{ ruedos_url }}{% else %}{{ home_url }}{% endif %}">ABITO</a>
+          <details class="ab-mobile-nav-menu">
+            <summary>Menú</summary>
+            <div class="ab-mobile-nav-panel">
+              <div class="ab-mobile-nav-user">{{ user.perfil.nombre|default:user.username }}</div>
+              {% if user.perfil.rol == 'COSTURERA' %}
+                <a href="{{ ruedos_url }}">Ruedos</a>
+              {% else %}
+                <a href="{{ home_url }}">Inicio</a>
+                <button type="button" data-go-back>Atrás</button>
+                <a href="{% url 'cuentas:actividad' %}">Registro de actividad</a>
+                <a href="{% url 'alquileres:clientes' %}">Clientes</a>
+                <a href="{% url 'visitas:listar' %}">Visitas</a>
+                {% if user.perfil.rol != 'EMPLEADO' %}<a href="{% url 'catalogo:gestion' %}">Catálogo</a>{% endif %}
+                {% if user.perfil.rol == 'PROPIETARIO' %}<a href="{% url 'cuentas:usuarios' %}">Usuarios</a>{% endif %}
+              {% endif %}
+              <a href="{% url 'cuentas:cambiar_password' %}">Modificar contraseña</a>
+              <form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cambiar usuario</button></form>
+              <form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form>
+            </div>
+          </details>
+        </nav>
+      {% endif %}
+
       {% if messages %}
         <div class="ab-flash-stack">
           {% for m in messages %}

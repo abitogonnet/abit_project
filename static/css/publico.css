@@ -1427,6 +1427,14 @@ details p {
   transform: translateY(0);
 }
 
+.site-header[data-reveal] {
+  transform: translate(-50%, 18px);
+}
+
+.site-header[data-reveal].is-visible {
+  transform: translate(-50%, 0);
+}
+
 /* Reserva existente */
 .hero-shell {
   min-height: 100vh;
@@ -1853,6 +1861,91 @@ details p {
   border: 1px solid rgba(91, 101, 75, 0.2);
   border-radius: 22px;
   background: #f6f5ef;
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  img,
+  video,
+  iframe,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .reserve-panel-head,
+  .reserve-flow {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .reserve-panel-head h2 {
+    font-size: clamp(1.8rem, 10vw, 2.7rem);
+  }
+
+  .detail-actions,
+  .reserve-actions,
+  .hero-actions {
+    flex-wrap: wrap;
+  }
+
+  .detail-actions > *,
+  .reserve-actions > *,
+  .hero-actions > * {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 479px) {
+  .time-slot-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detail-actions > *,
+  .reserve-actions > *,
+  .hero-actions > * {
+    flex-basis: 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .site-header {
+    gap: 8px;
+    padding-inline: 8px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand small {
+    display: none;
+  }
+
+  .brand strong {
+    font-size: 1.05rem;
+  }
+
+  .header-cta {
+    padding-inline: 10px;
+    font-size: 0.88rem;
+  }
 }
 
 .abito-location-copy h3 {
