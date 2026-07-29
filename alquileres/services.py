@@ -64,7 +64,6 @@ def cerrar_alquiler(alquiler_id, usuario=None):
 
     alquiler = (
         Alquiler.objects.select_for_update()
-        .select_related("cerrado_por")
         .get(pk=alquiler_id)
     )
     if alquiler.estado_alquiler == Alquiler.EST_CERRADO:

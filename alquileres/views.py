@@ -1,10 +1,11 @@
 from datetime import date, timedelta
 from decimal import Decimal
 from urllib.parse import urlencode
+import logging
 import secrets
 
 from django.contrib import messages
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse
 from django.urls import reverse
@@ -37,6 +38,8 @@ RUEDOS_MESSAGE_LABELS = {
     Prenda.C_ZAPATOS: "ZAPATOS",
     Prenda.C_CINTURON: "CINTURON",
 }
+
+logger = logging.getLogger(__name__)
 
 
 def home(request):
@@ -949,7 +952,19 @@ def _toggle_saldo_pagado(alquiler: Alquiler):
 
 def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool:
     if accion == "cerrar_alquiler":
-        alquiler_cerrado, changed = cerrar_alquiler(alquiler.pk, request.user)
+        try:
+            alquiler_cerrado, changed = cerrar_alquiler(alquiler.pk, request.user)
+        except DatabaseError:
+            logger.exception(
+                "No se pudo cerrar el alquiler %s para el usuario %s",
+                alquiler.pk,
+                getattr(request.user, "pk", None),
+            )
+            messages.error(
+                request,
+                "No se pudo cerrar el alquiler. No se realizó ningún cambio.",
+            )
+            return True
         alquiler.refresh_from_db()
         if changed:
             messages.success(request, f"Alquiler #{alquiler_cerrado.id} cerrado.")

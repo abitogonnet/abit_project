@@ -393,8 +393,9 @@
           if (submitting) { event.preventDefault(); return; }
           preserveSubmitter(form, event);
           submitting = true; dirty = false;
+          const closing = event.submitter && event.submitter.value === "cerrar_alquiler";
           form.querySelectorAll("button[type='submit']").forEach(function (button) {
-            button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = "Guardando…";
+            button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = closing ? "Cerrando…" : "Guardando…";
           });
         });
         window.addEventListener("beforeunload", function (event) {
@@ -406,10 +407,11 @@
         if (guardedForms.includes(form) || form.dataset.submitGuard === "off") return;
         form.addEventListener("submit", function (event) {
           preserveSubmitter(form, event);
+          const closing = event.submitter && event.submitter.value === "cerrar_alquiler";
           form.querySelectorAll("button[type='submit']").forEach(function (button) {
             button.disabled = true;
             if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
-            button.textContent = "Guardando…";
+            button.textContent = closing ? "Cerrando…" : "Guardando…";
           });
         }, {once: true});
       });
