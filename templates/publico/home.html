@@ -125,9 +125,6 @@
           {% if zapatos %}
             <button class="filter-pill" type="button" data-filter="zapato">Zapatos</button>
           {% endif %}
-          {% if combos %}
-            <button class="filter-pill" type="button" data-filter="combo">Combos</button>
-          {% endif %}
         </div>
         <p class="catalog-count" id="catalog-count">Looks disponibles</p>
         <a class="btn btn-compact" href="{% url 'visitas:reservar' %}">Consultar talles</a>
@@ -144,17 +141,22 @@
             <div class="product-body">
               <div class="product-top">
                 <div>
-                  <p class="product-kind">Ambo importado</p>
+                  <p class="product-kind">Traje importado</p>
                   <h3 class="product-name">{{ item.tela }}</h3>
                 </div>
                 <p class="product-price">${{ item.precio }}</p>
               </div>
               <div class="product-meta">
-                {% if item.talles_stock_saco %}<p><strong>Talles existentes en stock:</strong> saco {{ item.talles_stock_saco|join:" · " }}{% if item.talles_stock_pantalon %} · pantalón {{ item.talles_stock_pantalon|join:" · " }}{% endif %}</p>{% endif %}
-                {% for fila in item.talles.all %}
-                  <p>Color: {{ fila.color }} · Saco {{ fila.talle_saco }} · Pantalón {{ fila.talle_pantalon }}</p>
-                {% empty %}
+                {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
+                {% if item.colores_catalogo %}
+                  <p><strong>Colores disponibles:</strong> {{ item.colores_catalogo|join:" · " }}</p>
+                  <p><strong>Talles disponibles:</strong> saco {{ item.talles_saco_catalogo|join:" · " }} · pantalón {{ item.talles_pantalon_catalogo|join:" · " }}</p>
+                {% else %}
                   <p>Talles a confirmar en la visita.</p>
+                {% endif %}
+                <p><strong>Traje solo</strong><br>Saco + pantalón · ${{ item.precio }}</p>
+                {% for combo in combos %}
+                  <p><strong>{{ combo.nombre }}</strong><br>{% if combo.descripcion %}{{ combo.descripcion }} · {% endif %}${{ combo.precio_importado }}</p>
                 {% endfor %}
               </div>
               <div class="product-actions">
@@ -175,17 +177,22 @@
             <div class="product-body">
               <div class="product-top">
                 <div>
-                  <p class="product-kind">Ambo nacional</p>
+                  <p class="product-kind">Traje nacional</p>
                   <h3 class="product-name">{{ item.tela }}</h3>
                 </div>
                 <p class="product-price">${{ item.precio }}</p>
               </div>
               <div class="product-meta">
-                {% if item.talles_stock_saco %}<p><strong>Talles existentes en stock:</strong> saco {{ item.talles_stock_saco|join:" · " }}{% if item.talles_stock_pantalon %} · pantalón {{ item.talles_stock_pantalon|join:" · " }}{% endif %}</p>{% endif %}
-                {% for fila in item.talles.all %}
-                  <p>Color: {{ fila.color }} · Saco {{ fila.talle_saco }} · Pantalón {{ fila.talle_pantalon }}</p>
-                {% empty %}
+                {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
+                {% if item.colores_catalogo %}
+                  <p><strong>Colores disponibles:</strong> {{ item.colores_catalogo|join:" · " }}</p>
+                  <p><strong>Talles disponibles:</strong> saco {{ item.talles_saco_catalogo|join:" · " }} · pantalón {{ item.talles_pantalon_catalogo|join:" · " }}</p>
+                {% else %}
                   <p>Talles a confirmar en la visita.</p>
+                {% endif %}
+                <p><strong>Traje solo</strong><br>Saco + pantalón · ${{ item.precio }}</p>
+                {% for combo in combos %}
+                  <p><strong>{{ combo.nombre }}</strong><br>{% if combo.descripcion %}{{ combo.descripcion }} · {% endif %}${{ combo.precio_nacional }}</p>
                 {% endfor %}
               </div>
               <div class="product-actions">
@@ -254,32 +261,6 @@
           </article>
         {% endfor %}
 
-        {% for combo in combos %}
-          <article class="product-card is-entering" data-line="combo" style="--fabric:#6f1f2c">
-            <div class="product-media">
-              <div class="image-fallback" aria-hidden="true"><strong>{{ combo.nombre }}</strong></div>
-              <img src="{{ combo.foto.url }}" alt="{{ combo.nombre }}" loading="lazy">
-              <span class="product-badge">Combo</span>
-            </div>
-            <div class="product-body">
-              <div class="product-top">
-                <div>
-                  <p class="product-kind">Look completo</p>
-                  <h3 class="product-name">{{ combo.nombre }}</h3>
-                </div>
-                <p class="product-price">Desde ${{ combo.precio_nacional }}</p>
-              </div>
-              <div class="product-meta">
-                {% if combo.descripcion %}<p>{{ combo.descripcion }}</p>{% endif %}
-                <p>Importada ${{ combo.precio_importado }} · Nacional ${{ combo.precio_nacional }} · Niños ${{ combo.precio_ninos }}</p>
-              </div>
-              <div class="product-actions">
-                <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
-                <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
-              </div>
-            </div>
-          </article>
-        {% endfor %}
       </div>
 
       <div class="catalog-empty" id="catalog-empty" hidden>
@@ -396,7 +377,7 @@
         </details>
         <details>
           <summary>¿Hay combos con camisa?</summary>
-          <p>Sí. Cuando hay combos activos, la web los muestra con precios por línea.</p>
+          <p>Sí. Cada traje muestra debajo los combos activos, qué prendas incluyen y su precio.</p>
         </details>
       </div>
     </section>

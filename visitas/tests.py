@@ -43,6 +43,20 @@ class CuposTests(TestCase):
 
 
 class UbicacionPublicaTests(TestCase):
+    def test_reserva_usa_traje_en_toda_la_copia_visible(self):
+        reserva = self.client.get(reverse("visitas:reservar"))
+
+        self.assertContains(reserva, "¿Viste algún traje en nuestro catálogo?")
+        self.assertContains(reserva, "Sí, quiero indicar cuáles")
+        self.assertContains(reserva, "Podés indicar hasta 3 trajes que te interesaron.")
+        self.assertContains(reserva, "Traje 1")
+        self.assertContains(reserva, "Traje 2")
+        self.assertContains(reserva, "Traje 3")
+        self.assertContains(reserva, "Trajes elegidos")
+        self.assertContains(reserva, "<strong>Trajes</strong>", html=True)
+        self.assertNotContains(reserva, "Ambo 1")
+        self.assertNotContains(reserva, "Ambos elegidos")
+
     def test_reserva_no_expone_ubicacion_y_confirmacion_si_la_muestra(self):
         reserva = self.client.get(reverse("visitas:reservar"))
         self.assertNotContains(reserva, "Calle 489 entre 23 y 24 N.º 2871")

@@ -22,11 +22,11 @@ class VisitaForm(forms.ModelForm):
         choices=[
             ("", "Elegi una opcion"),
             ("no", "No, todavia no vi ninguna"),
-            ("si", "Si, quiero indicar ambos y talles"),
+            ("si", "Si, quiero indicar trajes y talles"),
         ],
         required=False,
         widget=forms.Select(attrs={"class": "reserve-input"}),
-        label="Viste alguna prenda en el catalogo?",
+        label="Viste algun traje en nuestro catalogo?",
     )
 
     class Meta:
@@ -88,15 +88,15 @@ class VisitaForm(forms.ModelForm):
             self.fields[f"preferencia_{index}_traje"] = forms.ModelChoiceField(
                 queryset=Traje.objects.filter(activo=True).order_by("linea", "tela"),
                 required=False,
-                empty_label="Elegi un ambo",
+                empty_label="Elegi un traje",
                 widget=forms.Select(attrs={"class": "reserve-input"}),
-                label=f"Ambo {index}",
+                label=f"Traje {index}",
             )
             self.fields[f"preferencia_{index}_color"] = forms.ChoiceField(
                 required=False,
                 choices=[("", "Elegi un color")],
                 widget=forms.Select(attrs={"class": "reserve-input"}),
-                label=f"Color del ambo {index}",
+                label=f"Color del traje {index}",
             )
             self.fields[f"preferencia_{index}_talle_saco"] = forms.CharField(
                 required=False,
@@ -107,7 +107,7 @@ class VisitaForm(forms.ModelForm):
                         "placeholder": "Ej: 50",
                     }
                 ),
-                label=f"Talle de saco del ambo {index}",
+                label=f"Talle de saco del traje {index}",
             )
             self.fields[f"preferencia_{index}_talle_pantalon"] = forms.CharField(
                 required=False,
@@ -118,7 +118,7 @@ class VisitaForm(forms.ModelForm):
                         "placeholder": "Ej: 42",
                     }
                 ),
-                label=f"Talle de pantalon del ambo {index}",
+                label=f"Talle de pantalon del traje {index}",
             )
 
         if self.is_bound:
@@ -213,7 +213,7 @@ class VisitaForm(forms.ModelForm):
         if vio_prendas_catalogo not in ["si", "no"]:
             self.add_error(
                 "vio_prendas_catalogo",
-                "Indicanos si viste alguna prenda en el catalogo.",
+                "Indicanos si viste algun traje en nuestro catalogo.",
             )
 
         self.selected_preferences = []
@@ -236,14 +236,14 @@ class VisitaForm(forms.ModelForm):
                     if not traje:
                         self.add_error(
                             f"preferencia_{index}_traje",
-                            "Primero elegi el ambo.",
+                            "Primero elegi el traje.",
                         )
                         continue
 
                 if traje and not color:
                     self.add_error(
                         f"preferencia_{index}_color",
-                        "Elegi el color para ese ambo.",
+                        "Elegi el color para ese traje.",
                     )
                 if traje and not talle_saco:
                     self.add_error(
@@ -263,7 +263,7 @@ class VisitaForm(forms.ModelForm):
                 if not color_valido:
                     self.add_error(
                         f"preferencia_{index}_color",
-                        "El color elegido no corresponde a ese ambo.",
+                        "El color elegido no corresponde a ese traje.",
                     )
                     continue
 
@@ -282,7 +282,7 @@ class VisitaForm(forms.ModelForm):
             if not self.selected_preferences:
                 self.add_error(
                     "vio_prendas_catalogo",
-                    "Si viste prendas, elegi al menos un ambo con sus talles.",
+                    "Si viste trajes, elegi al menos uno con sus talles.",
                 )
 
         return cleaned_data

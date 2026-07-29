@@ -49,7 +49,7 @@
         <p class="eyebrow">Reserva presencial</p>
         <h1 id="reserve-title">Probate el traje. Dejá el look resuelto.</h1>
         <p>
-          Elegí fecha, horario y contanos si ya viste un ambo del catálogo. ABITO valida cupo real y prepara la visita para que no pierdas tiempo.
+          Elegí fecha, horario y contanos si ya viste un traje del catálogo. ABITO valida cupo real y prepara la visita para que no pierdas tiempo.
         </p>
 
         <div class="reserve-proof">
@@ -83,7 +83,7 @@
           </button>
           <button class="reserve-step" type="button" id="pill-4" data-step-jump="4">
             <span>04</span>
-            <strong>Prendas</strong>
+            <strong>Trajes</strong>
             <small>Catálogo visto</small>
           </button>
           <button class="reserve-step" type="button" id="pill-5" data-step-jump="5">
@@ -223,15 +223,15 @@
 
           <div class="step-panel reserve-panel-step" id="step-4" hidden>
             <div class="form-group reserve-catalog-field">
-              <label for="{{ form.vio_prendas_catalogo.id_for_label }}">¿Viste alguna prenda en el catálogo?</label>
-              <div class="catalog-choice-grid" role="group" aria-label="Prendas vistas en catálogo">
+              <label for="{{ form.vio_prendas_catalogo.id_for_label }}">¿Viste algún traje en nuestro catálogo?</label>
+              <div class="catalog-choice-grid" role="group" aria-label="Trajes vistos en catálogo">
                 <button class="catalog-choice" type="button" data-catalog-value="no">
                   <span>No todavía</span>
                   <small>Prefiero que me asesoren en la visita.</small>
                 </button>
                 <button class="catalog-choice" type="button" data-catalog-value="si">
-                  <span>Sí, quiero indicar ambos</span>
-                  <small>Dejás modelo, color y talles tentativos.</small>
+                  <span>Sí, quiero indicar cuáles</span>
+                  <small>Podés indicar hasta 3 trajes que te interesaron.</small>
                 </button>
               </div>
               <div class="reserve-select-hidden">
@@ -244,7 +244,7 @@
 
             <div id="preferenciasWrap" class="preferences-stack" hidden>
               <div class="preference-card">
-                <p class="preference-title">Ambo 1</p>
+                <p class="preference-title">Traje 1</p>
 
                 <div class="form-group">
                   <label for="{{ form.preferencia_1_traje.id_for_label }}">Modelo</label>
@@ -282,7 +282,7 @@
               </div>
 
               <div class="preference-card">
-                <p class="preference-title">Ambo 2</p>
+                <p class="preference-title">Traje 2</p>
 
                 <div class="form-group">
                   <label for="{{ form.preferencia_2_traje.id_for_label }}">Modelo</label>
@@ -320,7 +320,7 @@
               </div>
 
               <div class="preference-card">
-                <p class="preference-title">Ambo 3</p>
+                <p class="preference-title">Traje 3</p>
 
                 <div class="form-group">
                   <label for="{{ form.preferencia_3_traje.id_for_label }}">Modelo</label>
@@ -402,7 +402,7 @@
             </div>
 
             <div class="reserve-summary summary-ambos" id="summaryAmbosBox" hidden>
-              <p><strong>Ambos elegidos</strong></p>
+              <p><strong>Trajes elegidos</strong></p>
               <div id="summaryAmbosList" class="summary-preferences-list"></div>
             </div>
 
@@ -447,7 +447,7 @@
       4: {
         kicker: "Paso 04",
         title: "Decinos si ya venís con un look en mente.",
-        copy: "Si viste prendas en el catálogo, podés dejarlas indicadas para preparar mejor la visita."
+        copy: "Si viste trajes en el catálogo, podés dejarlos indicados para preparar mejor la visita."
       },
       5: {
         kicker: "Paso 05",
@@ -664,11 +664,11 @@
         const tallePantalon = document.getElementById(`id_preferencia_${index}_talle_pantalon`).value.trim();
 
         if (traje && (!color || !talleSaco || !tallePantalon)) {
-          return "Completá color, talle de saco y talle de pantalón para el ambo que elegiste.";
+          return "Completá color, talle de saco y talle de pantalón para el traje que elegiste.";
         }
 
         if (!traje && (color || talleSaco || tallePantalon)) {
-          return "Primero elegí el ambo y después completá color y talles.";
+          return "Primero elegí el traje y después completá color y talles.";
         }
       }
 
@@ -682,7 +682,7 @@
       clearInlineMessage("step4Message");
 
       if (!vioPrendas) {
-        showInlineMessage("step4Message", "Indicanos si viste alguna prenda en el catálogo.");
+        showInlineMessage("step4Message", "Indicanos si viste algún traje en nuestro catálogo.");
         return;
       }
 
@@ -692,7 +692,7 @@
       }
 
       if (vioPrendas === "si" && !hayAlgunaPreferenciaCompleta()) {
-        showInlineMessage("step4Message", "Si viste prendas, elegí al menos un ambo con sus talles.");
+        showInlineMessage("step4Message", "Si viste trajes, elegí al menos uno con sus talles.");
         return;
       }
 

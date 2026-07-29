@@ -5,40 +5,31 @@ from catalogo.models import (
     Traje,
     Zapato,
 )
-from prendas.models import Color, Prenda
 
 
-def _agregar_talles_stock(trajes):
+def _preparar_trajes_catalogo(trajes):
     trajes = list(trajes)
-    color_ids = [item.color_stock_id for item in trajes if item.color_stock_id]
-    colores = {color.id: color.nombre for color in Color.objects.filter(id__in=color_ids)}
     for traje in trajes:
-        color = colores.get(traje.color_stock_id)
-        origen = (
-            Prenda.O_IMP if traje.linea == traje.LINEA_IMPORTADA else
-            Prenda.O_NAC if traje.linea == traje.LINEA_NACIONAL else ""
+        filas = list(traje.talles.all())
+        traje.colores_catalogo = list(dict.fromkeys(fila.color for fila in filas))
+        traje.talles_saco_catalogo = list(
+            dict.fromkeys(fila.talle_saco for fila in filas)
         )
-        qs = Prenda.objects.filter(
-            categoria__in=[Prenda.C_SACO, Prenda.C_PANTALON],
-            color=color,
+        traje.talles_pantalon_catalogo = list(
+            dict.fromkeys(fila.talle_pantalon for fila in filas)
         )
-        if origen:
-            qs = qs.filter(origen=origen)
-        rows = qs.values_list("categoria", "talle").distinct()
-        traje.talles_stock_saco = sorted({t for c, t in rows if c == Prenda.C_SACO})
-        traje.talles_stock_pantalon = sorted({t for c, t in rows if c == Prenda.C_PANTALON})
     return trajes
 
 
 def home(request):
-    trajes_importados = _agregar_talles_stock(
+    trajes_importados = _preparar_trajes_catalogo(
         Traje.objects
         .filter(linea=Traje.LINEA_IMPORTADA, activo=True)
         .prefetch_related("talles")
         .order_by("-creado")
     )
 
-    trajes_nacionales = _agregar_talles_stock(
+    trajes_nacionales = _preparar_trajes_catalogo(
         Traje.objects
         .filter(linea=Traje.LINEA_NACIONAL, activo=True)
         .prefetch_related("talles")

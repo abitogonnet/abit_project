@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
+from catalogo.models import Combo, TalleColorTraje, Traje
 from .models import ConfiguracionSitio
 
 
@@ -59,4 +60,40 @@ class HomeConversionTests(TestCase):
         self.assertContains(response, 'data-filter="all"', html=False)
         self.assertNotContains(response, 'data-filter="camisa"', html=False)
         self.assertNotContains(response, 'data-filter="zapato"', html=False)
+        self.assertNotContains(response, 'data-filter="combo"', html=False)
+
+    def test_catalogo_muestra_traje_y_sus_combos_sin_consultar_stock(self):
+        traje = Traje.objects.create(
+            linea=Traje.LINEA_NACIONAL,
+            foto_modelo="trajes/modelo.jpg",
+            foto_colgado="trajes/colgado.jpg",
+            tela="Gris Perla",
+            precio="100000.00",
+        )
+        TalleColorTraje.objects.create(
+            traje=traje,
+            color="Gris perla",
+            talle_saco="48",
+            talle_pantalon="42",
+        )
+        Combo.objects.create(
+            nombre="Combo 1",
+            foto="combos/combo.jpg",
+            descripcion="Traje + camisa",
+            precio_importado="150000.00",
+            precio_nacional="140000.00",
+            precio_ninos="90000.00",
+            precio_unico="140000.00",
+        )
+
+        response = self.client.get(reverse("home"))
+
+        self.assertContains(response, "Traje nacional")
+        self.assertContains(response, "Colores disponibles:")
+        self.assertContains(response, "Gris perla")
+        self.assertContains(response, "Traje solo")
+        self.assertContains(response, "Saco + pantalón")
+        self.assertContains(response, "Combo 1")
+        self.assertContains(response, "Traje + camisa")
+        self.assertNotContains(response, "Ambo nacional")
         self.assertNotContains(response, 'data-filter="combo"', html=False)
