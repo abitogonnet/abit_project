@@ -64,3 +64,14 @@ class StockCorrectionsTests(TestCase):
             "origen": Prenda.O_NAC, "notas": "Histórica",
         }, instance=prenda)
         self.assertTrue(form.is_valid(), form.errors)
+
+    def test_editar_camisa_oculta_selector_y_mantiene_origen_importado(self):
+        prenda = Prenda.objects.create(
+            codigo="CA-AUTO", categoria=Prenda.C_CAMISA, marca="Abito",
+            color="Negro", talle="M", origen=Prenda.O_NAC,
+        )
+
+        response = self.client.get(reverse("prendas:editar", args=[prenda.pk]))
+
+        self.assertContains(response, 'id="origenField" style="display:none"')
+        self.assertEqual(prenda.origen, Prenda.O_IMP)

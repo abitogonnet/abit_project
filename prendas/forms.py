@@ -148,7 +148,7 @@ def talle_options_for(categoria: str, marca: str):
 
 
 def requiere_origen(categoria: str, marca: str) -> bool:
-    return bool(categoria)
+    return Prenda.requiere_origen_manual(categoria)
 
 
 class PrendaForm(forms.ModelForm):
@@ -239,6 +239,10 @@ class PrendaForm(forms.ModelForm):
             color = Prenda.normalize_color_value(color, cat)
         talle = _norm(cleaned.get("talle", ""))
         origen = _norm(cleaned.get("origen", ""))
+        origen_automatico = Prenda.origen_automatico(cat)
+        if origen_automatico:
+            origen = origen_automatico
+            cleaned["origen"] = origen
         cleaned["color"] = color
 
         if cat in {Prenda.C_SACO, Prenda.C_PANTALON, Prenda.C_CAMISA, Prenda.C_ZAPATOS, Prenda.C_CINTURON}:
@@ -248,7 +252,7 @@ class PrendaForm(forms.ModelForm):
             elif color not in colores_validos:
                 self.add_error("color", "Elegí un color válido del catálogo.")
 
-        if origen not in dict(Prenda.ORIGENES):
+        if not origen_automatico and origen not in dict(Prenda.ORIGENES):
             self.add_error("origen", "Elegí si la prenda es nacional o importada.")
 
         if cat == Prenda.C_MONO:

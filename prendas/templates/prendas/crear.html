@@ -67,7 +67,7 @@
           {{ form.marca }}
           {% if form.marca.errors %}<div class="ab-field-errors">{{ form.marca.errors }}</div>{% endif %}
         </div>
-        <div class="col-4 ab-field" id="origenField">
+        <div class="col-4 ab-field" id="origenField" {% if form.categoria.value in automatic_origin_categories %}style="display:none"{% endif %}>
           <label class="ab-lab" for="{{ form.origen.id_for_label }}">Origen</label>
           {{ form.origen }}
           {% if form.origen.errors %}<div class="ab-field-errors">{{ form.origen.errors }}</div>{% endif %}

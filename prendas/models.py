@@ -71,6 +71,12 @@ class Prenda(models.Model):
         (O_NAC, "Nacional"),
         (O_IMP, "Importada"),
     ]
+    ORIGEN_AUTOMATICO_POR_CATEGORIA = {
+        C_CAMISA: O_IMP,
+        C_ZAPATOS: O_NAC,
+        C_CINTURON: O_NAC,
+        C_CORBATA: O_NAC,
+    }
 
     codigo = models.CharField(max_length=10, unique=True, db_index=True)
     categoria = models.CharField(max_length=20, choices=CATEGORIAS)
@@ -145,12 +151,28 @@ class Prenda(models.Model):
 
     def save(self, *args, **kwargs):
         self.color = self.normalize_color_value(self.color, self.categoria)
+        origen_automatico = self.origen_automatico(self.categoria)
+        if origen_automatico:
+            self.origen = origen_automatico
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = set(update_fields) | {"origen"}
         super().save(*args, **kwargs)
+
+    @classmethod
+    def origen_automatico(cls, categoria: str) -> str:
+        return cls.ORIGEN_AUTOMATICO_POR_CATEGORIA.get(categoria, "")
+
+    @classmethod
+    def requiere_origen_manual(cls, categoria: str) -> bool:
+        return bool(categoria) and not cls.origen_automatico(categoria)
 
     @classmethod
     def incompletas(cls):
         """Fuente única para Dashboard, tareas pendientes y Stock."""
-        return cls.objects.filter(origen="")
+        return cls.objects.filter(origen="").exclude(
+            categoria__in=cls.ORIGEN_AUTOMATICO_POR_CATEGORIA,
+        )
 
     @property
     def esta_completa(self):

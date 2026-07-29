@@ -38,8 +38,25 @@ class CatalogLogicTests(TestCase):
         self.assertEqual(CAMISA_SACO_TALLES, ["2", "4", "6", "8", "10", "12", "14", "16", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "50", "52", "54", "56", "58", "60", "62", "64", "66", "68", "70", "72", "74"])
         self.assertEqual(TAM_NINO_ADULTO, ["Niño", "Adulto"])
 
-    def test_origen_es_obligatorio_para_todas_las_prendas(self):
-        form = PrendaForm(self.payload(Prenda.C_CORBATA, color="A rayas", origen=""))
+    def test_origen_automatico_no_se_pide_y_sobrescribe_el_post(self):
+        casos = {
+            Prenda.C_CAMISA: (Prenda.O_IMP, "M", "Negro"),
+            Prenda.C_ZAPATOS: (Prenda.O_NAC, "40", "Negro"),
+            Prenda.C_CINTURON: (Prenda.O_NAC, "Adulto", "Negro"),
+            Prenda.C_CORBATA: (Prenda.O_NAC, "Adulto", "A rayas"),
+        }
+        for categoria, (origen, talle, color) in casos.items():
+            form = PrendaForm(self.payload(
+                categoria,
+                color=color,
+                talle=talle,
+                origen=Prenda.O_NAC if origen == Prenda.O_IMP else Prenda.O_IMP,
+            ))
+            self.assertTrue(form.is_valid(), form.errors)
+            self.assertEqual(form.cleaned_data["origen"], origen)
+
+    def test_origen_sigue_siendo_obligatorio_para_saco(self):
+        form = PrendaForm(self.payload(Prenda.C_SACO, talle="50", origen=""))
         self.assertFalse(form.is_valid())
         self.assertIn("origen", form.errors)
 

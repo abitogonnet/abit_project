@@ -134,11 +134,16 @@ def _prenda_form_context(form, *, titulo, subtitulo, accion_label, cancel_url, s
         "prenda": prenda,
         "prenda_lookups": _prenda_lookups(),
         "corbata_value": Prenda.C_CORBATA,
+        "automatic_origin_categories": list(Prenda.ORIGEN_AUTOMATICO_POR_CATEGORIA),
     }
 
 
 def _categorias_con_origen():
-    return [value for value, _label in Prenda.CATEGORIAS]
+    return [
+        value
+        for value, _label in Prenda.CATEGORIAS
+        if Prenda.requiere_origen_manual(value)
+    ]
 
 
 def _prendas_sin_origen():

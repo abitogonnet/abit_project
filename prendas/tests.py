@@ -10,6 +10,28 @@ from .models import Prenda
 
 
 class PrendaFormTests(TestCase):
+    def test_model_fuerza_origen_automatico_incluso_con_valor_incorrecto(self):
+        casos = {
+            Prenda.C_CAMISA: Prenda.O_IMP,
+            Prenda.C_ZAPATOS: Prenda.O_NAC,
+            Prenda.C_CINTURON: Prenda.O_NAC,
+            Prenda.C_CORBATA: Prenda.O_NAC,
+        }
+        for index, (categoria, origen_esperado) in enumerate(casos.items(), start=1):
+            prenda = Prenda.objects.create(
+                codigo=f"OA-{index:03d}",
+                categoria=categoria,
+                origen=Prenda.O_NAC if origen_esperado == Prenda.O_IMP else Prenda.O_IMP,
+            )
+            prenda.refresh_from_db()
+            self.assertEqual(prenda.origen, origen_esperado)
+
+            prenda.origen = ""
+            prenda.estado = Prenda.E_LAV
+            prenda.save(update_fields=["estado"])
+            prenda.refresh_from_db()
+            self.assertEqual(prenda.origen, origen_esperado)
+
     def test_requires_origen_for_cualquier_saco(self):
         form = PrendaForm(data={
             "categoria": Prenda.C_SACO,
@@ -449,4 +471,4 @@ class PrendaViewsTests(TestCase):
         camisa.refresh_from_db()
         self.assertEqual(saco.origen, Prenda.O_NAC)
         self.assertEqual(pantalon.origen, Prenda.O_IMP)
-        self.assertEqual(camisa.origen, "")
+        self.assertEqual(camisa.origen, Prenda.O_IMP)
