@@ -105,6 +105,14 @@ class Alquiler(models.Model):
         on_delete=models.SET_NULL,
         related_name="alquileres_cerrados",
     )
+    cancelado_en = models.DateTimeField(null=True, blank=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="alquileres_cancelados",
+    )
 
     @classmethod
     def calcular_importes(cls, total_bruto, descuento_pct, sena):

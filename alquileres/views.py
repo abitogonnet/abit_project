@@ -16,7 +16,11 @@ from prendas.models import Prenda
 
 from .forms import AlquilerEdicionForm, AlquilerForm, SHORT_POR_CATEGORIA, VerAlquileresFiltroForm
 from .models import Alquiler, AlquilerItem, Cliente
-from .services import cerrar_alquiler
+from .services import (
+    TransicionAlquilerInvalida,
+    cancelar_alquiler,
+    cerrar_alquiler,
+)
 from .whatsapp import generar_enlace_whatsapp, mensaje_recordatorio
 from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
@@ -972,6 +976,33 @@ def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool
             messages.info(request, "El alquiler ya estaba cerrado.")
         return True
 
+    if accion == "cancelar_alquiler":
+        try:
+            alquiler_cancelado, changed = cancelar_alquiler(
+                alquiler.pk, request.user
+            )
+        except TransicionAlquilerInvalida as exc:
+            messages.error(request, str(exc))
+        except DatabaseError:
+            logger.exception(
+                "No se pudo cancelar el alquiler %s para el usuario %s",
+                alquiler.pk,
+                getattr(request.user, "pk", None),
+            )
+            messages.error(
+                request,
+                "No se pudo cancelar el alquiler. No se realizó ningún cambio.",
+            )
+        else:
+            if changed:
+                messages.success(
+                    request, f"Alquiler #{alquiler_cancelado.id} cancelado."
+                )
+            else:
+                messages.info(request, "El alquiler ya estaba cancelado.")
+        alquiler.refresh_from_db()
+        return True
+
     estado_anterior = alquiler.estado_alquiler
     saldo_anterior = alquiler.estado_saldo
     importe_saldo_antes = alquiler.saldo_pendiente_actual
@@ -988,12 +1019,6 @@ def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool
         success_message = f"Alquiler #{alquiler.id} marcado como entregado."
     elif accion in {"marcar_saldo_pagado", "toggle_saldo_pagado"}:
         changed, error, success_message = _toggle_saldo_pagado(alquiler)
-    elif accion == "cancelar_alquiler":
-        changed, error = _actualizar_estado_operativo(
-            alquiler,
-            nuevo_estado=Alquiler.EST_CANCELADO,
-        )
-        success_message = f"Alquiler #{alquiler.id} cancelado."
     else:
         return False
 
@@ -1003,19 +1028,6 @@ def _procesar_accion_operativa(request, alquiler: Alquiler, accion: str) -> bool
         alquiler.save()
         if alquiler.estado_saldo == Alquiler.SAL_PAG and saldo_anterior != Alquiler.SAL_PAG:
             registrar_saldo(alquiler, request.user)
-        if alquiler.estado_alquiler == Alquiler.EST_CANCELADO and not alquiler.credito_cancelacion_generado:
-            if alquiler.cliente_id and alquiler.sena > 0:
-                cliente = Cliente.objects.get(pk=alquiler.cliente_id)
-                cliente.saldo_a_favor += alquiler.sena
-                cliente.save(update_fields=["saldo_a_favor"])
-                alquiler.credito_cancelacion_generado = True
-                alquiler.save(update_fields=["credito_cancelacion_generado"])
-                registrar_movimiento(
-                    clave=f"alquiler:{alquiler.pk}:credito-cancelacion",
-                    concepto="Saldo transferido a favor del cliente",
-                    referencia=f"Alquiler #{alquiler.pk}", cliente=cliente,
-                    alquiler=alquiler, usuario=request.user, informativo=True,
-                )
         _sync_prendas_por_estado(alquiler)
         if alquiler.estado_alquiler != estado_anterior:
             eventos = {

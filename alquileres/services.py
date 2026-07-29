@@ -5,7 +5,11 @@ from django.utils import timezone
 from cuentas.models import Actividad
 from prendas.models import Prenda
 
-from .models import Alquiler, AlquilerItem
+from .models import Alquiler, AlquilerItem, Cliente
+
+
+class TransicionAlquilerInvalida(ValueError):
+    pass
 
 
 def fecha_referencia_pago_cierre(alquiler: Alquiler):
@@ -106,6 +110,104 @@ def cerrar_alquiler(alquiler_id, usuario=None):
         usuario_nombre=nombre,
         accion="Alquiler cerrado",
         categoria=Actividad.DEVOLUCION,
+        tipo_objeto="Alquiler",
+        objeto_id=str(alquiler.pk),
+        referencia=f"Alquiler #{alquiler.pk}",
+    )
+    return alquiler, True
+
+
+@transaction.atomic
+def cancelar_alquiler(alquiler_id, usuario=None):
+    """Cancela un reservado y acredita su seña exactamente una vez."""
+    from gastos.services import registrar_movimiento
+
+    alquiler = (
+        Alquiler.objects.select_for_update()
+        .select_related("cliente")
+        .get(pk=alquiler_id)
+    )
+    if alquiler.estado_alquiler == Alquiler.EST_CANCELADO:
+        return alquiler, False
+    if alquiler.estado_alquiler != Alquiler.EST_RESERVADO:
+        raise TransicionAlquilerInvalida(
+            "Solo se puede cancelar un alquiler reservado."
+        )
+
+    cliente = None
+    if alquiler.cliente_id:
+        cliente = Cliente.objects.select_for_update().get(pk=alquiler.cliente_id)
+
+    prenda_ids = list(
+        alquiler.items.select_for_update().values_list("prenda_id", flat=True)
+    )
+    prendas = {
+        prenda.pk: prenda
+        for prenda in Prenda.objects.select_for_update().filter(
+            pk__in=set(prenda_ids)
+        )
+    }
+
+    if (
+        cliente is not None
+        and alquiler.sena > 0
+        and not alquiler.credito_cancelacion_generado
+    ):
+        cliente.saldo_a_favor += alquiler.sena
+        cliente.save(update_fields=["saldo_a_favor", "actualizado_en"])
+        alquiler.credito_cancelacion_generado = True
+        registrar_movimiento(
+            clave=f"alquiler:{alquiler.pk}:credito-cancelacion",
+            concepto="Saldo transferido a favor del cliente",
+            referencia=f"Alquiler #{alquiler.pk}",
+            cliente=cliente,
+            alquiler=alquiler,
+            usuario=usuario,
+            informativo=True,
+        )
+
+    alquiler.estado_alquiler = Alquiler.EST_CANCELADO
+    alquiler.cancelado_en = timezone.now()
+    alquiler.cancelado_por = (
+        usuario if getattr(usuario, "is_authenticated", False) else None
+    )
+    alquiler.save(update_fields=[
+        "estado_alquiler",
+        "credito_cancelacion_generado",
+        "cancelado_en",
+        "cancelado_por",
+        "actualizado_en",
+    ])
+
+    for prenda_id, prenda in prendas.items():
+        if prenda.estado in {Prenda.E_DAN, Prenda.E_LAV}:
+            continue
+        otros = AlquilerItem.objects.filter(
+            prenda_id=prenda_id,
+            alquiler__estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
+        )
+        if otros.filter(
+            alquiler__estado_alquiler=Alquiler.EST_ENTREGADO
+        ).exists():
+            nuevo_estado = Prenda.E_ENT
+        elif otros.exists():
+            nuevo_estado = Prenda.E_RES
+        else:
+            nuevo_estado = Prenda.E_DISP
+        if prenda.estado != nuevo_estado:
+            prenda.estado = nuevo_estado
+            prenda.save(update_fields=["estado"])
+
+    nombre = (
+        getattr(getattr(usuario, "perfil", None), "nombre", "")
+        or getattr(usuario, "get_full_name", lambda: "")()
+        or getattr(usuario, "username", "")
+    )
+    Actividad.objects.create(
+        usuario=usuario if getattr(usuario, "is_authenticated", False) else None,
+        usuario_nombre=nombre,
+        accion="Canceló alquiler",
+        categoria=Actividad.ALQUILER,
         tipo_objeto="Alquiler",
         objeto_id=str(alquiler.pk),
         referencia=f"Alquiler #{alquiler.pk}",
