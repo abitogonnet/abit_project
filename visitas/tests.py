@@ -43,11 +43,11 @@ class CuposTests(TestCase):
 
 
 class UbicacionPublicaTests(TestCase):
-    def test_reserva_y_confirmacion_muestran_mapa_sin_como_llegar(self):
+    def test_reserva_no_expone_ubicacion_y_confirmacion_si_la_muestra(self):
         reserva = self.client.get(reverse("visitas:reservar"))
-        self.assertContains(reserva, "Calle 489 entre 23 y 24 N.º 2871")
-        self.assertContains(reserva, "output=embed")
-        self.assertNotContains(reserva, "Cómo llegar")
+        self.assertNotContains(reserva, "Calle 489 entre 23 y 24 N.º 2871")
+        self.assertNotContains(reserva, "output=embed")
+        self.assertNotContains(reserva, "google.com/maps")
 
         visita = Visita.objects.create(
             nombre="Cliente", telefono="2215555555", dni="12345678",
@@ -58,9 +58,27 @@ class UbicacionPublicaTests(TestCase):
         session["ultima_visita_id"] = visita.pk
         session.save()
         confirmacion = self.client.get(reverse("visitas:confirmada"))
+        self.assertContains(confirmacion, "Ubicación de la visita")
         self.assertContains(confirmacion, "Calle 489 entre 23 y 24 N.º 2871")
         self.assertContains(confirmacion, "output=embed")
-        self.assertNotContains(confirmacion, "Cómo llegar")
+        self.assertContains(confirmacion, "Ver en Google Maps")
+
+    def test_formulario_invalido_tampoco_expone_la_ubicacion(self):
+        respuesta = self.client.post(reverse("visitas:reservar"), {})
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertNotContains(respuesta, "Calle 489 entre 23 y 24 N.º 2871")
+        self.assertNotContains(respuesta, "output=embed")
+        self.assertNotContains(respuesta, "google.com/maps")
+
+    def test_horarios_publicos_terminan_en_1930(self):
+        reserva = self.client.get(reverse("visitas:reservar"))
+
+        self.assertContains(reserva, "Horario de atención: 17:00 a 20:00")
+        self.assertContains(reserva, "Último turno: 19:30")
+        from visitas.forms import HORARIOS_VALIDOS
+        self.assertEqual(HORARIOS_VALIDOS[-1], time(19, 30))
+        self.assertNotIn(time(20, 0), HORARIOS_VALIDOS)
 
 
 class ReservaClienteTests(TestCase):
@@ -86,6 +104,23 @@ class ReservaClienteTests(TestCase):
         self.client.post(reverse("visitas:reservar"), segunda)
         self.assertEqual(Cliente.objects.count(), 1)
         self.assertEqual(Visita.objects.count(), 2)
+
+    def test_ubicacion_aparece_recien_despues_de_guardar_la_reserva(self):
+        previa = self.client.get(reverse("visitas:reservar"))
+        self.assertNotContains(previa, "Calle 489 entre 23 y 24 N.º 2871")
+
+        confirmada = self.client.post(
+            reverse("visitas:reservar"),
+            self.payload(),
+            follow=True,
+        )
+
+        self.assertRedirects(confirmada, reverse("visitas:confirmada"))
+        self.assertEqual(Visita.objects.count(), 1)
+        self.assertEqual(Visita.objects.get().estado, Visita.ESTADO_CONFIRMADA)
+        self.assertContains(confirmada, "Ubicación de la visita")
+        self.assertContains(confirmada, "Calle 489 entre 23 y 24 N.º 2871")
+        self.assertContains(confirmada, "Ver en Google Maps")
 
     def test_existir_por_visita_no_es_recurrente(self):
         cliente = Cliente.objects.create(nombre="Ana", dni="12345678", telefono="2215555555")
