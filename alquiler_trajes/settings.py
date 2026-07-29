@@ -103,11 +103,40 @@ if AWS_STORAGE_BUCKET_NAME:
     INSTALLED_APPS.append("storages")
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
-    AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL")
-    AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_S3_CUSTOM_DOMAIN")
+    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME") or None
+    AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL") or None
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_S3_CUSTOM_DOMAIN") or None
+    AWS_S3_ADDRESSING_STYLE = os.environ.get("AWS_S3_ADDRESSING_STYLE", "auto")
+    AWS_S3_SIGNATURE_VERSION = os.environ.get(
+        "AWS_S3_SIGNATURE_VERSION", "s3v4"
+    )
+    AWS_QUERYSTRING_AUTH = (
+        os.environ.get("AWS_QUERYSTRING_AUTH", "1") == "1"
+    )
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_S3_OBJECT_PARAMETERS = {
+        "CacheControl": "public, max-age=31536000, immutable",
+    }
     STORAGES = {
-        "default": {"BACKEND": "storages.backends.s3.S3Storage"},
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "access_key": AWS_ACCESS_KEY_ID,
+                "secret_key": AWS_SECRET_ACCESS_KEY,
+                "region_name": AWS_S3_REGION_NAME,
+                "endpoint_url": AWS_S3_ENDPOINT_URL,
+                "custom_domain": AWS_S3_CUSTOM_DOMAIN,
+                "addressing_style": AWS_S3_ADDRESSING_STYLE,
+                "signature_version": AWS_S3_SIGNATURE_VERSION,
+                "querystring_auth": AWS_QUERYSTRING_AUTH,
+                "file_overwrite": AWS_S3_FILE_OVERWRITE,
+                "default_acl": AWS_DEFAULT_ACL,
+                "object_parameters": AWS_S3_OBJECT_PARAMETERS,
+                "location": "media",
+            },
+        },
         "staticfiles": {
             "BACKEND": (
                 "whitenoise.storage.CompressedManifestStaticFilesStorage"

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Imagen no disponible</title>
+  <desc id="desc">Marcador visual de ABITO para una fotografía pendiente de re-subida.</desc>
+  <rect width="800" height="1000" fill="#171713"/>
+  <rect x="52" y="52" width="696" height="896" rx="28" fill="#24231f" stroke="#b89050" stroke-width="4"/>
+  <path d="M222 650l125-156 91 102 68-79 118 133H222z" fill="#6f665b"/>
+  <circle cx="532" cy="362" r="62" fill="#b89050"/>
+  <text x="400" y="760" text-anchor="middle" fill="#fffaf2" font-family="Georgia,serif" font-size="64">ABITO</text>
+  <text x="400" y="825" text-anchor="middle" fill="#b89050" font-family="Arial,sans-serif" font-size="28">Imagen pendiente</text>
+</svg>

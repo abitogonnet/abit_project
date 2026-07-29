@@ -14,6 +14,7 @@ from catalogo.image_utils import MAX_IMAGE_DIMENSION, normalize_uploaded_image
 from catalogo.media_repair import normalize_stored_image_name, repair_catalog_media
 from catalogo.models import Combo, ImagenTraje, Traje
 from catalogo.stock_sizes import actualizar_talles_traje, talles_stock_para_color
+from catalogo.templatetags.catalog_images import catalog_image_url
 from core.models import ConfiguracionSitio
 from prendas.models import Color, Prenda
 
@@ -289,6 +290,65 @@ class CatalogoMobileImageUploadTests(TestCase):
         self.assertNotContains(response, "variantes", html=False)
         self.assertNotContains(response, "Formato de variante inválido")
         self.assertContains(response, "Talles detectados en Stock")
+
+    def test_imagen_faltante_usa_placeholder_sin_icono_roto(self):
+        traje = Traje(
+            foto_modelo="trajes/archivo-que-ya-no-existe.jpg",
+        )
+
+        with self.assertLogs("catalogo.templatetags.catalog_images", level="WARNING"):
+            url = catalog_image_url(traje.foto_modelo)
+
+        self.assertTrue(url.endswith("img/catalog-placeholder.svg"))
+
+    @override_settings(MEDIA_URL="/media/")
+    def test_editar_traje_reemplaza_imagenes_perdidas_sin_recrear_producto(self):
+        with TemporaryDirectory() as storage_dir:
+            with override_settings(MEDIA_ROOT=storage_dir):
+                color = Color.objects.get(
+                    clave_normalizada=Color.normalizar_clave("Gris Topo")
+                )
+                traje = Traje.objects.create(
+                    linea=Traje.LINEA_NACIONAL,
+                    tela="Traje existente",
+                    descripcion="Conservar descripción",
+                    color_stock=color,
+                    precio="125000",
+                    foto_modelo="trajes/perdida-principal.jpg",
+                    foto_colgado="trajes/perdida-colgado.jpg",
+                )
+                original_id = traje.pk
+                form = MODEL_FORMS["traje"](
+                    {
+                        "linea": Traje.LINEA_NACIONAL,
+                        "tela": traje.tela,
+                        "descripcion": traje.descripcion,
+                        "color_stock": str(color.pk),
+                        "precio": str(traje.precio),
+                        "activo": "on",
+                    },
+                    {
+                        "foto_modelo": self.image_upload(
+                            "reemplazo-principal.heic", "HEIF"
+                        ),
+                        "foto_colgado": self.image_upload(
+                            "reemplazo-colgado.webp", "WEBP"
+                        ),
+                    },
+                    instance=traje,
+                )
+
+                self.assertTrue(form.is_valid(), form.errors.as_json())
+                actualizado = form.save()
+                self.assertEqual(actualizado.pk, original_id)
+                self.assertEqual(actualizado.descripcion, "Conservar descripción")
+                self.assertTrue(actualizado.foto_modelo.storage.exists(
+                    actualizado.foto_modelo.name
+                ))
+                self.assertTrue(actualizado.foto_colgado.storage.exists(
+                    actualizado.foto_colgado.name
+                ))
+                self.assertNotIn("perdida-", actualizado.foto_modelo.name)
 
 
 class CatalogoStockSizeTests(TestCase):

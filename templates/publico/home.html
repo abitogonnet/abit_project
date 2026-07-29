@@ -1,4 +1,5 @@
 {% load static %}
+{% load catalog_images %}
 <!doctype html>
 <html lang="es">
 <head>
@@ -135,7 +136,7 @@
           <article class="product-card is-entering" data-line="importada" style="--fabric:#17202f">
             <div class="product-media">
               <div class="image-fallback" aria-hidden="true"><strong>{{ item.tela }}</strong></div>
-              <img src="{{ item.foto_modelo.url }}" alt="Traje importado {{ item.tela }}" loading="lazy">
+              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Traje importado {{ item.tela }}" loading="lazy">
               <span class="product-badge">Importada</span>
             </div>
             <div class="product-body">
@@ -151,7 +152,7 @@
                 {% if item.imagenes_galeria.all %}
                   <div class="product-gallery" aria-label="Galería de {{ item.tela }}">
                     {% for foto in item.imagenes_galeria.all %}
-                      <img src="{{ foto.imagen.url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
+                      <img src="{{ foto.imagen|catalog_image_url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
                     {% endfor %}
                   </div>
                 {% endif %}
@@ -176,7 +177,7 @@
           <article class="product-card is-entering" data-line="nacional" style="--fabric:#253756">
             <div class="product-media">
               <div class="image-fallback" aria-hidden="true"><strong>{{ item.tela }}</strong></div>
-              <img src="{{ item.foto_modelo.url }}" alt="Traje nacional {{ item.tela }}" loading="lazy">
+              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Traje nacional {{ item.tela }}" loading="lazy">
               <span class="product-badge">Nacional</span>
             </div>
             <div class="product-body">
@@ -192,7 +193,7 @@
                 {% if item.imagenes_galeria.all %}
                   <div class="product-gallery" aria-label="Galería de {{ item.tela }}">
                     {% for foto in item.imagenes_galeria.all %}
-                      <img src="{{ foto.imagen.url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
+                      <img src="{{ foto.imagen|catalog_image_url }}" alt="{{ item.tela }} — foto adicional" loading="lazy">
                     {% endfor %}
                   </div>
                 {% endif %}
@@ -217,7 +218,7 @@
           <article class="product-card is-entering" data-line="camisa" style="--fabric:#6f665b">
             <div class="product-media">
               <div class="image-fallback" aria-hidden="true"><strong>Camisa</strong></div>
-              <img src="{{ item.foto_modelo.url }}" alt="Camisa ABITO" loading="lazy">
+              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Camisa ABITO" loading="lazy">
               <span class="product-badge">Camisa</span>
             </div>
             <div class="product-body">
@@ -246,7 +247,7 @@
           <article class="product-card is-entering" data-line="zapato" style="--fabric:#3b332b">
             <div class="product-media">
               <div class="image-fallback" aria-hidden="true"><strong>Zapatos</strong></div>
-              <img src="{{ item.foto_modelo.url }}" alt="Zapatos ABITO" loading="lazy">
+              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Zapatos ABITO" loading="lazy">
               <span class="product-badge">Zapatos</span>
             </div>
             <div class="product-body">
