@@ -3,6 +3,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -12,6 +14,7 @@ from PIL import Image
 from catalogo.forms import IMAGE_ERROR, MODEL_FORMS
 from catalogo.image_utils import MAX_IMAGE_DIMENSION, normalize_uploaded_image
 from catalogo.media_repair import normalize_stored_image_name, repair_catalog_media
+from catalogo.media_migration import migrate_catalog_media
 from catalogo.models import Combo, ImagenTraje, Traje
 from catalogo.stock_sizes import actualizar_talles_traje, talles_stock_para_color
 from catalogo.templatetags.catalog_images import catalog_image_url
@@ -129,6 +132,60 @@ class CatalogoImageNormalizationTests(TestCase):
         buffer = BytesIO()
         Image.new("RGB", (40, 40), (220, 180, 140)).save(buffer, format="JPEG")
         destination.write_bytes(buffer.getvalue())
+
+    def test_migra_archivos_locales_y_reporta_faltantes_de_forma_idempotente(self):
+        with TemporaryDirectory() as source_dir, TemporaryDirectory() as destination_dir:
+            source_root = Path(source_dir)
+            destination = FileSystemStorage(location=destination_dir)
+            traje = Traje.objects.create(
+                linea=Traje.LINEA_NACIONAL,
+                tela="Migración",
+                precio="100000",
+                foto_modelo="trajes/modelo-recuperable.jpg",
+                foto_colgado="trajes/colgado-perdido.jpg",
+            )
+            galeria = ImagenTraje.objects.create(
+                traje=traje,
+                imagen="trajes/galeria/ya-migrada.jpg",
+            )
+            self._write_seed_image(
+                source_root / "trajes" / "modelo-recuperable.jpg"
+            )
+            destination.save(
+                "trajes/galeria/ya-migrada.jpg",
+                ContentFile(b"archivo persistente"),
+            )
+
+            first = migrate_catalog_media(
+                source_root=source_root,
+                destination_storage=destination,
+            )
+
+            self.assertEqual(first.references_checked, 3)
+            self.assertEqual(first.files_found, 1)
+            self.assertEqual(first.migrated, 1)
+            self.assertEqual(first.already_persistent, 1)
+            self.assertEqual(len(first.missing), 1)
+            self.assertIn("colgado-perdido.jpg", first.missing[0])
+            self.assertTrue(destination.exists("trajes/modelo-recuperable.jpg"))
+            traje.refresh_from_db()
+            galeria.refresh_from_db()
+            self.assertEqual(
+                traje.foto_modelo.name,
+                "trajes/modelo-recuperable.jpg",
+            )
+            self.assertEqual(
+                galeria.imagen.name,
+                "trajes/galeria/ya-migrada.jpg",
+            )
+
+            second = migrate_catalog_media(
+                source_root=source_root,
+                destination_storage=destination,
+            )
+            self.assertEqual(second.migrated, 0)
+            self.assertEqual(second.already_persistent, 2)
+            self.assertEqual(len(second.missing), 1)
 
 
 class CatalogoMobileImageUploadTests(TestCase):

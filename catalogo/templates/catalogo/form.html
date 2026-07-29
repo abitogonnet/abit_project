@@ -2,8 +2,13 @@
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Catálogo</p><h1 class="ab-title">{% if objeto %}Editar{% else %}Crear{% endif %} {{ tipo }}</h1></div></section>
 <section class="ab-section-card">
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" enctype="multipart/form-data" id="catalog-product-form">
     {% csrf_token %}
+    <div class="catalog-save-bar">
+      <button class="ab-btn" type="submit">
+        {% if tipo == "traje" %}Guardar traje{% else %}Guardar producto{% endif %}
+      </button>
+    </div>
     {% for field in form %}
       <p>
         {{ field.label_tag }}

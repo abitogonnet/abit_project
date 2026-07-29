@@ -8,7 +8,16 @@ from urllib.parse import unquote, urlparse
 from django.conf import settings
 from django.core.files import File
 
-from .models import Camisa, Chaleco, Cinturon, Combo, Corbata, Traje, Zapato
+from .models import (
+    Camisa,
+    Chaleco,
+    Cinturon,
+    Combo,
+    Corbata,
+    ImagenTraje,
+    Traje,
+    Zapato,
+)
 
 
 CATALOG_IMAGE_MODELS = (
@@ -19,6 +28,7 @@ CATALOG_IMAGE_MODELS = (
     (Camisa, ("foto_modelo", "foto_colgado")),
     (Zapato, ("foto_modelo", "foto_colgado")),
     (Combo, ("foto",)),
+    (ImagenTraje, ("imagen",)),
 )
 
 KNOWN_UPLOAD_DIRS = {
