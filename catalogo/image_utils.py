@@ -1,5 +1,6 @@
 from io import BytesIO
 from pathlib import Path
+from uuid import uuid4
 
 from django.core.files.base import ContentFile
 from django.utils.text import get_valid_filename
@@ -40,7 +41,10 @@ def normalize_uploaded_image(uploaded_file, fallback_name):
 
     base_name = Path(getattr(uploaded_file, "name", "") or fallback_name).stem
     safe_name = get_valid_filename(base_name) or fallback_name
-    normalized = ContentFile(output.getvalue(), name=f"{safe_name}.jpg")
+    normalized = ContentFile(
+        output.getvalue(),
+        name=f"{safe_name}-{uuid4().hex}.jpg",
+    )
     normalized.content_type = "image/jpeg"
     normalized._catalog_normalized = True
     return normalized

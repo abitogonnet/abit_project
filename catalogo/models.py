@@ -1,3 +1,6 @@
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
 from core.models import ConfiguracionSitio
@@ -12,6 +15,22 @@ class NormalizedImageFieldsMixin(models.Model):
         abstract = True
 
     def save(self, *args, **kwargs):
+        pending_images = [
+            getattr(self, field_name, None)
+            for field_name in self.normalized_image_fields
+            if getattr(self, field_name, None)
+            and not getattr(getattr(self, field_name), "_committed", True)
+        ]
+        if (
+            pending_images
+            and getattr(settings, "IS_RENDER", False)
+            and isinstance(pending_images[0].storage, FileSystemStorage)
+            and not getattr(settings, "MEDIA_ROOT_ENV", "")
+        ):
+            raise ImproperlyConfigured(
+                "El almacenamiento de imágenes no está configurado en "
+                "producción. Configurá S3 o un MEDIA_ROOT persistente."
+            )
         for field_name in self.normalized_image_fields:
             image_field = getattr(self, field_name, None)
             if image_field and not getattr(image_field, "_committed", True):

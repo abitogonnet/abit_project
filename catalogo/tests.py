@@ -1,4 +1,4 @@
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -7,16 +7,28 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
+from django.core.exceptions import ImproperlyConfigured
+from django.db import models
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.datastructures import MultiValueDict
 from PIL import Image
 
-from catalogo.forms import IMAGE_ERROR, MODEL_FORMS
+from catalogo.forms import CatalogImageField, IMAGE_ERROR, MODEL_FORMS
 from catalogo.image_utils import MAX_IMAGE_DIMENSION, normalize_uploaded_image
 from catalogo.media_repair import normalize_stored_image_name, repair_catalog_media
 from catalogo.media_migration import migrate_catalog_media
-from catalogo.models import Combo, ImagenTraje, Traje
+from catalogo.models import (
+    Camisa,
+    Chaleco,
+    Cinturon,
+    Combo,
+    Corbata,
+    ImagenTraje,
+    Traje,
+    Zapato,
+)
 from catalogo.stock_sizes import actualizar_talles_traje, talles_stock_para_color
 from catalogo.templatetags.catalog_images import catalog_image_url
 from core.models import ConfiguracionSitio
@@ -243,6 +255,68 @@ class CatalogoMobileImageUploadTests(TestCase):
                 with Image.open(BytesIO(normalized.read())) as image:
                     self.assertEqual(image.format, "JPEG")
 
+    def test_todos_los_modelos_de_catalogo_usan_pipeline_central(self):
+        catalog_models = (
+            Traje,
+            Chaleco,
+            Cinturon,
+            Corbata,
+            Camisa,
+            Zapato,
+            Combo,
+        )
+        for model in catalog_models:
+            with self.subTest(model=model.__name__):
+                form = MODEL_FORMS[model._meta.model_name]()
+                image_names = {
+                    field.name
+                    for field in model._meta.fields
+                    if isinstance(field, models.ImageField)
+                }
+                self.assertTrue(image_names)
+                self.assertEqual(
+                    image_names,
+                    set(model.normalized_image_fields),
+                )
+                for field_name in image_names:
+                    self.assertIsInstance(
+                        form.fields[field_name],
+                        CatalogImageField,
+                    )
+                    self.assertIn("image/*", form.fields[field_name].widget.attrs["accept"])
+
+    def test_normalizacion_genera_nombre_unico_aun_con_nombre_repetido(self):
+        first = normalize_uploaded_image(
+            self.image_upload("IMG_1234.jpeg", "JPEG"),
+            "foto",
+        )
+        second = normalize_uploaded_image(
+            self.image_upload("IMG_1234.jpeg", "JPEG"),
+            "foto",
+        )
+
+        self.assertNotEqual(first.name, second.name)
+        self.assertTrue(first.name.startswith("IMG_1234-"))
+        self.assertTrue(first.name.endswith(".jpg"))
+
+    def test_comando_audita_todos_los_imagefield(self):
+        Traje.objects.create(
+            linea=Traje.LINEA_NACIONAL,
+            tela="Auditoría",
+            precio="100000",
+            foto_modelo="trajes/existe-o-no.jpg",
+            foto_colgado="trajes/otra.jpg",
+        )
+        output = StringIO()
+
+        call_command("auditar_imagenes_catalogo", stdout=output)
+
+        text = output.getvalue()
+        self.assertIn("Storage por defecto:", text)
+        self.assertIn("catalogo.Traje#1.foto_modelo", text)
+        self.assertIn("catalogo.Traje#1.foto_colgado", text)
+        self.assertIn("Resumen:", text)
+
     def test_corrige_orientacion_exif_vertical(self):
         exif = Image.Exif()
         exif[274] = 6
@@ -455,6 +529,24 @@ class CatalogoMobileImageUploadTests(TestCase):
         )
         self.assertEqual(Traje.objects.count(), 0)
         self.assertIn("FileSystemStorage efímero", "\n".join(logs.output))
+
+    @override_settings(IS_RENDER=True, MEDIA_ROOT_ENV="")
+    def test_modelo_tambien_bloquea_admin_con_filesystem_efimero(self):
+        traje = Traje(
+            linea=Traje.LINEA_NACIONAL,
+            tela="Admin",
+            precio="100000",
+            foto_modelo=self.image_upload("principal.jpg", "JPEG"),
+            foto_colgado=self.image_upload("colgado.jpg", "JPEG"),
+        )
+
+        with self.assertRaisesMessage(
+            ImproperlyConfigured,
+            "El almacenamiento de imágenes no está configurado",
+        ):
+            traje.save()
+
+        self.assertEqual(Traje.objects.count(), 0)
 
     def test_imagen_faltante_usa_placeholder_sin_icono_roto(self):
         traje = Traje(

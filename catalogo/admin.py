@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 
@@ -17,9 +18,21 @@ from .models import (
     Traje,
     Zapato,
 )
+from .forms import CatalogImageField
 
 
-class BaseCatalogAdmin(admin.ModelAdmin):
+class CatalogImageAdminMixin:
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if isinstance(db_field, models.ImageField):
+            return CatalogImageField(
+                required=not db_field.blank,
+                label=db_field.verbose_name.capitalize(),
+                help_text=db_field.help_text,
+            )
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+
+class BaseCatalogAdmin(CatalogImageAdminMixin, admin.ModelAdmin):
     save_on_top = True
     show_full_result_count = False
     show_facets = admin.ShowFacets.NEVER
@@ -30,7 +43,7 @@ class TalleColorTrajeInline(admin.TabularInline):
     extra = 1
 
 
-class ImagenTrajeInline(admin.TabularInline):
+class ImagenTrajeInline(CatalogImageAdminMixin, admin.TabularInline):
     model = ImagenTraje
     extra = 1
 

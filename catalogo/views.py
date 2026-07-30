@@ -56,7 +56,12 @@ def _log_upload_diagnostics(request, tipo):
 def _verify_received_images(form, received_fields):
     instance = form.instance
     failures = []
-    for field_name in ("foto_modelo", "foto_colgado"):
+    image_fields = {
+        field.name: field
+        for field in instance._meta.fields
+        if getattr(field, "get_internal_type", lambda: "")() == "ImageField"
+    }
+    for field_name, model_field in image_fields.items():
         if field_name not in received_fields:
             continue
         image = getattr(instance, field_name, None)
@@ -85,13 +90,13 @@ def _verify_received_images(form, received_fields):
             image.storage.__class__.__name__ if image else "sin imagen",
         )
         if not exists:
-            failures.append(field_name)
+            failures.append((field_name, str(model_field.verbose_name)))
 
     if "imagenes_galeria" in received_fields:
         expected = len(form.cleaned_data.get("imagenes_galeria") or [])
         gallery = list(instance.imagenes_galeria.order_by("-id")[:expected])
         if len(gallery) != expected:
-            failures.append("imagenes_galeria")
+            failures.append(("imagenes_galeria", "imagen de la galería"))
         for gallery_image in gallery:
             image = gallery_image.imagen
             try:
@@ -118,19 +123,14 @@ def _verify_received_images(form, received_fields):
                 image.storage.__class__.__name__,
             )
             if not exists:
-                failures.append("imagenes_galeria")
+                failures.append(("imagenes_galeria", "imagen de la galería"))
 
     if failures:
-        labels = {
-            "foto_modelo": "la foto principal",
-            "foto_colgado": "la foto colgado",
-            "imagenes_galeria": "una imagen de la galería",
-        }
         failed_labels = ", ".join(
-            labels[name] for name in dict.fromkeys(failures)
+            label for _, label in dict.fromkeys(failures)
         )
         raise OSError(
-            f"No pudimos guardar {failed_labels}. "
+            f"No pudimos guardar: {failed_labels}. "
             "El almacenamiento no confirmó el archivo."
         )
 

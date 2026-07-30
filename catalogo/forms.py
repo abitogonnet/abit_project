@@ -25,7 +25,7 @@ IMAGE_ERROR = (
     "JPG, PNG, WEBP, HEIC o HEIF."
 )
 IMAGE_ACCEPT = (
-    "image/jpeg,image/png,image/webp,image/heic,image/heif,"
+    "image/*,image/jpeg,image/png,image/webp,image/heic,image/heif,"
     ".jpg,.jpeg,.png,.webp,.heic,.heif"
 )
 
