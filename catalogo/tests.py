@@ -1,6 +1,7 @@
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
@@ -347,6 +348,85 @@ class CatalogoMobileImageUploadTests(TestCase):
         self.assertNotContains(response, "variantes", html=False)
         self.assertNotContains(response, "Formato de variante inválido")
         self.assertContains(response, "Talles detectados en Stock")
+
+    def test_post_real_recibe_convierte_y_confirma_fotos_de_iphone(self):
+        user = get_user_model().objects.create_superuser(
+            username="iphone-owner",
+            email="iphone@example.com",
+            password="secret123",
+        )
+        self.client.force_login(user)
+        with TemporaryDirectory() as storage_dir:
+            with override_settings(MEDIA_ROOT=storage_dir):
+                data = self.base_data()
+                data.update({
+                    "foto_modelo": self.image_upload(
+                        "favorito-principal.heic",
+                        "HEIF",
+                        content_type="image/heic",
+                    ),
+                    "foto_colgado": self.image_upload(
+                        "favorito-colgado.jpeg",
+                        "JPEG",
+                        content_type="image/jpeg",
+                    ),
+                    "imagenes_galeria": self.image_upload(
+                        "favorito-galeria.heif",
+                        "HEIF",
+                        content_type="image/heif",
+                    ),
+                })
+
+                with self.assertLogs("catalogo.views", level="INFO") as logs:
+                    response = self.client.post(
+                        reverse("catalogo:crear", args=["traje"]),
+                        data,
+                    )
+
+                self.assertRedirects(response, reverse("catalogo:gestion"))
+                traje = Traje.objects.get()
+                self.assertTrue(traje.foto_modelo.name.endswith(".jpg"))
+                self.assertTrue(traje.foto_colgado.name.endswith(".jpg"))
+                self.assertTrue(traje.foto_modelo.storage.exists(
+                    traje.foto_modelo.name
+                ))
+                self.assertTrue(traje.foto_colgado.storage.exists(
+                    traje.foto_colgado.name
+                ))
+                self.assertEqual(traje.imagenes_galeria.count(), 1)
+                joined_logs = "\n".join(logs.output)
+                self.assertIn("favorito-principal.heic", joined_logs)
+                self.assertIn("content_type='image/heic'", joined_logs)
+                self.assertIn("existe=True", joined_logs)
+
+    def test_no_confirma_producto_si_storage_no_conserva_la_foto(self):
+        user = get_user_model().objects.create_superuser(
+            username="storage-owner",
+            email="storage@example.com",
+            password="secret123",
+        )
+        self.client.force_login(user)
+        data = self.base_data()
+        data.update({
+            "foto_modelo": self.image_upload("principal.jpg", "JPEG"),
+            "foto_colgado": self.image_upload("colgado.jpg", "JPEG"),
+        })
+
+        with patch(
+            "catalogo.views._verify_received_images",
+            side_effect=OSError(
+                "No pudimos guardar la foto principal. "
+                "El almacenamiento no confirmó el archivo."
+            ),
+        ):
+            response = self.client.post(
+                reverse("catalogo:crear", args=["traje"]),
+                data,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No pudimos guardar la foto principal")
+        self.assertEqual(Traje.objects.count(), 0)
 
     def test_imagen_faltante_usa_placeholder_sin_icono_roto(self):
         traje = Traje(

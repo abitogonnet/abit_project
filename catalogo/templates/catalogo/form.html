@@ -4,6 +4,9 @@
 <section class="ab-section-card">
   <form method="post" enctype="multipart/form-data" id="catalog-product-form">
     {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="ab-msg err" role="alert">{{ form.non_field_errors }}</div>
+    {% endif %}
     <div class="catalog-save-bar">
       <button class="ab-btn" type="submit">
         {% if tipo == "traje" %}Guardar traje{% else %}Guardar producto{% endif %}
