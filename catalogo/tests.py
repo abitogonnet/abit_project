@@ -428,6 +428,34 @@ class CatalogoMobileImageUploadTests(TestCase):
         self.assertContains(response, "No pudimos guardar la foto principal")
         self.assertEqual(Traje.objects.count(), 0)
 
+    @override_settings(IS_RENDER=True, MEDIA_ROOT_ENV="")
+    def test_produccion_bloquea_upload_en_filesystem_efimero(self):
+        user = get_user_model().objects.create_superuser(
+            username="ephemeral-owner",
+            email="ephemeral@example.com",
+            password="secret123",
+        )
+        self.client.force_login(user)
+        data = self.base_data()
+        data.update({
+            "foto_modelo": self.image_upload("principal.jpg", "JPEG"),
+            "foto_colgado": self.image_upload("colgado.jpg", "JPEG"),
+        })
+
+        with self.assertLogs("catalogo.views", level="ERROR") as logs:
+            response = self.client.post(
+                reverse("catalogo:crear", args=["traje"]),
+                data,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "el almacenamiento persistente no está configurado",
+        )
+        self.assertEqual(Traje.objects.count(), 0)
+        self.assertIn("FileSystemStorage efímero", "\n".join(logs.output))
+
     def test_imagen_faltante_usa_placeholder_sin_icono_roto(self):
         traje = Traje(
             foto_modelo="trajes/archivo-que-ya-no-existe.jpg",

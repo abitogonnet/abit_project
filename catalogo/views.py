@@ -1,7 +1,9 @@
 import logging
 
 from django.contrib import messages
+from django.conf import settings
 from django.core.files.storage import default_storage
+from django.core.files.storage import FileSystemStorage
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -20,6 +22,12 @@ MODELOS = {
     for model in (Traje, Chaleco, Cinturon, Corbata, Camisa, Zapato, Combo)
 }
 permitido = roles_requeridos(PerfilUsuario.PROPIETARIO, PerfilUsuario.ADMINISTRADOR)
+
+
+def _persistent_media_is_active():
+    if not isinstance(default_storage, FileSystemStorage):
+        return True
+    return bool(getattr(settings, "MEDIA_ROOT_ENV", ""))
 
 
 def _log_upload_diagnostics(request, tipo):
@@ -146,6 +154,24 @@ def editar(request, tipo, pk=None):
     if request.method == "POST":
         _log_upload_diagnostics(request, tipo)
         form = MODEL_FORMS[tipo](request.POST, request.FILES, instance=instance)
+        if (
+            request.FILES
+            and getattr(settings, "IS_RENDER", False)
+            and not _persistent_media_is_active()
+        ):
+            logger.error(
+                "Carga bloqueada: producción usa FileSystemStorage efímero. "
+                "Configurar AWS_STORAGE_BUCKET_NAME o MEDIA_ROOT persistente."
+            )
+            form.add_error(
+                None,
+                "No pudimos guardar las fotos porque el almacenamiento "
+                "persistente no está configurado. No se modificó el traje. "
+                "Contactá al administrador.",
+            )
+            return render(request, "catalogo/form.html", {
+                "form": form, "objeto": instance, "tipo": tipo,
+            })
         if form.is_valid():
             try:
                 with transaction.atomic():
