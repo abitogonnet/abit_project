@@ -19,6 +19,7 @@ from .models import (
     Zapato,
 )
 from .forms import CatalogImageField
+from .stock_colors import stock_colors_for_model
 
 
 class CatalogImageAdminMixin:
@@ -36,6 +37,12 @@ class BaseCatalogAdmin(CatalogImageAdminMixin, admin.ModelAdmin):
     save_on_top = True
     show_full_result_count = False
     show_facets = admin.ShowFacets.NEVER
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "colores_stock":
+            kwargs["queryset"] = stock_colors_for_model(self.model)
+            kwargs["help_text"] = "Elegí uno o varios colores existentes en Stock; no se muestran cantidades ni disponibilidad momentánea."
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 class TalleColorTrajeInline(admin.TabularInline):
@@ -79,6 +86,7 @@ class TrajeAdmin(BaseCatalogAdmin):
                     "tela",
                     "descripcion",
                     "color_stock",
+                    "colores_stock",
                     "talles_saco_stock",
                     "talles_pantalon_stock",
                     "precio",
@@ -101,7 +109,7 @@ class ChalecoAdmin(BaseCatalogAdmin):
     list_filter = ("activo",)
     search_fields = ("descripcion",)
     inlines = [TalleColorChalecoInline]
-    fields = ("descripcion", "precio", "activo", "foto_modelo", "foto_colgado")
+    fields = ("descripcion", "colores_stock", "precio", "activo", "foto_modelo", "foto_colgado")
 
 
 @admin.register(Cinturon)
@@ -109,7 +117,7 @@ class CinturonAdmin(BaseCatalogAdmin):
     list_display = ("id", "precio", "activo", "creado")
     list_filter = ("activo",)
     search_fields = ("descripcion",)
-    fields = ("descripcion", "precio", "activo", "foto_1", "foto_2")
+    fields = ("descripcion", "colores_stock", "precio", "activo", "foto_1", "foto_2")
 
 
 @admin.register(Corbata)
@@ -117,7 +125,7 @@ class CorbataAdmin(BaseCatalogAdmin):
     list_display = ("id", "precio", "activo", "creado")
     list_filter = ("activo",)
     search_fields = ("descripcion",)
-    fields = ("descripcion", "precio", "activo", "foto_1", "foto_2")
+    fields = ("descripcion", "colores_stock", "precio", "activo", "foto_1", "foto_2")
 
 
 @admin.register(Camisa)
@@ -126,7 +134,7 @@ class CamisaAdmin(BaseCatalogAdmin):
     list_filter = ("activo",)
     search_fields = ("descripcion",)
     inlines = [TalleColorCamisaInline]
-    fields = ("descripcion", "precio", "activo", "foto_modelo", "foto_colgado")
+    fields = ("descripcion", "colores_stock", "precio", "activo", "foto_modelo", "foto_colgado")
 
 
 @admin.register(Zapato)
@@ -135,7 +143,7 @@ class ZapatoAdmin(BaseCatalogAdmin):
     list_filter = ("activo",)
     search_fields = ("descripcion",)
     inlines = [TalleColorZapatoInline]
-    fields = ("descripcion", "precio", "activo", "foto_modelo", "foto_colgado")
+    fields = ("descripcion", "colores_stock", "precio", "activo", "foto_modelo", "foto_colgado")
 
 
 @admin.register(Combo)

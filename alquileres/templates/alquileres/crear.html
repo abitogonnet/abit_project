@@ -46,7 +46,7 @@
 
 {% if cliente_recurrente %}<div class="ab-msg info" data-recurring-client>Este cliente ya alquiló anteriormente. Hacer 10% de descuento.</div>{% endif %}
 
-<form method="post" id="alqForm" class="ab-create-layout" data-draft-clear="{% if mensaje_cliente %}1{% else %}0{% endif %}">
+<form method="post" id="alqForm" class="ab-create-layout" data-draft-clear="{% if limpiar_borrador %}1{% else %}0{% endif %}">
   {% csrf_token %}
   <input type="hidden" name="creation_token" value="{{ creation_token }}">
   {{ form.personas_visibles }}

@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from urllib.parse import urlencode
 import uuid
@@ -18,7 +18,7 @@ from cuentas.models import Actividad
 from cuentas.services import registrar_actividad
 
 from .access import require_finanzas_access
-from .forms import DivisionBienesForm, GASTO_CATEGORIAS, GastoForm
+from .forms import DivisionBienesForm, GASTO_CATEGORIAS, GastoForm, RangoInformeSemanalForm
 from .models import DivisionBienes, Gasto, InformeFinancieroSemanal, MovimientoFinanciero
 from .services import registrar_movimiento, resumen_movimientos
 from .weekly_report import (
@@ -189,7 +189,11 @@ def _resumen_cuenta(*, start=None, end=None, account_end=None):
     total_gastos_cuenta = gasto_totals["total_cuenta"]
     total_dividido_cuenta = division_totals["total_cuenta"]
 
-    periodo = resumen_movimientos(desde=start, hasta=(end - timedelta(days=1)) if start and end else None)
+    periodo = resumen_movimientos(
+        desde=start,
+        hasta=(end - timedelta(days=1)) if start and end else None,
+        incluir_divisiones=False,
+    )
     total_senas_periodo = alquiler_totals["total_senas_periodo"]
     total_saldos_pagados_periodo = periodo["ingresos"] - total_senas_periodo
     total_gastos_periodo = gasto_totals["total_periodo"]
@@ -330,7 +334,9 @@ def home(request):
     mes_actual_inicio = _start_of_month(hoy)
     mes_actual_fin = _first_day_next_month(mes_actual_inicio)
     resumen_mes_actual = resumen_movimientos(
-        desde=mes_actual_inicio, hasta=mes_actual_fin - timedelta(days=1)
+        desde=mes_actual_inicio,
+        hasta=mes_actual_fin - timedelta(days=1),
+        incluir_divisiones=False,
     )
     saldo_total = resumen_movimientos()["saldo"]
     gastos_mes_actual = (
@@ -460,12 +466,28 @@ def movimientos(request):
     })
 
 
+def _rango_informe(form):
+    desde_fecha = form.cleaned_data.get("desde")
+    hasta_fecha = form.cleaned_data.get("hasta")
+    if not desde_fecha and not hasta_fecha:
+        return periodo_semanal()
+    zona = timezone.get_current_timezone()
+    return (
+        timezone.make_aware(datetime.combine(desde_fecha, time.min), zona),
+        timezone.make_aware(datetime.combine(hasta_fecha, time.max), zona),
+    )
+
+
 def descargar_informe_semanal(request):
     access_response = require_finanzas_access(request)
     if access_response:
         return access_response
     regularizar_saldos_de_cerrados(request.user)
-    desde, hasta = periodo_semanal()
+    rango_form = RangoInformeSemanalForm(request.GET)
+    if not rango_form.is_valid():
+        messages.error(request, "Revisá el rango de fechas antes de descargar.")
+        return redirect("gastos:enviar_informe_semanal")
+    desde, hasta = _rango_informe(rango_form)
     datos = datos_informe_semanal(desde, hasta)
     response = HttpResponse(generar_pdf(datos), content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{nombre_archivo(datos)}"'
@@ -477,10 +499,24 @@ def enviar_informe_semanal(request):
     if access_response:
         return access_response
     regularizar_saldos_de_cerrados(request.user)
+    rango_form = RangoInformeSemanalForm(request.POST if request.method == "POST" else None)
     desde, hasta = periodo_semanal()
     resultado_actual = None
 
     if request.method == "POST":
+        if not rango_form.is_valid():
+            desde, hasta = periodo_semanal()
+        else:
+            desde, hasta = _rango_informe(rango_form)
+        if not rango_form.is_valid():
+            return render(request, "gastos/informe_semanal.html", {
+                "desde": desde, "hasta": hasta,
+                "rango_form": rango_form,
+                "clave_solicitud": str(uuid.uuid4()),
+                "whatsapp_configurado": whatsapp_configurado(),
+                "resultado_actual": None,
+                "informes_recientes": InformeFinancieroSemanal.objects.select_related("usuario", "usuario__perfil")[:10],
+            })
         try:
             clave = uuid.UUID(request.POST.get("clave_solicitud", ""))
         except (ValueError, TypeError, AttributeError):
@@ -556,6 +592,7 @@ def enviar_informe_semanal(request):
     return render(request, "gastos/informe_semanal.html", {
         "desde": desde,
         "hasta": hasta,
+        "rango_form": rango_form,
         "clave_solicitud": str(uuid.uuid4()),
         "whatsapp_configurado": whatsapp_configurado(),
         "resultado_actual": resultado_actual,

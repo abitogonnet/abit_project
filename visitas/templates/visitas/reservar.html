@@ -41,25 +41,6 @@
   </header>
 
   <main class="reserve-experience">
-    <section class="reserve-intro" aria-labelledby="reserve-title">
-      <img class="reserve-bg" src="{% static 'img/hero_abito.jpg' %}" alt="">
-      <div class="reserve-shade" aria-hidden="true"></div>
-
-      <div class="reserve-intro-content">
-        <p class="eyebrow">Reserva presencial</p>
-        <h1 id="reserve-title">Probate el traje. Dejá el look resuelto.</h1>
-        <p>
-          Elegí fecha, horario y contanos si ya viste un traje del catálogo. ABITO valida cupo real y prepara la visita para que no pierdas tiempo.
-        </p>
-
-        <div class="reserve-proof">
-          <span>Agenda con cupo</span>
-          <span>Lunes a viernes</span>
-          <span>Local en Gonnet</span>
-        </div>
-      </div>
-    </section>
-
     <section class="reserve-workspace" aria-label="Formulario de reserva">
       <aside class="reserve-rail" aria-label="Progreso de reserva">
         <p class="process-status">Reserva activa <span id="reserve-progress-label">01 / 05</span></p>
@@ -83,7 +64,7 @@
           </button>
           <button class="reserve-step" type="button" id="pill-4" data-step-jump="4">
             <span>04</span>
-            <strong>Trajes</strong>
+            <strong>Catálogo</strong>
             <small>Catálogo visto</small>
           </button>
           <button class="reserve-step" type="button" id="pill-5" data-step-jump="5">
@@ -223,7 +204,7 @@
 
           <div class="step-panel reserve-panel-step" id="step-4" hidden>
             <div class="form-group reserve-catalog-field">
-              <label for="{{ form.vio_prendas_catalogo.id_for_label }}">¿Viste algún traje en nuestro catálogo?</label>
+              <label for="{{ form.vio_prendas_catalogo.id_for_label }}">¿Viste algún traje o combo en nuestro catálogo?</label>
               <div class="catalog-choice-grid" role="group" aria-label="Trajes vistos en catálogo">
                 <button class="catalog-choice" type="button" data-catalog-value="no">
                   <span>No todavía</span>
@@ -244,10 +225,10 @@
 
             <div id="preferenciasWrap" class="preferences-stack" hidden>
               <div class="preference-card">
-                <p class="preference-title">Traje 1</p>
+                <p class="preference-title">Producto 1</p>
 
                 <div class="form-group">
-                  <label for="{{ form.preferencia_1_traje.id_for_label }}">Modelo</label>
+                  <label for="{{ form.preferencia_1_traje.id_for_label }}">Producto</label>
                   {{ form.preferencia_1_traje }}
                   {% for error in form.preferencia_1_traje.errors %}
                     <p class="field-error">{{ error }}</p>
@@ -262,7 +243,7 @@
                   {% endfor %}
                 </div>
 
-                <div class="preference-size-grid">
+                <div class="preference-size-grid" hidden>
                   <div class="form-group">
                     <label for="{{ form.preferencia_1_talle_saco.id_for_label }}">Talle de saco</label>
                     {{ form.preferencia_1_talle_saco }}
@@ -282,10 +263,10 @@
               </div>
 
               <div class="preference-card">
-                <p class="preference-title">Traje 2</p>
+                <p class="preference-title">Producto 2</p>
 
                 <div class="form-group">
-                  <label for="{{ form.preferencia_2_traje.id_for_label }}">Modelo</label>
+                  <label for="{{ form.preferencia_2_traje.id_for_label }}">Producto</label>
                   {{ form.preferencia_2_traje }}
                   {% for error in form.preferencia_2_traje.errors %}
                     <p class="field-error">{{ error }}</p>
@@ -300,7 +281,7 @@
                   {% endfor %}
                 </div>
 
-                <div class="preference-size-grid">
+                <div class="preference-size-grid" hidden>
                   <div class="form-group">
                     <label for="{{ form.preferencia_2_talle_saco.id_for_label }}">Talle de saco</label>
                     {{ form.preferencia_2_talle_saco }}
@@ -320,10 +301,10 @@
               </div>
 
               <div class="preference-card">
-                <p class="preference-title">Traje 3</p>
+                <p class="preference-title">Producto 3</p>
 
                 <div class="form-group">
-                  <label for="{{ form.preferencia_3_traje.id_for_label }}">Modelo</label>
+                  <label for="{{ form.preferencia_3_traje.id_for_label }}">Producto</label>
                   {{ form.preferencia_3_traje }}
                   {% for error in form.preferencia_3_traje.errors %}
                     <p class="field-error">{{ error }}</p>
@@ -338,7 +319,7 @@
                   {% endfor %}
                 </div>
 
-                <div class="preference-size-grid">
+                <div class="preference-size-grid" hidden>
                   <div class="form-group">
                     <label for="{{ form.preferencia_3_talle_saco.id_for_label }}">Talle de saco</label>
                     {{ form.preferencia_3_talle_saco }}
@@ -418,7 +399,6 @@
     </section>
   </main>
 
-  {% include "includes/social_links.html" %}
   {{ preferencias_catalogo|json_script:"catalogoPreferenciasData" }}
 
   <script>
@@ -658,18 +638,10 @@
 
     function preferenciasIncompletas() {
       for (let index = 1; index <= 3; index++) {
-        const traje = document.getElementById(`id_preferencia_${index}_traje`).value;
+        const producto = document.getElementById(`id_preferencia_${index}_traje`).value;
         const color = document.getElementById(`id_preferencia_${index}_color`).value;
-        const talleSaco = document.getElementById(`id_preferencia_${index}_talle_saco`).value.trim();
-        const tallePantalon = document.getElementById(`id_preferencia_${index}_talle_pantalon`).value.trim();
-
-        if (traje && (!color || !talleSaco || !tallePantalon)) {
-          return "Completá color, talle de saco y talle de pantalón para el traje que elegiste.";
-        }
-
-        if (!traje && (color || talleSaco || tallePantalon)) {
-          return "Primero elegí el traje y después completá color y talles.";
-        }
+        if (producto.startsWith('combo:') && !color) return "Elegí el color de traje que te interesó para el combo.";
+        if (!producto && color) return "Primero elegí el producto.";
       }
 
       return "";
@@ -692,7 +664,7 @@
       }
 
       if (vioPrendas === "si" && !hayAlgunaPreferenciaCompleta()) {
-        showInlineMessage("step4Message", "Si viste trajes, elegí al menos uno con sus talles.");
+        showInlineMessage("step4Message", "Si viste productos, elegí al menos uno.");
         return;
       }
 
@@ -752,12 +724,7 @@
 
     function hayAlgunaPreferenciaCompleta() {
       for (let index = 1; index <= 3; index++) {
-        const traje = document.getElementById(`id_preferencia_${index}_traje`).value;
-        const color = document.getElementById(`id_preferencia_${index}_color`).value;
-        const talleSaco = document.getElementById(`id_preferencia_${index}_talle_saco`).value.trim();
-        const tallePantalon = document.getElementById(`id_preferencia_${index}_talle_pantalon`).value.trim();
-
-        if (traje && color && talleSaco && tallePantalon) return true;
+        if (document.getElementById(`id_preferencia_${index}_traje`).value) return true;
       }
 
       return false;
@@ -791,14 +758,11 @@
       for (let index = 1; index <= 3; index++) {
         const trajeSelect = document.getElementById(`id_preferencia_${index}_traje`);
         const colorSelect = document.getElementById(`id_preferencia_${index}_color`);
-        const talleSaco = document.getElementById(`id_preferencia_${index}_talle_saco`).value.trim();
-        const tallePantalon = document.getElementById(`id_preferencia_${index}_talle_pantalon`).value.trim();
-
-        if (!trajeSelect.value || !colorSelect.value || !talleSaco || !tallePantalon) continue;
+        if (!trajeSelect.value) continue;
 
         const item = document.createElement("p");
         item.className = "summary-preference-item";
-        item.textContent = `${trajeSelect.options[trajeSelect.selectedIndex].text} · ${colorSelect.value} · Saco ${talleSaco} · Pantalón ${tallePantalon}`;
+        item.textContent = trajeSelect.options[trajeSelect.selectedIndex].text + (colorSelect.value ? ` · ${colorSelect.value}` : '');
         ambosList.appendChild(item);
       }
 

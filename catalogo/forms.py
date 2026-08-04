@@ -3,6 +3,7 @@ import logging
 from django import forms
 
 from .image_utils import normalize_uploaded_image
+from .stock_colors import stock_colors_for_model
 from .models import (
     Camisa,
     Chaleco,
@@ -91,6 +92,9 @@ class MultipleCatalogImageField(forms.Field):
 class CatalogoModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if "colores_stock" in self.fields:
+            self.fields["colores_stock"].queryset = stock_colors_for_model(self._meta.model)
+            self.fields["colores_stock"].widget = forms.CheckboxSelectMultiple()
         for name, field in list(self.fields.items()):
             if isinstance(field, forms.ImageField):
                 self.fields[name] = CatalogImageField(

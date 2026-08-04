@@ -49,7 +49,32 @@ class NormalizedImageFieldsMixin(models.Model):
         super().save(*args, **kwargs)
 
 
-class Traje(NormalizedImageFieldsMixin):
+class StockColorsMixin(models.Model):
+    colores_stock = models.ManyToManyField(
+        Color,
+        blank=True,
+        related_name="%(class)s_catalogo",
+        verbose_name="Colores disponibles",
+        help_text="Se muestran solamente colores que existen en Stock para esta categoría.",
+    )
+
+    class Meta:
+        abstract = True
+
+    @property
+    def colores_disponibles(self):
+        return list(self.colores_stock.all().order_by("nombre"))
+
+    @property
+    def foto_publica(self):
+        for name in ("foto_modelo", "foto_1"):
+            image = getattr(self, name, None)
+            if image:
+                return image
+        return None
+
+
+class Traje(StockColorsMixin, NormalizedImageFieldsMixin):
     LINEA_IMPORTADA = "IMPORTADO"
     LINEA_NACIONAL = "NACIONAL"
     LINEA_UNICO = "UNICO"
@@ -82,6 +107,32 @@ class Traje(NormalizedImageFieldsMixin):
 
     def __str__(self):
         return f"{self.get_linea_display()} - {self.tela}"
+
+    @property
+    def colores_disponibles(self):
+        colores = list(self.colores_stock.all().order_by("nombre"))
+        if self.color_stock and self.color_stock not in colores:
+            colores.append(self.color_stock)
+        return colores
+
+    @staticmethod
+    def _agrupar_talles(values):
+        letras_orden = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]
+        numeros = sorted({int(v) for v in values if str(v).isdigit()})
+        letras = [v for v in letras_orden if v in {str(x).upper() for x in values}]
+        return {
+            "ninos": [str(v) for v in numeros if 2 <= v <= 42],
+            "letras": letras,
+            "adultos": [str(v) for v in numeros if 44 <= v <= 76],
+        }
+
+    @property
+    def talles_saco_grupos(self):
+        return self._agrupar_talles(self.talles_saco_stock)
+
+    @property
+    def talles_pantalon_grupos(self):
+        return self._agrupar_talles(self.talles_pantalon_stock)
 
 
 class TalleColorTraje(models.Model):
@@ -119,7 +170,7 @@ class ImagenTraje(NormalizedImageFieldsMixin):
         return f"Imagen de {self.traje}"
 
 
-class Chaleco(NormalizedImageFieldsMixin):
+class Chaleco(StockColorsMixin, NormalizedImageFieldsMixin):
     foto_modelo = models.ImageField(upload_to="chalecos/")
     foto_colgado = models.ImageField(upload_to="chalecos/")
     descripcion = models.TextField(blank=True, default="")
@@ -153,7 +204,7 @@ class TalleColorChaleco(models.Model):
         return f"{self.color} | Talle {self.talle}"
 
 
-class Cinturon(NormalizedImageFieldsMixin):
+class Cinturon(StockColorsMixin, NormalizedImageFieldsMixin):
     foto_1 = models.ImageField(upload_to="cinturones/")
     foto_2 = models.ImageField(upload_to="cinturones/")
     descripcion = models.TextField(blank=True, default="")
@@ -171,7 +222,7 @@ class Cinturon(NormalizedImageFieldsMixin):
         return f"Cinturon #{self.id}"
 
 
-class Corbata(NormalizedImageFieldsMixin):
+class Corbata(StockColorsMixin, NormalizedImageFieldsMixin):
     foto_1 = models.ImageField(upload_to="corbatas/")
     foto_2 = models.ImageField(upload_to="corbatas/")
     descripcion = models.TextField(blank=True, default="")
@@ -189,7 +240,7 @@ class Corbata(NormalizedImageFieldsMixin):
         return f"Corbata #{self.id}"
 
 
-class Camisa(NormalizedImageFieldsMixin):
+class Camisa(StockColorsMixin, NormalizedImageFieldsMixin):
     foto_modelo = models.ImageField(upload_to="camisas/")
     foto_colgado = models.ImageField(upload_to="camisas/")
     descripcion = models.TextField(blank=True, default="")
@@ -223,7 +274,7 @@ class TalleColorCamisa(models.Model):
         return f"{self.color} | Talle {self.talle}"
 
 
-class Zapato(NormalizedImageFieldsMixin):
+class Zapato(StockColorsMixin, NormalizedImageFieldsMixin):
     foto_modelo = models.ImageField(upload_to="zapatos/")
     foto_colgado = models.ImageField(upload_to="zapatos/")
     descripcion = models.TextField(blank=True, default="")
@@ -267,6 +318,11 @@ class Combo(NormalizedImageFieldsMixin):
     precio_unico = models.DecimalField(max_digits=10, decimal_places=2)
     orden = models.PositiveIntegerField(default=1)
     activo = models.BooleanField(default=True)
+    disponible_todos_trajes = models.BooleanField(
+        default=True,
+        verbose_name="Disponible para todos los trajes activos",
+        help_text="Incluye automáticamente los trajes publicados actuales y futuros.",
+    )
     creado = models.DateTimeField(auto_now_add=True)
     normalized_image_fields = ("foto",)
 
@@ -275,6 +331,16 @@ class Combo(NormalizedImageFieldsMixin):
 
     def __str__(self):
         return self.nombre
+
+    @property
+    def colores_disponibles(self):
+        if not self.disponible_todos_trajes:
+            return []
+        colores = {}
+        for traje in Traje.objects.filter(activo=True).select_related("color_stock").prefetch_related("colores_stock"):
+            for color in traje.colores_disponibles:
+                colores[color.clave_normalizada] = color
+        return sorted(colores.values(), key=lambda color: color.nombre.casefold())
 
 
 class ConfiguracionVisitas(ConfiguracionSitio):

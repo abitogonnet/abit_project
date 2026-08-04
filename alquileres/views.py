@@ -1142,6 +1142,7 @@ def crear(request):
     msg_cliente = request.session.pop("ultimo_mensaje_cliente", None)
     whatsapp_url = request.session.pop("ultimo_whatsapp_url", "")
     cliente_recurrente = request.session.pop("cliente_recurrente", False)
+    limpiar_borrador = request.session.pop("limpiar_borrador_alquiler", False)
     disponibles = _disponibles_por_categoria()
     visita_id = request.session.get("visita_para_alquiler")
     visita_origen = (
@@ -1210,6 +1211,7 @@ def crear(request):
                 request.session["ultimo_mensaje_cliente"] = _armar_mensaje_cliente(alquiler)
                 request.session["ultimo_whatsapp_url"] = generar_enlace_whatsapp(alquiler.cliente_telefono, request.session["ultimo_mensaje_cliente"])
                 request.session["cliente_recurrente"] = recurrente
+                request.session["limpiar_borrador_alquiler"] = True
                 request.session.pop("alquiler_creation_token", None)
                 request.session.pop("visita_para_alquiler", None)
 
@@ -1249,6 +1251,7 @@ def crear(request):
         "mensaje_cliente": msg_cliente,
         "whatsapp_url": whatsapp_url,
         "cliente_recurrente": cliente_recurrente,
+        "limpiar_borrador": limpiar_borrador,
         "creation_token": creation_token,
         "visita_origen": visita_origen,
     })

@@ -24,21 +24,33 @@
       <span class="ab-chip">Bauti</span>
       <span class="ab-chip">Tadeo</span>
     </div>
+    <form method="post" data-single-submit>
+      {% csrf_token %}
+      <input type="hidden" name="clave_solicitud" value="{{ clave_solicitud }}">
+      <div class="ab-form-grid" style="margin-top:16px">
+        <div class="ab-field">
+          <label for="{{ rango_form.desde.id_for_label }}">Desde</label>
+          {{ rango_form.desde }}
+        </div>
+        <div class="ab-field">
+          <label for="{{ rango_form.hasta.id_for_label }}">Hasta</label>
+          {{ rango_form.hasta }}
+        </div>
+      </div>
+      {% for error in rango_form.non_field_errors %}<div class="ab-empty">{{ error }}</div>{% endfor %}
+      <p class="ab-help">Si dejás ambas fechas vacías, se usa la última semana por defecto. El rango elegido se aplica tanto al envío como al PDF.</p>
     <p><strong>Período:</strong> {{ desde|date:"d/m/Y H:i" }} – {{ hasta|date:"d/m/Y H:i" }}</p>
     {% if not whatsapp_configurado %}
       <div class="ab-empty">WhatsApp Business todavía no está configurado para envíos automáticos. El PDF sí se puede descargar.</div>
     {% endif %}
     <div class="ab-actions">
       <a class="ab-btn2" href="{% url 'gastos:home' %}">Cancelar</a>
-      <a class="ab-btn2" href="{% url 'gastos:descargar_informe_semanal' %}">Descargar PDF</a>
-      <form method="post" data-single-submit>
-        {% csrf_token %}
-        <input type="hidden" name="clave_solicitud" value="{{ clave_solicitud }}">
-        <button class="ab-btn" type="submit" {% if not whatsapp_configurado %}disabled{% endif %}>
+      <button class="ab-btn2" type="submit" formmethod="get" formaction="{% url 'gastos:descargar_informe_semanal' %}">Descargar PDF</button>
+        <button class="ab-btn" type="submit" data-send-report {% if not whatsapp_configurado %}disabled{% endif %}>
           Enviar informe
         </button>
-      </form>
     </div>
+    </form>
   </section>
 
   {% if resultado_actual %}
@@ -87,8 +99,9 @@
 
 <script>
 document.querySelectorAll("[data-single-submit]").forEach(function (form) {
-  form.addEventListener("submit", function () {
-    var button = form.querySelector("button[type=submit]");
+  form.addEventListener("submit", function (event) {
+    if (!event.submitter || !event.submitter.matches("[data-send-report]")) return;
+    var button = event.submitter;
     button.disabled = true;
     button.textContent = "Enviando…";
   });

@@ -50,10 +50,15 @@ class HomeConversionTests(TestCase):
         response = self.client.get(reverse("home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Alquilá un traje que te quede bien")
+        self.assertContains(response, "Tu traje, listo para tu evento")
         self.assertContains(response, reverse("visitas:reservar"))
         self.assertContains(response, "Catálogo real")
         self.assertContains(response, "Cuatro pasos, cero vueltas raras")
+        html = response.content.decode()
+        self.assertLess(
+            html.index('class="hero-actions"'),
+            html.index('id="hero-title"'),
+        )
 
     def test_home_hides_empty_catalog_filters(self):
         response = self.client.get(reverse("home"))
@@ -102,7 +107,7 @@ class HomeConversionTests(TestCase):
         response = self.client.get(reverse("home"))
 
         self.assertContains(response, "Traje nacional")
-        self.assertContains(response, '<span>Color</span>', html=True)
+        self.assertContains(response, '<span>Colores disponibles</span>', html=True)
         self.assertContains(response, "<strong>Gris Perla</strong>", html=True)
         self.assertContains(response, '<span>Saco</span>', html=True)
         self.assertContains(response, '<span>Pantalón</span>', html=True)

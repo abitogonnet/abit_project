@@ -43,17 +43,26 @@ class CuposTests(TestCase):
 
 
 class UbicacionPublicaTests(TestCase):
-    def test_reserva_usa_traje_en_toda_la_copia_visible(self):
+    def test_reserva_abre_directamente_en_el_formulario(self):
         reserva = self.client.get(reverse("visitas:reservar"))
 
-        self.assertContains(reserva, "¿Viste algún traje en nuestro catálogo?")
-        self.assertContains(reserva, "Sí, quiero indicar cuáles")
-        self.assertContains(reserva, "Podés indicar hasta 3 trajes que te interesaron.")
-        self.assertContains(reserva, "Traje 1")
-        self.assertContains(reserva, "Traje 2")
-        self.assertContains(reserva, "Traje 3")
+        self.assertNotContains(reserva, 'class="reserve-intro"', html=False)
+        self.assertNotContains(reserva, 'class="reserve-utility-actions"', html=False)
+        self.assertNotContains(reserva, 'class="reserve-bg"', html=False)
+        self.assertNotContains(reserva, 'class="social-float-stack"', html=False)
+        self.assertNotContains(reserva, ">Reservar visita</a>", html=False)
+        self.assertContains(reserva, 'class="reserve-workspace"', html=False)
+        self.assertContains(reserva, 'id="reservaForm"', html=False)
+
+    def test_reserva_permite_elegir_productos_sin_reescribir_talles(self):
+        reserva = self.client.get(reverse("visitas:reservar"))
+
+        self.assertContains(reserva, "¿Viste algún traje o combo en nuestro catálogo?")
+        self.assertContains(reserva, "Producto 1")
+        self.assertContains(reserva, "Producto 2")
+        self.assertContains(reserva, "Producto 3")
         self.assertContains(reserva, "Trajes elegidos")
-        self.assertContains(reserva, "<strong>Trajes</strong>", html=True)
+        self.assertContains(reserva, "<strong>Catálogo</strong>", html=True)
         self.assertNotContains(reserva, "Ambo 1")
         self.assertNotContains(reserva, "Ambos elegidos")
 
@@ -157,6 +166,12 @@ class ReservaClienteTests(TestCase):
 
 
 class CalendarioVisitasTests(TestCase):
+    def test_ver_visitas_ofrece_crear_con_el_formulario_web(self):
+        response = self.client.get(reverse("visitas:listar"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Crear visita")
+        self.assertContains(response, f'href="{reverse("visitas:reservar")}"', html=False)
+
     def setUp(self):
         user = User.objects.create_user("agenda", password="test")
         PerfilUsuario.objects.create(

@@ -1,5 +1,28 @@
 from decimal import Decimal
 from django import forms
+
+
+class RangoInformeSemanalForm(forms.Form):
+    desde = forms.DateField(
+        required=False,
+        label="Desde",
+        widget=forms.DateInput(attrs={"type": "date", "class": "ab-inp"}),
+    )
+    hasta = forms.DateField(
+        required=False,
+        label="Hasta",
+        widget=forms.DateInput(attrs={"type": "date", "class": "ab-inp"}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        desde = cleaned.get("desde")
+        hasta = cleaned.get("hasta")
+        if bool(desde) != bool(hasta):
+            raise forms.ValidationError("Elegí las dos fechas o dejá ambas vacías para usar la última semana.")
+        if desde and hasta and desde > hasta:
+            raise forms.ValidationError("La fecha desde no puede ser posterior a la fecha hasta.")
+        return cleaned
 from django.core.exceptions import ValidationError
 from .models import Gasto, DivisionBienes
 

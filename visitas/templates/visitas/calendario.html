@@ -5,9 +5,10 @@
   <aside class="ab-pagehero-panel"><strong>Visitas hoy: {{ visitas_hoy }}</strong></aside>
 </section>
 <div class="ab-actions">
+  <a class="ab-btn" href="{% url 'visitas:reservar' %}">Crear visita</a>
   <a class="ab-btn2" href="{% url 'visitas:listar' %}?alcance=hoy">Visitas de hoy</a>
   <a class="ab-btn2" href="{% url 'visitas:listar' %}?alcance=historial">Historial</a>
-  <a class="ab-btn" href="{% url 'visitas:bloqueos' %}">Bloquear agenda</a>
+  <a class="ab-btn2" href="{% url 'visitas:bloqueos' %}">Bloquear agenda</a>
 </div>
 <section class="ab-section-card">
   <div class="ab-calendar-nav">

@@ -86,6 +86,31 @@ class AccesoTests(TestCase):
         self.assertFalse(user.perfil.debe_cambiar_password)
         self.assertIn("_auth_user_id", self.client.session)
 
+    def test_lucas_cambia_password_y_no_vuelve_al_bucle(self):
+        user = self.crear_usuario(
+            "lucas", PerfilUsuario.EMPLEADO,
+            debe_cambiar_password=True,
+        )
+        self.client.post(reverse("cuentas:login"), {
+            "username": "lucas", "password": "ClaveSegura-2026!",
+        })
+        change_page = self.client.get(reverse("cuentas:cambiar_password"))
+        self.assertNotContains(change_page, 'name="old_password"', html=False)
+        response = self.client.post(reverse("cuentas:cambiar_password"), {
+            "new_password1": "NuevaLucas-2026!",
+            "new_password2": "NuevaLucas-2026!",
+        })
+        self.assertRedirects(response, reverse("alquileres:home"))
+        user.refresh_from_db()
+        self.assertFalse(user.perfil.debe_cambiar_password)
+        self.assertEqual(self.client.get(reverse("alquileres:home")).status_code, 200)
+        self.client.post(reverse("cuentas:logout"))
+        response = self.client.post(reverse("cuentas:login"), {
+            "username": "lucas", "password": "NuevaLucas-2026!",
+        })
+        self.assertRedirects(response, reverse("alquileres:home"))
+        self.assertEqual(self.client.get(reverse("alquileres:home")).status_code, 200)
+
     def test_password_pendiente_redirige_sin_bucle_y_permite_salir(self):
         user = self.crear_usuario(
             "pendiente",

@@ -22,6 +22,9 @@
         <div class="product-fact"><span>Incluye</span><strong>{{ combo.descripcion }}</strong></div>
       </div>
     {% endif %}
+    {% if combo.colores_disponibles %}
+      <div class="product-fact"><span>Colores disponibles</span><strong>{% for color in combo.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</strong></div>
+    {% endif %}
     <div class="product-actions">
       <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
       <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a>
@@ -37,6 +40,7 @@
         <h2>{{ combo.nombre }}</h2>
         <dl class="detail-facts">
           {% if combo.descripcion %}<div><dt>Incluye</dt><dd>{{ combo.descripcion }}</dd></div>{% endif %}
+          {% if combo.colores_disponibles %}<div><dt>Colores disponibles</dt><dd>{% for color in combo.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd></div>{% endif %}
           <div><dt>Precio línea nacional</dt><dd>{{ combo.precio_nacional|ars_currency }}</dd></div>
           <div><dt>Precio línea importada</dt><dd>{{ combo.precio_importado|ars_currency }}</dd></div>
         </dl>

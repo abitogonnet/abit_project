@@ -8,7 +8,7 @@ from django.urls import reverse
 from alquileres.models import Alquiler, Cliente
 from alquileres.services import regularizar_saldos_de_cerrados
 from cuentas.models import PerfilUsuario
-from .models import Gasto, MovimientoFinanciero
+from .models import DivisionBienes, Gasto, MovimientoFinanciero
 from .services import registrar_movimiento, registrar_saldo, registrar_sena, resumen_movimientos
 
 
@@ -110,6 +110,27 @@ class MovimientosFinancierosTests(TestCase):
         registrar_movimiento(clave=f"gasto:{gasto.id}", concepto="Gasto", referencia="Gasto",
                              egreso=gasto.monto, gasto=gasto, usuario=self.user)
         self.assertEqual(resumen_movimientos()["saldo"], Decimal("10000"))
+
+    def test_division_baja_la_cuenta_pero_no_el_resultado_del_mes(self):
+        registrar_movimiento(
+            clave="ingreso-prueba", concepto="Ingreso", referencia="Prueba",
+            ingreso=Decimal("100000"), usuario=self.user,
+        )
+        division = DivisionBienes.objects.create(
+            monto_total=Decimal("40000"),
+            para_tade=Decimal("20000"),
+            para_bauti=Decimal("20000"),
+        )
+        registrar_movimiento(
+            clave=f"division:{division.pk}", concepto="División de bienes",
+            referencia="Prueba", egreso=division.monto_total,
+            division=division, usuario=self.user,
+        )
+        self.assertEqual(resumen_movimientos()["saldo"], Decimal("60000"))
+        self.assertEqual(
+            resumen_movimientos(incluir_divisiones=False)["saldo"],
+            Decimal("100000"),
+        )
 
     def test_planilla_movimientos_es_privada_y_renderiza(self):
         response = self.client.get(reverse("gastos:movimientos"))

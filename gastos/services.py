@@ -53,8 +53,10 @@ def sincronizar_movimientos_alquiler(alquiler, usuario=None):
         saldo.save(update_fields=["ingreso", "cliente"])
 
 
-def resumen_movimientos(*, desde=None, hasta=None):
+def resumen_movimientos(*, desde=None, hasta=None, incluir_divisiones=True):
     qs = MovimientoFinanciero.objects.filter(informativo=False)
+    if not incluir_divisiones:
+        qs = qs.filter(division__isnull=True)
     if desde:
         qs = qs.filter(fecha_hora__date__gte=desde)
     if hasta:

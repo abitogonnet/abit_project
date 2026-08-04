@@ -23,7 +23,12 @@ def periodo_semanal(ahora=None):
 def datos_informe_semanal(desde, hasta):
     movimientos = list(
         MovimientoFinanciero.objects
-        .filter(informativo=False, fecha_hora__gte=desde, fecha_hora__lte=hasta)
+        .filter(
+            informativo=False,
+            division__isnull=True,
+            fecha_hora__gte=desde,
+            fecha_hora__lte=hasta,
+        )
         .order_by("fecha_hora", "id")
     )
     ingresos = [item for item in movimientos if item.ingreso > 0]

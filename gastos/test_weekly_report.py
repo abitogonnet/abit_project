@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from cuentas.models import Actividad, PerfilUsuario
-from .models import InformeFinancieroSemanal, MovimientoFinanciero
+from .models import DivisionBienes, InformeFinancieroSemanal, MovimientoFinanciero
 from .weekly_report import datos_informe_semanal, generar_pdf
 
 
@@ -49,6 +49,22 @@ class InformeSemanalTests(TestCase):
         self.assertTrue(pdf.startswith(b"%PDF"))
         self.assertGreater(len(pdf), 1000)
 
+    def test_division_no_es_egreso_del_resultado_pero_baja_saldo_actual(self):
+        self.movimiento("ingreso", ingreso="100000")
+        division = DivisionBienes.objects.create(
+            fecha=self.desde.date(), monto_total="40000",
+            para_tade="20000", para_bauti="20000",
+        )
+        MovimientoFinanciero.objects.create(
+            clave="division:test", concepto="División de bienes",
+            egreso="40000", division=division,
+            fecha_hora=timezone.make_aware(datetime(2026, 7, 28, 13, 0)),
+        )
+        datos = datos_informe_semanal(self.desde, self.hasta)
+        self.assertEqual(datos["total_egresos"], Decimal("0"))
+        self.assertEqual(datos["resultado"], Decimal("100000"))
+        self.assertEqual(datos["saldo_actual"], Decimal("60000"))
+
     @override_settings(WHATSAPP_ACCESS_TOKEN="", WHATSAPP_PHONE_NUMBER_ID="")
     def test_sin_whatsapp_permite_descargar_y_no_falla(self):
         response = self.client.get(reverse("gastos:descargar_informe_semanal"))
@@ -62,6 +78,23 @@ class InformeSemanalTests(TestCase):
         )
         self.assertContains(response, "todavía no está configurado")
         self.assertEqual(InformeFinancieroSemanal.objects.count(), 0)
+
+    def test_descarga_acepta_rango_personalizado_inclusivo(self):
+        self.movimiento("dentro", ingreso="25000", hora=timezone.make_aware(datetime(2026, 7, 10, 23, 30)))
+        response = self.client.get(
+            reverse("gastos:descargar_informe_semanal"),
+            {"desde": "2026-07-01", "hasta": "2026-07-10"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("2026-07-01_2026-07-10", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
+    def test_rango_incompleto_no_descarga(self):
+        response = self.client.get(
+            reverse("gastos:descargar_informe_semanal"),
+            {"desde": "2026-07-01"},
+        )
+        self.assertRedirects(response, reverse("gastos:enviar_informe_semanal"))
 
     def test_empleado_no_accede(self):
         empleado = User.objects.create_user("employee-report", password="test")
@@ -100,11 +133,14 @@ class InformeSemanalTests(TestCase):
         enviar.side_effect = resultado
         clave = str(uuid.uuid4())
         url = reverse("gastos:enviar_informe_semanal")
-        self.client.post(url, {"clave_solicitud": clave})
-        self.client.post(url, {"clave_solicitud": clave})
+        payload = {"clave_solicitud": clave, "desde": "2026-07-01", "hasta": "2026-07-31"}
+        self.client.post(url, payload)
+        self.client.post(url, payload)
 
         self.assertEqual(InformeFinancieroSemanal.objects.count(), 1)
         informe = InformeFinancieroSemanal.objects.get()
+        self.assertEqual(timezone.localtime(informe.periodo_desde).date().isoformat(), "2026-07-01")
+        self.assertEqual(timezone.localtime(informe.periodo_hasta).date().isoformat(), "2026-07-31")
         self.assertEqual(informe.resultados["Bauti"]["estado"], "enviado")
         self.assertEqual(informe.resultados["Tadeo"]["estado"], "enviado")
         self.assertEqual(enviar.call_count, 3)

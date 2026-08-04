@@ -24,16 +24,18 @@
     </div>
 
     <div class="product-meta product-facts">
-      {% if item.color_stock %}
+      {% if item.colores_disponibles %}
         <div class="product-fact">
-          <span>Color</span>
-          <strong>{{ item.color_stock.nombre }}</strong>
+          <span>Colores disponibles</span>
+          <strong>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</strong>
         </div>
       {% endif %}
       <div class="product-fact">
         <span>Saco</span>
         <strong>
-          {% if item.talles_saco_stock %}
+          {% if item.linea == 'NACIONAL' and item.talles_saco_stock %}
+            {% with grupos=item.talles_saco_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.letras %}Adultos — Letras: {{ grupos.letras|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos — Números: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}
+          {% elif item.talles_saco_stock %}
             {{ item.talles_saco_stock|join:" · " }}
           {% else %}
             A confirmar
@@ -43,7 +45,9 @@
       <div class="product-fact">
         <span>Pantalón</span>
         <strong>
-          {% if item.talles_pantalon_stock %}
+          {% if item.linea == 'NACIONAL' and item.talles_pantalon_stock %}
+            {% with grupos=item.talles_pantalon_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.letras %}Adultos — Letras: {{ grupos.letras|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos — Números: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}
+          {% elif item.talles_pantalon_stock %}
             {{ item.talles_pantalon_stock|join:" · " }}
           {% else %}
             A confirmar
@@ -82,8 +86,8 @@
         <h2>{{ item.tela }}</h2>
 
         <dl class="detail-facts">
-          {% if item.color_stock %}
-            <div><dt>Color</dt><dd>{{ item.color_stock.nombre }}</dd></div>
+          {% if item.colores_disponibles %}
+            <div><dt>Colores disponibles</dt><dd>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd></div>
           {% endif %}
           <div>
             <dt>Talles de saco</dt>

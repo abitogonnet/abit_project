@@ -104,12 +104,15 @@ class PreferenciaAmboVisita(models.Model):
         blank=True,
         related_name="preferencias_visita",
     )
+    producto_tipo = models.CharField(max_length=30, blank=True, default="traje")
+    producto_id = models.PositiveIntegerField(null=True, blank=True)
+    producto_nombre = models.CharField(max_length=140, blank=True, default="")
     orden = models.PositiveSmallIntegerField()
     linea = models.CharField(max_length=20, blank=True, default="")
     tela = models.CharField(max_length=100, blank=True, default="")
-    color = models.CharField(max_length=50)
-    talle_saco = models.CharField(max_length=50)
-    talle_pantalon = models.CharField(max_length=50)
+    color = models.CharField(max_length=50, blank=True, default="")
+    talle_saco = models.CharField(max_length=50, blank=True, default="")
+    talle_pantalon = models.CharField(max_length=50, blank=True, default="")
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:

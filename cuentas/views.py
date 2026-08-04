@@ -4,7 +4,7 @@ from datetime import datetime, time, timedelta
 
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
@@ -136,13 +136,22 @@ def actividad(request):
 
 
 def cambiar_password(request):
-    form = PasswordChangeForm(request.user, request.POST or None)
+    try:
+        cambio_obligatorio = request.user.perfil.debe_cambiar_password
+    except PerfilUsuario.DoesNotExist:
+        cambio_obligatorio = False
+    form_class = SetPasswordForm if cambio_obligatorio else PasswordChangeForm
+    form = form_class(request.user, request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
-        request.user.perfil.debe_cambiar_password = False
-        request.user.perfil.save(update_fields=["debe_cambiar_password"])
+        PerfilUsuario.objects.filter(user=user).update(debe_cambiar_password=False)
+        if "perfil" in request.user._state.fields_cache:
+            request.user._state.fields_cache.pop("perfil", None)
         update_session_auth_hash(request, user)
         registrar_actividad(request, "Cambió su contraseña", Actividad.USUARIOS, objeto=user, referencia=user.username)
         messages.success(request, "Contraseña actualizada.")
         return redirect("alquileres:home")
-    return render(request, "cuentas/cambiar_password.html", {"form": form})
+    return render(request, "cuentas/cambiar_password.html", {
+        "form": form,
+        "cambio_obligatorio": cambio_obligatorio,
+    })

@@ -2,7 +2,7 @@ from datetime import date, time, timedelta
 
 from django import forms
 
-from catalogo.models import Traje
+from catalogo.models import Camisa, Chaleco, Cinturon, Combo, Corbata, Traje, Zapato
 
 from .models import BloqueoAgenda, PreferenciaAmboVisita, Visita
 
@@ -22,11 +22,11 @@ class VisitaForm(forms.ModelForm):
         choices=[
             ("", "Elegi una opcion"),
             ("no", "No, todavia no vi ninguna"),
-            ("si", "Si, quiero indicar trajes y talles"),
+            ("si", "Sí, quiero seleccionar productos"),
         ],
         required=False,
         widget=forms.Select(attrs={"class": "reserve-input"}),
-        label="Viste algun traje en nuestro catalogo?",
+        label="¿Viste algún traje o combo en nuestro catálogo?",
     )
 
     class Meta:
@@ -71,12 +71,17 @@ class VisitaForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.trajes_catalogo = list(
-            Traje.objects
-            .filter(activo=True)
-            .prefetch_related("talles")
-            .order_by("linea", "tela", "-creado")
-        )
+        self.trajes_catalogo = list(Traje.objects.filter(activo=True).select_related("color_stock").prefetch_related("colores_stock").order_by("linea", "tela"))
+        self.productos_catalogo = []
+        for obj in self.trajes_catalogo:
+            self.productos_catalogo.append((f"traje:{obj.pk}", f"Traje {obj.get_linea_display()} — {obj.tela}", obj))
+        for model, tipo in ((Combo, "combo"), (Camisa, "camisa"), (Zapato, "zapato"), (Chaleco, "chaleco"), (Corbata, "corbata"), (Cinturon, "cinturon")):
+            qs = model.objects.filter(activo=True)
+            if hasattr(model, "colores_stock"):
+                qs = qs.prefetch_related("colores_stock")
+            for obj in qs:
+                nombre = obj.nombre if tipo == "combo" else (obj.descripcion or f"{model._meta.verbose_name.title()} #{obj.pk}")
+                self.productos_catalogo.append((f"{tipo}:{obj.pk}", nombre, obj))
 
         super().__init__(*args, **kwargs)
 
@@ -85,12 +90,11 @@ class VisitaForm(forms.ModelForm):
         self.fields["fecha_visita"].widget.attrs["min"] = hoy
 
         for index in range(1, 4):
-            self.fields[f"preferencia_{index}_traje"] = forms.ModelChoiceField(
-                queryset=Traje.objects.filter(activo=True).order_by("linea", "tela"),
+            self.fields[f"preferencia_{index}_traje"] = forms.ChoiceField(
+                choices=[("", "Elegí un producto")] + [(key, name) for key, name, obj in self.productos_catalogo],
                 required=False,
-                empty_label="Elegi un traje",
                 widget=forms.Select(attrs={"class": "reserve-input"}),
-                label=f"Traje {index}",
+                label=f"Producto {index}",
             )
             self.fields[f"preferencia_{index}_color"] = forms.ChoiceField(
                 required=False,
@@ -98,28 +102,8 @@ class VisitaForm(forms.ModelForm):
                 widget=forms.Select(attrs={"class": "reserve-input"}),
                 label=f"Color del traje {index}",
             )
-            self.fields[f"preferencia_{index}_talle_saco"] = forms.CharField(
-                required=False,
-                max_length=50,
-                widget=forms.TextInput(
-                    attrs={
-                        "class": "reserve-input",
-                        "placeholder": "Ej: 50",
-                    }
-                ),
-                label=f"Talle de saco del traje {index}",
-            )
-            self.fields[f"preferencia_{index}_talle_pantalon"] = forms.CharField(
-                required=False,
-                max_length=50,
-                widget=forms.TextInput(
-                    attrs={
-                        "class": "reserve-input",
-                        "placeholder": "Ej: 42",
-                    }
-                ),
-                label=f"Talle de pantalon del traje {index}",
-            )
+            self.fields[f"preferencia_{index}_talle_saco"] = forms.CharField(required=False, widget=forms.HiddenInput())
+            self.fields[f"preferencia_{index}_talle_pantalon"] = forms.CharField(required=False, widget=forms.HiddenInput())
 
         if self.is_bound:
             for index in range(1, 4):
@@ -135,19 +119,12 @@ class VisitaForm(forms.ModelForm):
         if not traje_id:
             return choices
 
-        try:
-            traje_id = int(traje_id)
-        except (TypeError, ValueError):
+        entry = next((item for item in self.productos_catalogo if item[0] == str(traje_id)), None)
+        if not entry:
             return choices
 
-        traje = next((item for item in self.trajes_catalogo if item.id == traje_id), None)
-        if not traje:
-            return choices
-
-        colores = []
-        for variante in traje.talles.all():
-            if variante.color not in colores:
-                colores.append(variante.color)
+        obj = entry[2]
+        colores = [color.nombre for color in obj.colores_disponibles] if hasattr(obj, "colores_disponibles") else []
 
         for color in colores:
             choices.append((color, color))
@@ -220,7 +197,9 @@ class VisitaForm(forms.ModelForm):
 
         if vio_prendas_catalogo == "si":
             for index in range(1, 4):
-                traje = cleaned_data.get(f"preferencia_{index}_traje")
+                product_key = cleaned_data.get(f"preferencia_{index}_traje")
+                entry = next((item for item in self.productos_catalogo if item[0] == product_key), None)
+                traje = entry[2] if entry and product_key.startswith("traje:") else None
                 color = (cleaned_data.get(f"preferencia_{index}_color") or "").strip()
                 talle_saco = (
                     cleaned_data.get(f"preferencia_{index}_talle_saco") or ""
@@ -229,37 +208,26 @@ class VisitaForm(forms.ModelForm):
                     cleaned_data.get(f"preferencia_{index}_talle_pantalon") or ""
                 ).strip()
 
-                if not traje and not color and not talle_saco and not talle_pantalon:
+                if not entry and not color:
                     continue
 
-                if color or talle_saco or talle_pantalon:
-                    if not traje:
+                if color and not entry:
                         self.add_error(
                             f"preferencia_{index}_traje",
                             "Primero elegi el traje.",
                         )
                         continue
 
-                if traje and not color:
+                if entry and product_key.startswith("combo:") and not color:
                     self.add_error(
                         f"preferencia_{index}_color",
                         "Elegi el color para ese traje.",
                     )
-                if traje and not talle_saco:
-                    self.add_error(
-                        f"preferencia_{index}_talle_saco",
-                        "Escribi el talle de saco.",
-                    )
-                if traje and not talle_pantalon:
-                    self.add_error(
-                        f"preferencia_{index}_talle_pantalon",
-                        "Escribi el talle de pantalon.",
-                    )
-
-                if not color or not talle_saco or not talle_pantalon:
+                if not entry or (product_key.startswith("combo:") and not color):
                     continue
 
-                color_valido = traje.talles.filter(color=color).exists()
+                colores_validos = [item.nombre for item in entry[2].colores_disponibles] if hasattr(entry[2], "colores_disponibles") else []
+                color_valido = not color or color in colores_validos
                 if not color_valido:
                     self.add_error(
                         f"preferencia_{index}_color",
@@ -271,8 +239,11 @@ class VisitaForm(forms.ModelForm):
                     {
                         "orden": index,
                         "traje": traje,
-                        "linea": traje.get_linea_display(),
-                        "tela": traje.tela,
+                        "producto_tipo": product_key.split(":", 1)[0],
+                        "producto_id": entry[2].pk,
+                        "producto_nombre": entry[1],
+                        "linea": traje.get_linea_display() if traje else "",
+                        "tela": traje.tela if traje else entry[1],
                         "color": color,
                         "talle_saco": talle_saco,
                         "talle_pantalon": talle_pantalon,
@@ -282,7 +253,7 @@ class VisitaForm(forms.ModelForm):
             if not self.selected_preferences:
                 self.add_error(
                     "vio_prendas_catalogo",
-                    "Si viste trajes, elegi al menos uno con sus talles.",
+                    "Si viste productos, elegí al menos uno.",
                 )
 
         return cleaned_data
@@ -306,6 +277,9 @@ class VisitaForm(forms.ModelForm):
             PreferenciaAmboVisita(
                 visita=visita,
                 traje=item["traje"],
+                producto_tipo=item["producto_tipo"],
+                producto_id=item["producto_id"],
+                producto_nombre=item["producto_nombre"],
                 orden=item["orden"],
                 linea=item["linea"],
                 tela=item["tela"],

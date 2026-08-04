@@ -1,7 +1,10 @@
 from django.shortcuts import render
 from catalogo.models import (
     Camisa,
+    Chaleco,
+    Cinturon,
     Combo,
+    Corbata,
     Traje,
     Zapato,
 )
@@ -38,6 +41,12 @@ def home(request):
         .order_by("-creado")
     )
 
+    otros_productos = []
+    for model, tipo in ((Chaleco, "Chaleco"), (Corbata, "Corbata"), (Cinturon, "Cinturón")):
+        for producto in model.objects.filter(activo=True).prefetch_related("colores_stock").order_by("-creado"):
+            producto.tipo_publico = tipo
+            otros_productos.append(producto)
+
     combos = (
         Combo.objects
         .filter(activo=True)
@@ -50,4 +59,5 @@ def home(request):
         "camisas": camisas,
         "zapatos": zapatos,
         "combos": combos,
+        "otros_productos": otros_productos,
     })

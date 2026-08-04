@@ -250,14 +250,12 @@ def reservar(request):
         form = VisitaForm()
 
     preferencias_catalogo = []
-    for traje in form.trajes_catalogo:
+    for key, nombre, producto in form.productos_catalogo:
         preferencias_catalogo.append(
             {
-                "id": traje.id,
-                "nombre": f"{traje.get_linea_display()} - {traje.tela}",
-                "colores": list(
-                    dict.fromkeys(variante.color for variante in traje.talles.all())
-                ),
+                "id": key,
+                "nombre": nombre,
+                "colores": [color.nombre for color in producto.colores_disponibles] if hasattr(producto, "colores_disponibles") else [],
             }
         )
 

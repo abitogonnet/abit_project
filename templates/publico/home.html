@@ -40,11 +40,6 @@
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
         <p class="eyebrow" data-reveal>Alquiler de trajes · Prueba presencial</p>
-        <h1 id="hero-title" data-reveal>Alquilá un traje que te quede bien, sin comprar uno.</h1>
-        <p class="hero-copy" data-reveal>
-          Reservá tu visita, probátelo y salí con el look resuelto para egresados, casamientos, fiestas y noches importantes.
-        </p>
-
         <div class="hero-actions" data-reveal>
           <a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar visita</a>
           <a class="btn btn-secondary" href="#catalogo">Ver trajes</a>
@@ -57,6 +52,11 @@
             WhatsApp
           </a>
         </div>
+
+        <h1 id="hero-title" data-reveal>Tu traje, listo para tu evento.</h1>
+        <p class="hero-copy" data-reveal>
+          Probátelo, ajustalo y reservá tu visita en Gonnet.
+        </p>
 
         <div class="hero-proof" data-reveal>
           <span>Precios visibles</span>
@@ -160,9 +160,7 @@
               </div>
               <div class="product-meta">
                 {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
-                {% for fila in item.talles.all %}
-                  <p>Color: {{ fila.color }} · Talle {{ fila.talle }}</p>
-                {% endfor %}
+                {% if item.colores_disponibles %}<p><strong>Colores disponibles</strong><br>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
               </div>
               <div class="product-actions">
                 <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
@@ -177,7 +175,7 @@
                   <h2>Camisa</h2>
                   <dl class="detail-facts">
                     {% if item.descripcion %}<div><dt>Descripción</dt><dd>{{ item.descripcion }}</dd></div>{% endif %}
-                    {% for fila in item.talles.all %}<div><dt>Color y talle</dt><dd>{{ fila.color }} · {{ fila.talle }}</dd></div>{% endfor %}
+                    {% if item.colores_disponibles %}<div><dt>Colores disponibles</dt><dd>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd></div>{% endif %}
                     <div><dt>Precio</dt><dd>{{ item.precio|ars_currency }}</dd></div>
                   </dl>
                 </div>
@@ -203,9 +201,7 @@
               </div>
               <div class="product-meta">
                 {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
-                {% for fila in item.talles.all %}
-                  <p>Color: {{ fila.color }} · Talle {{ fila.talle }}</p>
-                {% endfor %}
+                {% if item.colores_disponibles %}<p><strong>Colores disponibles</strong><br>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
               </div>
               <div class="product-actions">
                 <button class="btn btn-detail" type="button" data-detail>Ver detalles</button>
@@ -220,12 +216,22 @@
                   <h2>Zapatos</h2>
                   <dl class="detail-facts">
                     {% if item.descripcion %}<div><dt>Descripción</dt><dd>{{ item.descripcion }}</dd></div>{% endif %}
-                    {% for fila in item.talles.all %}<div><dt>Color y talle</dt><dd>{{ fila.color }} · {{ fila.talle }}</dd></div>{% endfor %}
+                    {% if item.colores_disponibles %}<div><dt>Colores disponibles</dt><dd>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd></div>{% endif %}
                     <div><dt>Precio</dt><dd>{{ item.precio|ars_currency }}</dd></div>
                   </dl>
                 </div>
               </article>
             </template>
+          </article>
+        {% endfor %}
+
+        {% for item in otros_productos %}
+          <article class="product-card is-entering" data-line="otro" data-product-type="producto">
+            <div class="product-media"><img src="{{ item.foto_publica|catalog_image_url }}" alt="{{ item.tipo_publico }}" loading="lazy"><span class="product-badge">{{ item.tipo_publico }}</span></div>
+            <div class="product-body"><div class="product-top"><div><p class="product-kind">Accesorio</p><h3 class="product-name">{{ item.tipo_publico }}</h3></div><p class="product-price">{{ item.precio|ars_currency }}</p></div>
+            {% if item.colores_disponibles %}<div class="product-fact"><span>Colores disponibles</span><strong>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</strong></div>{% endif %}
+            <div class="product-actions"><button class="btn btn-detail" type="button" data-detail>Ver detalles</button><a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a></div></div>
+            <template data-product-detail><article class="detail-product"><div class="detail-product-media"><img src="{{ item.foto_publica|catalog_image_url }}" alt="{{ item.tipo_publico }}"></div><div class="detail-product-copy"><h2>{{ item.tipo_publico }}</h2>{% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}</div></article></template>
           </article>
         {% endfor %}
 
@@ -384,6 +390,16 @@
       WhatsApp
     </a>
   </aside>
+  <script>
+    (() => {
+      const hero = document.querySelector('.hero');
+      const bar = document.querySelector('.sticky-conversion');
+      if (!hero || !bar) return;
+      const updateBar = () => bar.classList.toggle('is-visible', window.scrollY > hero.offsetHeight - 80);
+      addEventListener('scroll', updateBar, {passive: true});
+      updateBar();
+    })();
+  </script>
 
   <dialog class="look-dialog" id="look-dialog" aria-label="Detalle del producto">
     <form method="dialog" class="dialog-shell look-shell">
