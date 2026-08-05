@@ -8,6 +8,7 @@ from django.urls import reverse
 from alquileres.models import Alquiler, Cliente
 from alquileres.services import regularizar_saldos_de_cerrados
 from cuentas.models import PerfilUsuario
+from .forms import DivisionBienesForm
 from .models import DivisionBienes, Gasto, MovimientoFinanciero
 from .services import registrar_movimiento, registrar_saldo, registrar_sena, resumen_movimientos
 
@@ -131,6 +132,28 @@ class MovimientosFinancierosTests(TestCase):
             resumen_movimientos(incluir_divisiones=False)["saldo"],
             Decimal("100000"),
         )
+
+    def test_division_sin_reparto_manual_se_completa_cincuenta_cincuenta(self):
+        form = DivisionBienesForm(data={
+            "fecha": date.today().isoformat(),
+            "monto_total": "10001",
+            "para_tade": "",
+            "para_bauti": "",
+            "notas": "",
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["para_tade"], Decimal("5000.50"))
+        self.assertEqual(form.cleaned_data["para_bauti"], Decimal("5000.50"))
+
+    def test_division_admite_reparto_manual(self):
+        form = DivisionBienesForm(data={
+            "fecha": date.today().isoformat(),
+            "monto_total": "10000",
+            "para_tade": "6000",
+            "para_bauti": "4000",
+            "notas": "",
+        })
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_planilla_movimientos_es_privada_y_renderiza(self):
         response = self.client.get(reverse("gastos:movimientos"))

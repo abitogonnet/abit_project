@@ -75,11 +75,13 @@
         <div class="col-3 ab-field">
           <label class="ab-lab" for="{{ form.para_tade.id_for_label }}">Para Tade</label>
           {{ form.para_tade }}
+          <span class="ab-small">Se completa en 50% y podés modificarlo.</span>
           {% if form.para_tade.errors %}<div class="ab-field-errors">{{ form.para_tade.errors }}</div>{% endif %}
         </div>
         <div class="col-3 ab-field">
           <label class="ab-lab" for="{{ form.para_bauti.id_for_label }}">Para Bauti</label>
           {{ form.para_bauti }}
+          <span class="ab-small">Se completa en 50% y podés modificarlo.</span>
           {% if form.para_bauti.errors %}<div class="ab-field-errors">{{ form.para_bauti.errors }}</div>{% endif %}
         </div>
         <div class="col-12 ab-field">
@@ -117,4 +119,29 @@
     </aside>
   </form>
 </div>
+<script>
+(function () {
+  const total = document.getElementById("{{ form.monto_total.id_for_label }}");
+  const tade = document.getElementById("{{ form.para_tade.id_for_label }}");
+  const bauti = document.getElementById("{{ form.para_bauti.id_for_label }}");
+  if (!total || !tade || !bauti) return;
+
+  function repartirMitad() {
+    const valor = Number.parseFloat(String(total.value || "").replace(",", "."));
+    if (!Number.isFinite(valor) || valor < 0) {
+      tade.value = "";
+      bauti.value = "";
+      return;
+    }
+    const parteTade = Math.round((valor / 2) * 100) / 100;
+    const parteBauti = Math.round((valor - parteTade) * 100) / 100;
+    tade.value = parteTade.toFixed(2);
+    bauti.value = parteBauti.toFixed(2);
+  }
+
+  total.addEventListener("input", repartirMitad);
+  total.addEventListener("change", repartirMitad);
+  if (total.value && !tade.value && !bauti.value) repartirMitad();
+})();
+</script>
 {% endblock %}

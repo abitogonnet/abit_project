@@ -121,6 +121,11 @@ class DivisionBienesForm(forms.ModelForm):
             "notas": forms.TextInput(attrs={"class": "ab-inp", "placeholder": "Opcional"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["para_tade"].required = False
+        self.fields["para_bauti"].required = False
+
     def clean(self):
         cleaned = super().clean()
         total = Decimal(cleaned.get("monto_total") or 0)
@@ -131,12 +136,14 @@ class DivisionBienesForm(forms.ModelForm):
             self.add_error("monto_total", "El total no puede ser negativo.")
             return cleaned
 
-        # Permitimos que cargues 1 de los dos y el otro se complete solo.
+        # Sin reparto manual, se propone 50/50. Si se edita solo un lado,
+        # el restante se calcula como complemento exacto del total.
         if tade is None and bauti is None:
-            raise ValidationError("Cargá al menos uno: Tade o Bauti.")
-
-        tade_val = Decimal(tade or 0)
-        bauti_val = Decimal(bauti or 0)
+            tade_val = (total / Decimal("2")).quantize(Decimal("0.01"))
+            bauti_val = total - tade_val
+        else:
+            tade_val = Decimal(tade or 0)
+            bauti_val = Decimal(bauti or 0)
 
         if tade is None and bauti is not None:
             tade_val = total - bauti_val
