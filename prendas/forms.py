@@ -96,7 +96,7 @@ CAMISA_TALLES = (
 )
 CAMISA_SACO_TALLES = SACO_TALLES
 PANTALON_NUM = _nums(2, 74, 2)
-ZAPATOS_NUM = _nums(30, 50, 2)
+ZAPATOS_NUM = _nums(30, 46, 1)
 
 GENERIC_NUM = _nums(0, 76, 1)
 GENERIC_TALLES = GENERIC_NUM + LETRAS_XS_5XL
@@ -272,7 +272,7 @@ class PrendaForm(forms.ModelForm):
 
         if cat == Prenda.C_ZAPATOS:
             if talle not in ZAPATOS_NUM:
-                self.add_error("talle", "Para zapatos, elegí un talle par entre 30 y 50.")
+                self.add_error("talle", "Para zapatos, elegí un talle entre 30 y 46.")
             return cleaned
 
         if cat == Prenda.C_PANTALON:

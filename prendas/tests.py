@@ -10,6 +10,21 @@ from .models import Prenda
 
 
 class PrendaFormTests(TestCase):
+    def test_zapatos_usan_talles_consecutivos_del_30_al_46(self):
+        form = PrendaForm(data={
+            "categoria": Prenda.C_ZAPATOS,
+            "marca": "Boiler",
+            "color": "Negro",
+            "talle": "35",
+            "origen": "",
+            "notas": "",
+        })
+        self.assertTrue(form.is_valid())
+        self.assertEqual(
+            [value for value, _label in form.fields["talle"].choices if value],
+            [str(numero) for numero in range(30, 47)],
+        )
+
     def test_model_fuerza_origen_automatico_incluso_con_valor_incorrecto(self):
         casos = {
             Prenda.C_CAMISA: Prenda.O_IMP,
