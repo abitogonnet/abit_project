@@ -167,6 +167,21 @@ class MovimientosFinancierosTests(TestCase):
         self.client.force_login(empleado)
         self.assertEqual(self.client.get(reverse("gastos:movimientos")).status_code, 403)
 
+    def test_planilla_renderiza_movimiento_sin_usuario_como_sistema(self):
+        registrar_movimiento(
+            clave="movimiento-sistema",
+            concepto="Regularización",
+            referencia="Movimiento histórico",
+            ingreso=Decimal("1000"),
+            usuario=None,
+        )
+
+        response = self.client.get(reverse("gastos:movimientos"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Movimiento histórico")
+        self.assertContains(response, "Sistema")
+
     def test_finanzas_muestra_solo_cuatro_indicadores_principales(self):
         response = self.client.get(reverse("gastos:home"))
         self.assertEqual(response.status_code, 200)
