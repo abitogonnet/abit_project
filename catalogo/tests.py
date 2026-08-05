@@ -646,6 +646,21 @@ class CatalogoStockSizeTests(TestCase):
         self.assertEqual(talles["sacos"], ["M", "L", "XL"])
         self.assertEqual(talles["pantalones"], ["42", "44", "50"])
 
+    def test_presentacion_publica_agrupa_solo_ninos_y_adultos(self):
+        traje = Traje(
+            talles_saco_stock=["48", "S", "44", "XS", "46", "4", "XL"],
+            talles_pantalon_stock=["42", "38", "4", "40", "36"],
+        )
+
+        self.assertEqual(traje.talles_saco_grupos, {
+            "ninos": ["4", "44"],
+            "adultos": ["XS", "S", "XL", "46", "48"],
+        })
+        self.assertEqual(traje.talles_pantalon_grupos, {
+            "ninos": ["4", "36", "38"],
+            "adultos": ["40", "42"],
+        })
+
     def test_unica_unidad_danada_no_publica_talle_pero_otra_util_si(self):
         self.prenda("SA-D-1", Prenda.C_SACO, "S", Prenda.E_DAN)
         self.prenda("SA-D-2", Prenda.C_SACO, "M", Prenda.E_DAN)

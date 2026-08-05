@@ -116,23 +116,22 @@ class Traje(StockColorsMixin, NormalizedImageFieldsMixin):
         return colores
 
     @staticmethod
-    def _agrupar_talles(values):
+    def _agrupar_talles(values, limite_adulto):
         letras_orden = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]
         numeros = sorted({int(v) for v in values if str(v).isdigit()})
         letras = [v for v in letras_orden if v in {str(x).upper() for x in values}]
         return {
-            "ninos": [str(v) for v in numeros if 2 <= v <= 42],
-            "letras": letras,
-            "adultos": [str(v) for v in numeros if 44 <= v <= 76],
+            "ninos": [str(v) for v in numeros if v < limite_adulto],
+            "adultos": letras + [str(v) for v in numeros if v >= limite_adulto],
         }
 
     @property
     def talles_saco_grupos(self):
-        return self._agrupar_talles(self.talles_saco_stock)
+        return self._agrupar_talles(self.talles_saco_stock, 46)
 
     @property
     def talles_pantalon_grupos(self):
-        return self._agrupar_talles(self.talles_pantalon_stock)
+        return self._agrupar_talles(self.talles_pantalon_stock, 40)
 
 
 class TalleColorTraje(models.Model):

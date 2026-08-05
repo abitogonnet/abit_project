@@ -34,10 +34,8 @@
       <div class="product-fact">
         <span>Saco</span>
         <strong>
-          {% if item.linea == 'NACIONAL' and item.talles_saco_stock %}
-            {% with grupos=item.talles_saco_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.letras %}Adultos — Letras: {{ grupos.letras|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos — Números: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}
-          {% elif item.talles_saco_stock %}
-            {{ item.talles_saco_stock|join:" · " }}
+          {% if item.talles_saco_stock %}
+            {% with grupos=item.talles_saco_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}
           {% else %}
             A confirmar
           {% endif %}
@@ -46,10 +44,8 @@
       <div class="product-fact">
         <span>Pantalón</span>
         <strong>
-          {% if item.linea == 'NACIONAL' and item.talles_pantalon_stock %}
-            {% with grupos=item.talles_pantalon_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.letras %}Adultos — Letras: {{ grupos.letras|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos — Números: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}
-          {% elif item.talles_pantalon_stock %}
-            {{ item.talles_pantalon_stock|join:" · " }}
+          {% if item.talles_pantalon_stock %}
+            {% with grupos=item.talles_pantalon_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}
           {% else %}
             A confirmar
           {% endif %}
@@ -93,11 +89,11 @@
           {% endif %}
           <div>
             <dt>Talles de saco</dt>
-            <dd>{% if item.talles_saco_stock %}{{ item.talles_saco_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</dd>
+            <dd>{% if item.talles_saco_stock %}{% with grupos=item.talles_saco_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}{% else %}A confirmar en la visita{% endif %}</dd>
           </div>
           <div>
             <dt>Talles de pantalón</dt>
-            <dd>{% if item.talles_pantalon_stock %}{{ item.talles_pantalon_stock|join:" · " }}{% else %}A confirmar en la visita{% endif %}</dd>
+            <dd>{% if item.talles_pantalon_stock %}{% with grupos=item.talles_pantalon_grupos %}{% if grupos.ninos %}Niños: {{ grupos.ninos|join:" · " }}<br>{% endif %}{% if grupos.adultos %}Adultos: {{ grupos.adultos|join:" · " }}{% endif %}{% endwith %}{% else %}A confirmar en la visita{% endif %}</dd>
           </div>
           {% if item.descripcion %}
             <div><dt>Descripción</dt><dd>{{ item.descripcion }}</dd></div>
