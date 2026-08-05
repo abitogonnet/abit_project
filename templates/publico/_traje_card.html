@@ -1,4 +1,4 @@
-{% load catalog_images %}
+{% load catalog_images static %}
 <article
   class="product-card is-entering"
   data-line="{{ line_slug }}"
@@ -10,6 +10,7 @@
       src="{{ item.foto_modelo|catalog_image_url }}"
       alt="Traje {{ line_label|lower }} {{ item.tela }}"
       loading="lazy"
+      onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'"
     >
     <span class="product-badge">{{ line_label }}</span>
   </div>
@@ -68,15 +69,16 @@
         <img
           src="{{ item.foto_modelo|catalog_image_url }}"
           alt="Traje {{ item.tela }}"
+          onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'"
         >
       </div>
       {% if item.foto_colgado or item.imagenes_galeria.all %}
         <div class="detail-gallery">
           {% if item.foto_colgado %}
-            <img src="{{ item.foto_colgado|catalog_image_url }}" alt="{{ item.tela }} colgado">
+            <button type="button" data-gallery-image="{{ item.foto_colgado|catalog_image_url }}"><img src="{{ item.foto_colgado|catalog_image_url }}" alt="{{ item.tela }} colgado" onerror="this.closest('button').hidden=true"></button>
           {% endif %}
           {% for foto in item.imagenes_galeria.all %}
-            <img src="{{ foto.imagen|catalog_image_url }}" alt="{{ item.tela }} — foto adicional">
+            <button type="button" data-gallery-image="{{ foto.imagen|catalog_image_url }}"><img src="{{ foto.imagen|catalog_image_url }}" alt="{{ item.tela }} — foto adicional" onerror="this.closest('button').hidden=true"></button>
           {% endfor %}
         </div>
       {% endif %}

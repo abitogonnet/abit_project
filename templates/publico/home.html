@@ -147,7 +147,7 @@
           <article class="product-card is-entering" data-line="camisa" style="--fabric:#6f665b">
             <div class="product-media">
               <div class="image-fallback" aria-hidden="true"><strong>Camisa</strong></div>
-              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Camisa ABITO" loading="lazy">
+              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Camisa ABITO" loading="lazy" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'">
               <span class="product-badge">Camisa</span>
             </div>
             <div class="product-body">
@@ -169,7 +169,8 @@
             </div>
             <template data-product-detail>
               <article class="detail-product">
-                <div class="detail-product-media"><img src="{{ item.foto_modelo|catalog_image_url }}" alt="Camisa ABITO"></div>
+                <div class="detail-product-media"><img src="{{ item.foto_modelo|catalog_image_url }}" alt="Camisa ABITO" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'"></div>
+                {% if item.foto_colgado %}<div class="detail-gallery"><button type="button" data-gallery-image="{{ item.foto_colgado|catalog_image_url }}"><img src="{{ item.foto_colgado|catalog_image_url }}" alt="Camisa colgada" onerror="this.closest('button').hidden=true"></button></div>{% endif %}
                 <div class="detail-product-copy">
                   <p class="product-kind">Complemento</p>
                   <h2>Camisa</h2>
@@ -188,7 +189,7 @@
           <article class="product-card is-entering" data-line="zapato" style="--fabric:#3b332b">
             <div class="product-media">
               <div class="image-fallback" aria-hidden="true"><strong>Zapatos</strong></div>
-              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Zapatos ABITO" loading="lazy">
+              <img src="{{ item.foto_modelo|catalog_image_url }}" alt="Zapatos ABITO" loading="lazy" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'">
               <span class="product-badge">Zapatos</span>
             </div>
             <div class="product-body">
@@ -210,7 +211,8 @@
             </div>
             <template data-product-detail>
               <article class="detail-product">
-                <div class="detail-product-media"><img src="{{ item.foto_modelo|catalog_image_url }}" alt="Zapatos ABITO"></div>
+                <div class="detail-product-media"><img src="{{ item.foto_modelo|catalog_image_url }}" alt="Zapatos ABITO" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'"></div>
+                {% if item.foto_colgado %}<div class="detail-gallery"><button type="button" data-gallery-image="{{ item.foto_colgado|catalog_image_url }}"><img src="{{ item.foto_colgado|catalog_image_url }}" alt="Zapato — segunda foto" onerror="this.closest('button').hidden=true"></button></div>{% endif %}
                 <div class="detail-product-copy">
                   <p class="product-kind">Complemento</p>
                   <h2>Zapatos</h2>
@@ -227,11 +229,11 @@
 
         {% for item in otros_productos %}
           <article class="product-card is-entering" data-line="otro" data-product-type="producto">
-            <div class="product-media"><img src="{{ item.foto_publica|catalog_image_url }}" alt="{{ item.tipo_publico }}" loading="lazy"><span class="product-badge">{{ item.tipo_publico }}</span></div>
+            <div class="product-media"><img src="{{ item.foto_publica|catalog_image_url }}" alt="{{ item.tipo_publico }}" loading="lazy" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'"><span class="product-badge">{{ item.tipo_publico }}</span></div>
             <div class="product-body"><div class="product-top"><div><p class="product-kind">Accesorio</p><h3 class="product-name">{{ item.tipo_publico }}</h3></div><p class="product-price">{{ item.precio|ars_currency }}</p></div>
             {% if item.colores_disponibles %}<div class="product-fact"><span>Colores disponibles</span><strong>{% for color in item.colores_disponibles %}{{ color.nombre }}{% if not forloop.last %} · {% endif %}{% endfor %}</strong></div>{% endif %}
             <div class="product-actions"><button class="btn btn-detail" type="button" data-detail>Ver detalles</button><a class="btn btn-primary" href="{% url 'visitas:reservar' %}">Reservar</a></div></div>
-            <template data-product-detail><article class="detail-product"><div class="detail-product-media"><img src="{{ item.foto_publica|catalog_image_url }}" alt="{{ item.tipo_publico }}"></div><div class="detail-product-copy"><h2>{{ item.tipo_publico }}</h2>{% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}</div></article></template>
+            <template data-product-detail><article class="detail-product"><div class="detail-product-media"><img src="{{ item.foto_publica|catalog_image_url }}" alt="{{ item.tipo_publico }}" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'"></div>{% if item.foto_2 %}<div class="detail-gallery"><button type="button" data-gallery-image="{{ item.foto_2|catalog_image_url }}"><img src="{{ item.foto_2|catalog_image_url }}" alt="{{ item.tipo_publico }} — segunda foto" onerror="this.closest('button').hidden=true"></button></div>{% elif item.foto_colgado %}<div class="detail-gallery"><button type="button" data-gallery-image="{{ item.foto_colgado|catalog_image_url }}"><img src="{{ item.foto_colgado|catalog_image_url }}" alt="{{ item.tipo_publico }} — segunda foto" onerror="this.closest('button').hidden=true"></button></div>{% endif %}<div class="detail-product-copy"><h2>{{ item.tipo_publico }}</h2>{% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}</div></article></template>
           </article>
         {% endfor %}
 
@@ -575,6 +577,13 @@
       const target = document.querySelector("#look-content");
       if (!source || !target) return;
       target.replaceChildren(source.content.cloneNode(true));
+
+      const mainImage = target.querySelector(".detail-product-media img");
+      target.querySelectorAll("[data-gallery-image]").forEach((thumbnail) => {
+        thumbnail.addEventListener("click", () => {
+          if (mainImage) mainImage.src = thumbnail.dataset.galleryImage;
+        });
+      });
 
       if (typeof lookDialog.showModal === "function") lookDialog.showModal();
     }

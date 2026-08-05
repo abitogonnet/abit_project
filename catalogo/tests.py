@@ -471,9 +471,9 @@ class CatalogoMobileImageUploadTests(TestCase):
                 joined_logs = "\n".join(logs.output)
                 self.assertIn("favorito-principal.heic", joined_logs)
                 self.assertIn("content_type='image/heic'", joined_logs)
-                self.assertIn("existe=True", joined_logs)
+                self.assertNotIn("Imagen post-guardado", joined_logs)
 
-    def test_no_confirma_producto_si_storage_no_conserva_la_foto(self):
+    def test_no_hace_exists_remoto_despues_de_guardar(self):
         user = get_user_model().objects.create_superuser(
             username="storage-owner",
             email="storage@example.com",
@@ -486,21 +486,15 @@ class CatalogoMobileImageUploadTests(TestCase):
             "foto_colgado": self.image_upload("colgado.jpg", "JPEG"),
         })
 
-        with patch(
-            "catalogo.views._verify_received_images",
-            side_effect=OSError(
-                "No pudimos guardar la foto principal. "
-                "El almacenamiento no confirmó el archivo."
-            ),
-        ):
+        with patch("catalogo.views._verify_received_images") as verify:
             response = self.client.post(
                 reverse("catalogo:crear", args=["traje"]),
                 data,
             )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No pudimos guardar la foto principal")
-        self.assertEqual(Traje.objects.count(), 0)
+        self.assertEqual(response.status_code, 302)
+        verify.assert_not_called()
+        self.assertEqual(Traje.objects.count(), 1)
 
     @override_settings(IS_RENDER=True, MEDIA_ROOT_ENV="")
     def test_produccion_bloquea_upload_en_filesystem_efimero(self):
@@ -548,15 +542,16 @@ class CatalogoMobileImageUploadTests(TestCase):
 
         self.assertEqual(Traje.objects.count(), 0)
 
-    def test_imagen_faltante_usa_placeholder_sin_icono_roto(self):
+    def test_render_publico_no_consulta_exists_y_deja_fallback_al_navegador(self):
         traje = Traje(
             foto_modelo="trajes/archivo-que-ya-no-existe.jpg",
         )
 
-        with self.assertLogs("catalogo.templatetags.catalog_images", level="WARNING"):
+        with patch.object(traje.foto_modelo.storage, "exists") as exists:
             url = catalog_image_url(traje.foto_modelo)
 
-        self.assertTrue(url.endswith("img/catalog-placeholder.svg"))
+        exists.assert_not_called()
+        self.assertIn("trajes/archivo-que-ya-no-existe.jpg", url)
 
     @override_settings(MEDIA_URL="/media/")
     def test_editar_traje_reemplaza_imagenes_perdidas_sin_recrear_producto(self):

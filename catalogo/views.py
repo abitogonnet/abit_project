@@ -12,7 +12,7 @@ from cuentas.access import roles_requeridos
 from cuentas.models import PerfilUsuario
 
 from .forms import MODEL_FORMS
-from .models import Camisa, Chaleco, Cinturon, Color, Combo, Corbata, Traje, Zapato
+from .models import Camisa, Chaleco, Cinturon, Color, Combo, Corbata, ImagenTraje, Traje, Zapato
 from .stock_sizes import talles_stock_para_color
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ MODELOS = {
     model._meta.model_name: model
     for model in (Traje, Chaleco, Cinturon, Corbata, Camisa, Zapato, Combo)
 }
+IMAGE_MODELS = (*MODELOS.values(), ImagenTraje)
 permitido = roles_requeridos(PerfilUsuario.PROPIETARIO, PerfilUsuario.ADMINISTRADOR)
 
 
@@ -135,6 +136,36 @@ def _verify_received_images(form, received_fields):
         )
 
 
+def _image_names(instance):
+    return {
+        field.name: getattr(getattr(instance, field.name, None), "name", "")
+        for field in instance._meta.fields
+        if field.get_internal_type() == "ImageField"
+    }
+
+
+def _name_is_referenced(name):
+    if not name:
+        return False
+    for model in IMAGE_MODELS:
+        for field in model._meta.fields:
+            if field.get_internal_type() == "ImageField" and model.objects.filter(
+                **{field.name: name}
+            ).exists():
+                return True
+    return False
+
+
+def _delete_unreferenced(names):
+    for name in set(filter(None, names)):
+        if _name_is_referenced(name):
+            continue
+        try:
+            default_storage.delete(name)
+        except Exception:
+            logger.exception("No se pudo limpiar archivo huérfano: %r", name)
+
+
 @permitido
 def gestion(request):
     grupos = [
@@ -151,6 +182,7 @@ def editar(request, tipo, pk=None):
         from django.http import Http404
         raise Http404
     instance = get_object_or_404(model, pk=pk) if pk else None
+    previous_names = _image_names(instance) if instance else {}
     if request.method == "POST":
         _log_upload_diagnostics(request, tipo)
         form = MODEL_FORMS[tipo](request.POST, request.FILES, instance=instance)
@@ -176,8 +208,14 @@ def editar(request, tipo, pk=None):
             try:
                 with transaction.atomic():
                     form.save()
-                    _verify_received_images(form, set(request.FILES.keys()))
             except Exception as exc:
+                new_names = list(_image_names(form.instance).values())
+                new_names.extend(
+                    image.name for image in getattr(form, "saved_gallery_images", [])
+                )
+                _delete_unreferenced(
+                    name for name in new_names if name not in previous_names.values()
+                )
                 logger.exception(
                     "Falló el guardado del catálogo: tipo=%s producto=%s "
                     "storage=%s",
@@ -189,6 +227,10 @@ def editar(request, tipo, pk=None):
                     form.instance.pk = None
                 form.add_error(None, str(exc))
             else:
+                current_names = set(_image_names(form.instance).values())
+                _delete_unreferenced(
+                    name for name in previous_names.values() if name not in current_names
+                )
                 messages.success(
                     request,
                     "Producto guardado y actualizado en el catálogo público.",

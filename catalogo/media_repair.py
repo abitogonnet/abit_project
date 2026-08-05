@@ -59,9 +59,14 @@ def normalize_stored_image_name(raw_name: str) -> str:
     if parsed.scheme and parsed.netloc:
         cleaned = parsed.path
 
-    for prefix in _known_media_prefixes():
-        if cleaned.startswith(prefix):
-            cleaned = cleaned[len(prefix):]
+    prefixes = _known_media_prefixes()
+    while True:
+        previous = cleaned
+        for prefix in prefixes:
+            if cleaned.startswith(prefix):
+                cleaned = cleaned[len(prefix):]
+                break
+        if cleaned == previous:
             break
 
     cleaned = cleaned.lstrip("/")
@@ -74,7 +79,7 @@ def normalize_stored_image_name(raw_name: str) -> str:
     return "/".join(parts)
 
 
-def repair_catalog_media(*, seed_roots: Iterable[Path] | None = None) -> dict:
+def repair_catalog_media(*, seed_roots: Iterable[Path] | None = None, dry_run=False) -> dict:
     seed_paths = _normalize_seed_roots(seed_roots)
     summary = {
         "checked_fields": 0,
@@ -118,6 +123,10 @@ def repair_catalog_media(*, seed_roots: Iterable[Path] | None = None) -> dict:
                     )
                     continue
 
+                if dry_run:
+                    summary["copied_files"] += 1
+                    continue
+
                 with source_path.open("rb") as source_file:
                     saved_name = image_field.storage.save(
                         image_field.name,
@@ -131,7 +140,7 @@ def repair_catalog_media(*, seed_roots: Iterable[Path] | None = None) -> dict:
 
                 summary["copied_files"] += 1
 
-            if dirty_fields:
+            if dirty_fields and not dry_run:
                 instance.save(update_fields=dirty_fields)
 
     return summary

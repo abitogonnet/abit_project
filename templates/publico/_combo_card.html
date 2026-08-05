@@ -1,4 +1,4 @@
-{% load catalog_images %}
+{% load catalog_images static %}
 <article
   class="product-card is-entering"
   data-line="combo"
@@ -6,7 +6,7 @@
   style="--fabric:#6f1f2c"
 >
   <div class="product-media">
-    <img src="{{ combo.foto|catalog_image_url }}" alt="{{ combo.nombre }}" loading="lazy">
+    <img src="{{ combo.foto|catalog_image_url }}" alt="{{ combo.nombre }}" loading="lazy" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'">
     <span class="product-badge">Combo</span>
   </div>
   <div class="product-body">
@@ -33,7 +33,7 @@
   <template data-product-detail>
     <article class="detail-product">
       <div class="detail-product-media">
-        <img src="{{ combo.foto|catalog_image_url }}" alt="{{ combo.nombre }}">
+        <img src="{{ combo.foto|catalog_image_url }}" alt="{{ combo.nombre }}" onerror="this.onerror=null;this.src='{% static 'img/catalog-placeholder.svg' %}'">
       </div>
       <div class="detail-product-copy">
         <p class="product-kind">Combo</p>

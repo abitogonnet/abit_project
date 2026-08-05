@@ -3,6 +3,8 @@ from django.core.files.storage import default_storage
 from django.core.management.base import BaseCommand
 from django.db import connection, models
 
+from catalogo.media_repair import normalize_stored_image_name
+
 
 class Command(BaseCommand):
     help = (
@@ -45,10 +47,11 @@ class Command(BaseCommand):
                         f"{model._meta.label}#{instance.pk}."
                         f"{model_field.name}"
                     )
+                    product_name = str(instance)
                     if not name:
                         missing += 1
                         self.stdout.write(
-                            f"FALTANTE | {reference} | nombre vacío | "
+                            f"FALTANTE | {reference} | producto={product_name!r} | nombre vacío | "
                             f"storage={image.storage.__class__.__name__}"
                         )
                         continue
@@ -63,13 +66,14 @@ class Command(BaseCommand):
                             f"{exc}"
                         )
                         continue
-                    status = "OK" if exists else "FALTANTE"
+                    legacy = normalize_stored_image_name(name) != name
+                    status = "LEGACY" if legacy else ("OK" if exists else "FALTANTE")
                     if exists:
                         ok += 1
                     else:
                         missing += 1
                     self.stdout.write(
-                        f"{status} | {reference} | nombre={name!r} | "
+                        f"{status} | {reference} | producto={product_name!r} | nombre={name!r} | "
                         f"storage={image.storage.__class__.__name__} | "
                         f"exists={exists} | url={url}"
                     )

@@ -217,16 +217,18 @@ class TrajeForm(CatalogoModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=commit)
+        self.saved_gallery_images = []
         if commit:
             inicio = instance.imagenes_galeria.count()
             for index, image in enumerate(
                 self.cleaned_data.get("imagenes_galeria") or []
             ):
-                ImagenTraje.objects.create(
+                gallery = ImagenTraje.objects.create(
                     traje=instance,
                     imagen=image,
                     orden=inicio + index,
                 )
+                self.saved_gallery_images.append(gallery.imagen)
         return instance
 
 
