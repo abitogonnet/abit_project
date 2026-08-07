@@ -685,6 +685,15 @@ class CatalogoStockSizeTests(TestCase):
                 self.assertIn("colores_stock", form.fields)
                 self.assertIn("automáticamente", form.fields["colores_stock"].help_text)
 
+    def test_formulario_camisa_renderiza_colores_reales_del_stock(self):
+        self.prenda("CA-O-1", Prenda.C_CAMISA, "M")
+
+        form = MODEL_FORMS["camisa"]()
+        html = str(form["colores_stock"])
+
+        self.assertIn('type="checkbox"', html)
+        self.assertIn("Gris Topo", html)
+
     def test_unica_unidad_danada_no_publica_talle_pero_otra_util_si(self):
         self.prenda("SA-D-1", Prenda.C_SACO, "S", Prenda.E_DAN)
         self.prenda("SA-D-2", Prenda.C_SACO, "M", Prenda.E_DAN)
