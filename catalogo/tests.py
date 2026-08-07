@@ -661,6 +661,30 @@ class CatalogoStockSizeTests(TestCase):
             "adultos": ["40", "42"],
         })
 
+    def test_otras_categorias_vinculan_talles_reales_por_color(self):
+        self.prenda("CA-C-1", Prenda.C_CAMISA, "M")
+        self.prenda("CA-C-2", Prenda.C_CAMISA, "44")
+        self.prenda("CA-C-3", Prenda.C_CAMISA, "L", Prenda.E_DAN)
+        camisa = Camisa.objects.create(
+            foto_modelo="camisas/modelo.jpg",
+            foto_colgado="camisas/colgado.jpg",
+            precio="25000",
+        )
+        camisa.colores_stock.add(self.color_topo)
+
+        self.assertEqual(camisa.talles_por_color, [{
+            "color": "Gris Topo",
+            "grupos": [{"categoria": "Camisa", "talles": ["M", "44"]}],
+        }])
+
+    def test_formularios_no_piden_talles_manuales_fuera_de_trajes(self):
+        for tipo in ("camisa", "chaleco", "zapato", "corbata", "cinturon"):
+            with self.subTest(tipo=tipo):
+                form = MODEL_FORMS[tipo]()
+                self.assertNotIn("variantes", form.fields)
+                self.assertIn("colores_stock", form.fields)
+                self.assertIn("automáticamente", form.fields["colores_stock"].help_text)
+
     def test_unica_unidad_danada_no_publica_talle_pero_otra_util_si(self):
         self.prenda("SA-D-1", Prenda.C_SACO, "S", Prenda.E_DAN)
         self.prenda("SA-D-2", Prenda.C_SACO, "M", Prenda.E_DAN)

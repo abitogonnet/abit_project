@@ -30,14 +30,14 @@ def home(request):
     camisas = (
         Camisa.objects
         .filter(activo=True)
-        .prefetch_related("talles")
+        .prefetch_related("colores_stock")
         .order_by("-creado")
     )
 
     zapatos = (
         Zapato.objects
         .filter(activo=True)
-        .prefetch_related("talles")
+        .prefetch_related("colores_stock")
         .order_by("-creado")
     )
 

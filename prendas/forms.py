@@ -88,14 +88,14 @@ LETRAS_XS_4XL = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
 AIRES_SACO_NUM = _nums(22, 76, 2)
 AIRES_CHAL_NUM = _nums(22, 70, 2)
 
-SACO_TALLES = _nums(2, 16, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(50, 74, 2)
+SACO_TALLES = _nums(2, 16, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(50, 76, 2)
 CAMISA_TALLES = (
     _nums(2, 16, 2)
     + ["XS", "S", "M", "L", "XL", "2XL", "3XL"]
     + _nums(40, 80, 2)
 )
 CAMISA_SACO_TALLES = SACO_TALLES
-PANTALON_NUM = _nums(2, 74, 2)
+PANTALON_NUM = _nums(2, 76, 2)
 ZAPATOS_NUM = _nums(30, 46, 1)
 
 GENERIC_NUM = _nums(0, 76, 1)
@@ -277,7 +277,7 @@ class PrendaForm(forms.ModelForm):
 
         if cat == Prenda.C_PANTALON:
             if talle not in PANTALON_NUM:
-                self.add_error("talle", "Para pantalón, elegí un talle par entre 2 y 74.")
+                self.add_error("talle", "Para pantalón, elegí un talle par entre 2 y 76.")
             return cleaned
 
         if cat == Prenda.C_CHALECO:

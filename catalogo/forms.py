@@ -95,6 +95,10 @@ class CatalogoModelForm(forms.ModelForm):
         if "colores_stock" in self.fields:
             self.fields["colores_stock"].queryset = stock_colors_for_model(self._meta.model)
             self.fields["colores_stock"].widget = forms.CheckboxSelectMultiple()
+            self.fields["colores_stock"].help_text = (
+                "Elegí colores existentes en Stock. Los talles se vinculan "
+                "automáticamente por color y se actualizan con el inventario."
+            )
         for name, field in list(self.fields.items()):
             if isinstance(field, forms.ImageField):
                 self.fields[name] = CatalogImageField(
@@ -176,16 +180,6 @@ MODEL_FORMS = {
     model._meta.model_name: form_for(model)
     for model in (Traje, Chaleco, Cinturon, Corbata, Camisa, Zapato, Combo)
 }
-MODEL_FORMS.update({
-    "traje": variant_form(
-        Traje,
-        TalleColorTraje,
-        ("color", "talle_saco", "talle_pantalon"),
-    ),
-    "chaleco": variant_form(Chaleco, TalleColorChaleco, ("color", "talle")),
-    "camisa": variant_form(Camisa, TalleColorCamisa, ("color", "talle")),
-    "zapato": variant_form(Zapato, TalleColorZapato, ("color", "talle")),
-})
 
 
 class TrajeForm(CatalogoModelForm):

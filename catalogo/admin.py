@@ -108,7 +108,6 @@ class ChalecoAdmin(BaseCatalogAdmin):
     list_display = ("id", "precio", "activo", "creado")
     list_filter = ("activo",)
     search_fields = ("descripcion",)
-    inlines = [TalleColorChalecoInline]
     fields = ("descripcion", "colores_stock", "precio", "activo", "foto_modelo", "foto_colgado")
 
 
@@ -133,7 +132,6 @@ class CamisaAdmin(BaseCatalogAdmin):
     list_display = ("id", "precio", "activo", "creado")
     list_filter = ("activo",)
     search_fields = ("descripcion",)
-    inlines = [TalleColorCamisaInline]
     fields = ("descripcion", "colores_stock", "precio", "activo", "foto_modelo", "foto_colgado")
 
 
@@ -142,7 +140,6 @@ class ZapatoAdmin(BaseCatalogAdmin):
     list_display = ("id", "precio", "activo", "creado")
     list_filter = ("activo",)
     search_fields = ("descripcion",)
-    inlines = [TalleColorZapatoInline]
     fields = ("descripcion", "colores_stock", "precio", "activo", "foto_modelo", "foto_colgado")
 
 

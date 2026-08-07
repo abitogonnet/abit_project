@@ -1,9 +1,18 @@
 import re
 
-from prendas.forms import SACO_TALLES
+from prendas.forms import SACO_TALLES, talle_options_for
 from prendas.models import Color, Prenda
 
 from .models import Traje
+
+
+CATEGORIES_BY_MODEL = {
+    "chaleco": (Prenda.C_CHALECO,),
+    "camisa": (Prenda.C_CAMISA,),
+    "zapato": (Prenda.C_ZAPATOS,),
+    "corbata": (Prenda.C_CORBATA,),
+    "cinturon": (Prenda.C_CINTURON,),
+}
 
 
 def _unique(values):
@@ -31,6 +40,38 @@ def ordenar_talles_saco(values):
 
 def ordenar_talles_pantalon(values):
     return sorted(_unique(values), key=_natural_key)
+
+
+def talles_stock_por_color(model, colors):
+    categories = CATEGORIES_BY_MODEL.get(model._meta.model_name, ())
+    result = []
+    useful_stock = Prenda.objects.exclude(estado=Prenda.E_DAN)
+    category_labels = dict(Prenda.CATEGORIAS)
+    for color in colors:
+        groups = []
+        for category in categories:
+            normalized_color = Prenda.normalize_color_value(color.nombre, category)
+            sizes = list(useful_stock.filter(
+                categoria=category,
+                color=normalized_color,
+            ).exclude(talle="").values_list("talle", flat=True))
+            option_order = {
+                value: index
+                for index, value in enumerate(talle_options_for(category, ""))
+            }
+            sizes = sorted(_unique(sizes), key=lambda value: (
+                0 if value in option_order else 1,
+                option_order.get(value, 0),
+                _natural_key(value),
+            ))
+            if sizes:
+                groups.append({
+                    "categoria": category_labels.get(category, category.title()),
+                    "talles": sizes,
+                })
+        if groups:
+            result.append({"color": color.nombre, "grupos": groups})
+    return result
 
 
 def talles_stock_para_color(color):

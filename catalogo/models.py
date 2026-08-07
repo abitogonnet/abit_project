@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
+from django.utils.functional import cached_property
 
 from core.models import ConfiguracionSitio
 from prendas.models import Color
@@ -72,6 +73,13 @@ class StockColorsMixin(models.Model):
             if image:
                 return image
         return None
+
+    @cached_property
+    def talles_por_color(self):
+        if not self.pk:
+            return []
+        from .stock_sizes import talles_stock_por_color
+        return talles_stock_por_color(self.__class__, self.colores_disponibles)
 
 
 class Traje(StockColorsMixin, NormalizedImageFieldsMixin):
