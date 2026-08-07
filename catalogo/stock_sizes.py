@@ -64,7 +64,17 @@ def talles_stock_por_color(model, colors):
                 option_order.get(value, 0),
                 _natural_key(value),
             ))
-            if sizes:
+            if category == Prenda.C_CAMISA:
+                children = [
+                    size for size in sizes
+                    if size.isdigit() and int(size) <= 16
+                ]
+                adults = [size for size in sizes if size not in children]
+                if children:
+                    groups.append({"categoria": "Niños", "talles": children})
+                if adults:
+                    groups.append({"categoria": "Adultos", "talles": adults})
+            elif sizes:
                 groups.append({
                     "categoria": category_labels.get(category, category.title()),
                     "talles": sizes,

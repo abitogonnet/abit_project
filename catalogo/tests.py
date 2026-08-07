@@ -662,6 +662,9 @@ class CatalogoStockSizeTests(TestCase):
         })
 
     def test_otras_categorias_vinculan_talles_reales_por_color(self):
+        self.prenda("CA-C-0", Prenda.C_CAMISA, "4")
+        self.prenda("CA-C-00", Prenda.C_CAMISA, "16")
+        self.prenda("CA-C-01", Prenda.C_CAMISA, "S")
         self.prenda("CA-C-1", Prenda.C_CAMISA, "M")
         self.prenda("CA-C-2", Prenda.C_CAMISA, "44")
         self.prenda("CA-C-3", Prenda.C_CAMISA, "L", Prenda.E_DAN)
@@ -674,7 +677,10 @@ class CatalogoStockSizeTests(TestCase):
 
         self.assertEqual(camisa.talles_por_color, [{
             "color": "Gris Topo",
-            "grupos": [{"categoria": "Camisa", "talles": ["M", "44"]}],
+            "grupos": [
+                {"categoria": "Niños", "talles": ["4", "16"]},
+                {"categoria": "Adultos", "talles": ["S", "M", "44"]},
+            ],
         }])
 
     def test_formularios_no_piden_talles_manuales_fuera_de_trajes(self):
