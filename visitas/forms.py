@@ -309,7 +309,7 @@ class BloqueoAgendaForm(forms.ModelForm):
     TIPO_HORARIO = "HORARIO"
     tipo_bloqueo = forms.ChoiceField(
         choices=[(TIPO_DIA, "Bloquear día"), (TIPO_HORARIO, "Bloquear horario")],
-        initial=TIPO_DIA,
+        initial=TIPO_HORARIO,
         widget=forms.RadioSelect,
         label="¿Qué querés bloquear?",
     )

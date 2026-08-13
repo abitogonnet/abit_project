@@ -213,25 +213,6 @@ body.ab-page::after {
 .xp-clicked {
   animation: xp-click-confirm .56s var(--xp-spring) both !important;
 }
-.xp-clicked::after {
-  content: "✓";
-  position: absolute;
-  top: 50%;
-  right: 9px;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1;
-  background: var(--xp-teal);
-  box-shadow: 0 3px 12px rgba(7,94,87,.3);
-  animation: xp-check-pop .5s var(--xp-spring) both;
-}
 .xp-ripple {
   position: absolute;
   border-radius: 50%;
@@ -346,11 +327,6 @@ textarea:focus {
   box-shadow: 0 10px 24px rgba(8,127,115,.28), inset 0 1px rgba(255,255,255,.3);
   transform: translateY(-2px) scale(1.025);
 }
-.ab-slot-bubbles label:has(input:checked)::after {
-  content: "✓";
-  margin-left: 7px;
-  font-size: .78rem;
-}
 .ab-slot-bubbles.is-inactive [id$="modulos_horarios"] label {
   color: rgba(255,255,255,.46) !important;
   border-color: rgba(255,255,255,.1);
@@ -416,11 +392,6 @@ textarea:focus {
   28% { transform: scale(.93); box-shadow: inset 0 3px 8px rgba(0,0,0,.2); }
   62% { transform: scale(1.045); }
   100% { transform: scale(1); }
-}
-@keyframes xp-check-pop {
-  0% { opacity: 0; transform: translateY(-50%) scale(.3) rotate(-25deg); }
-  55% { opacity: 1; transform: translateY(-50%) scale(1.18) rotate(5deg); }
-  100% { opacity: 1; transform: translateY(-50%) scale(1) rotate(0); }
 }
 @keyframes xp-toast-in { from { opacity: 0; transform: translateY(-14px) scale(.96); } }
 

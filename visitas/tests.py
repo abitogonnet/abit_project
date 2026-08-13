@@ -107,6 +107,7 @@ class BloqueosAgendaTests(TestCase):
 
     def test_bloqueo_por_horario_muestra_dos_burbujas_por_turno(self):
         form = BloqueoAgendaForm()
+        self.assertEqual(form["tipo_bloqueo"].value(), "HORARIO")
         html = form.as_p()
         self.assertEqual(html.count('value="17:00|'), 2)
         self.assertEqual(html.count('value="17:30|'), 2)
