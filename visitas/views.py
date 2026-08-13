@@ -448,8 +448,22 @@ def crear_alquiler(request, pk):
 def bloqueos(request):
     form = BloqueoAgendaForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        bloqueo = form.save()
-        registrar_actividad(request, "Bloqueó agenda", Actividad.ALQUILER, objeto=bloqueo)
+        if form.cleaned_data["tipo_bloqueo"] == BloqueoAgendaForm.TIPO_DIA:
+            bloqueos_creados = [form.save()]
+        else:
+            bloqueos_creados = []
+            for seleccion in form.cleaned_data["modulos_horarios"]:
+                hora_texto, _modulo = seleccion.split("|", 1)
+                hora_inicio = datetime.strptime(hora_texto, "%H:%M").time()
+                hora_fin = (datetime.combine(date.today(), hora_inicio) + timedelta(minutes=30)).time()
+                bloqueos_creados.append(BloqueoAgenda.objects.create(
+                    fecha=form.cleaned_data["fecha"],
+                    hora_inicio=hora_inicio,
+                    hora_fin=hora_fin,
+                    modulos=1,
+                    motivo=form.cleaned_data["motivo"],
+                ))
+        registrar_actividad(request, "Bloqueó agenda", Actividad.ALQUILER, objeto=bloqueos_creados[0])
         messages.success(request, "Bloqueo guardado.")
         return redirect("visitas:bloqueos")
     return render(request, "visitas/bloqueos.html", {

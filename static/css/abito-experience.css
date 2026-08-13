@@ -298,6 +298,68 @@ textarea:focus {
   cursor: not-allowed;
 }
 
+.ab-slot-bubbles > div > label:first-child {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 900;
+}
+.ab-slot-bubbles [id$="modulos_horarios"] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.ab-slot-bubbles [id$="modulos_horarios"] > div { min-width: 0; }
+.ab-slot-bubbles [id$="modulos_horarios"] label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid rgba(8,127,115,.2);
+  border-radius: 999px;
+  background: rgba(255,255,255,.76);
+  color: var(--xp-teal-deep);
+  font-size: .86rem;
+  font-weight: 900;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(37,58,50,.06);
+  transition: transform .22s var(--xp-spring), background .22s, color .22s, box-shadow .22s, border-color .22s;
+}
+.ab-slot-bubbles [id$="modulos_horarios"] label:hover {
+  transform: translateY(-2px);
+  border-color: rgba(8,127,115,.48);
+  box-shadow: 0 10px 22px rgba(8,127,115,.13);
+}
+.ab-slot-bubbles input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.ab-slot-bubbles label:has(input:checked) {
+  color: #fff;
+  border-color: var(--xp-teal);
+  background: linear-gradient(135deg, var(--xp-teal), #0baa84);
+  box-shadow: 0 10px 24px rgba(8,127,115,.28), inset 0 1px rgba(255,255,255,.3);
+  transform: translateY(-2px) scale(1.025);
+}
+.ab-slot-bubbles label:has(input:checked)::after {
+  content: "✓";
+  margin-left: 7px;
+  font-size: .78rem;
+}
+.ab-slot-bubbles.is-inactive [id$="modulos_horarios"] label {
+  color: rgba(255,255,255,.46) !important;
+  border-color: rgba(255,255,255,.1);
+  background: rgba(13,20,19,.28);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .ab-table-wrap { border-radius: 20px !important; box-shadow: 0 16px 44px rgba(36,58,50,.07); }
 .ab-table thead { position: sticky; top: 74px; z-index: 5; backdrop-filter: blur(16px); }
 .ab-table tbody tr { transition: background .2s, transform .2s; }
@@ -373,6 +435,7 @@ textarea:focus {
   .ab-home-menu-btn:hover,
   .ab-priority-card:hover,
   .ab-home-movement-card:hover { transform: translateY(-2px); }
+  .ab-slot-bubbles [id$="modulos_horarios"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

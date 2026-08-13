@@ -309,7 +309,26 @@ class BloqueoAgendaForm(forms.ModelForm):
     TIPO_HORARIO = "HORARIO"
     tipo_bloqueo = forms.ChoiceField(
         choices=[(TIPO_DIA, "Bloquear día"), (TIPO_HORARIO, "Bloquear horario")],
-        initial=TIPO_DIA, widget=forms.RadioSelect, label="¿Qué querés bloquear?",
+        initial=TIPO_DIA,
+        widget=forms.RadioSelect,
+        label="¿Qué querés bloquear?",
+    )
+    MODULOS_HORARIOS = [
+        (f"{hora.strftime('%H:%M')}|{modulo}", f"{hora.strftime('%H:%M')} · módulo {modulo}")
+        for hora in HORARIOS_VALIDOS
+        for modulo in (1, 2)
+    ]
+    modulos_horarios = forms.MultipleChoiceField(
+        required=False,
+        choices=MODULOS_HORARIOS,
+        widget=forms.CheckboxSelectMultiple,
+        label="Elegí los módulos que querés bloquear",
+    )
+    modulos = forms.TypedChoiceField(
+        required=False,
+        choices=((1, "1 módulo"), (2, "2 módulos")),
+        coerce=int,
+        widget=forms.HiddenInput(),
     )
 
     class Meta:
@@ -318,18 +337,11 @@ class BloqueoAgendaForm(forms.ModelForm):
         labels = {"modulos": "¿Cuántos módulos querés bloquear por horario?"}
         widgets = {
             "fecha": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-            "hora_inicio": forms.Select(attrs={"class": "ab-sel"}),
-            "hora_fin": forms.Select(attrs={"class": "ab-sel"}),
+            "hora_inicio": forms.HiddenInput(),
+            "hora_fin": forms.HiddenInput(),
             "modulos": forms.Select(attrs={"class": "ab-sel"}),
             "motivo": forms.TextInput(attrs={"class": "ab-inp"}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        inicios = [time(17, 0), time(17, 30), time(18, 0), time(18, 30), time(19, 0), time(19, 30)]
-        finales = [time(17, 30), time(18, 0), time(18, 30), time(19, 0), time(19, 30), time(20, 0)]
-        self.fields["hora_inicio"].widget.choices = [("", "Elegir hora")] + [(h.strftime("%H:%M"), h.strftime("%H:%M")) for h in inicios]
-        self.fields["hora_fin"].widget.choices = [("", "Elegir hora")] + [(h.strftime("%H:%M"), h.strftime("%H:%M")) for h in finales]
 
     def clean(self):
         cleaned = super().clean()
@@ -337,8 +349,9 @@ class BloqueoAgendaForm(forms.ModelForm):
             cleaned["hora_inicio"] = None
             cleaned["hora_fin"] = None
             cleaned["modulos"] = 2
-        elif not cleaned.get("hora_inicio") or not cleaned.get("hora_fin"):
+        elif not cleaned.get("modulos_horarios"):
             self.add_error(
-                "hora_inicio", "Elegí la hora de inicio y la hora de fin.",
+                "modulos_horarios",
+                "Elegí al menos una burbuja de horario.",
             )
         return cleaned

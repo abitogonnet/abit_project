@@ -44,13 +44,17 @@ class CuposTests(TestCase):
 
     def test_bloquear_un_modulo_deja_el_otro_disponible(self):
         fecha = date.today() + timedelta(days=1)
-        BloqueoAgenda.objects.create(fecha=fecha, hora_inicio=time(18), hora_fin=time(18, 30), modulos=1)
+        BloqueoAgenda.objects.create(
+            fecha=fecha, hora_inicio=time(18), hora_fin=time(18, 30), modulos=1,
+        )
         self.assertEqual(_capacidad_por_horario(fecha)[time(18)], 1)
 
     def test_dos_bloqueos_de_un_modulo_completan_el_horario(self):
         fecha = date.today() + timedelta(days=1)
         for _ in range(2):
-            BloqueoAgenda.objects.create(fecha=fecha, hora_inicio=time(18), hora_fin=time(18, 30), modulos=1)
+            BloqueoAgenda.objects.create(
+                fecha=fecha, hora_inicio=time(18), hora_fin=time(18, 30), modulos=1,
+            )
         self.assertEqual(_capacidad_por_horario(fecha)[time(18)], 0)
 
 
@@ -101,13 +105,26 @@ class BloqueosAgendaTests(TestCase):
         self.assertEqual(bloqueo.modulos, 2)
         self.assertTrue(all(cupo == 0 for cupo in _capacidad_por_horario(fecha).values()))
 
-    def test_bloqueo_por_horario_usa_desplegables_de_media_hora(self):
+    def test_bloqueo_por_horario_muestra_dos_burbujas_por_turno(self):
         form = BloqueoAgendaForm()
         html = form.as_p()
-        self.assertIn('<select name="hora_inicio"', html)
-        self.assertIn('value="17:30"', html)
-        self.assertIn('value="20:00"', html)
+        self.assertEqual(html.count('value="17:00|'), 2)
+        self.assertEqual(html.count('value="17:30|'), 2)
+        self.assertEqual(html.count('value="19:30|'), 2)
         self.assertNotIn('type="time"', html)
+
+    def test_burbujas_crean_un_bloqueo_por_modulo_seleccionado(self):
+        fecha = date.today() + timedelta(days=1)
+        response = self.client.post(reverse("visitas:bloqueos"), {
+            "tipo_bloqueo": "HORARIO", "fecha": fecha.isoformat(),
+            "modulos_horarios": ["17:00|1", "17:00|2", "17:30|1"],
+            "motivo": "Ocupado",
+        })
+        self.assertRedirects(response, reverse("visitas:bloqueos"))
+        self.assertEqual(BloqueoAgenda.objects.count(), 3)
+        capacidad = _capacidad_por_horario(fecha)
+        self.assertEqual(capacidad[time(17)], 0)
+        self.assertEqual(capacidad[time(17, 30)], 1)
 
 
 class UbicacionPublicaTests(TestCase):
