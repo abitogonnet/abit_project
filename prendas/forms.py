@@ -90,9 +90,9 @@ AIRES_CHAL_NUM = _nums(22, 70, 2)
 
 SACO_TALLES = _nums(2, 16, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(50, 76, 2)
 CAMISA_TALLES = (
-    _nums(2, 16, 2)
-    + ["XS", "S", "M", "L", "XL", "2XL", "3XL"]
-    + _nums(40, 80, 2)
+    _nums(2, 42, 2)
+    + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
+    + _nums(44, 70, 2)
 )
 CAMISA_SACO_TALLES = SACO_TALLES
 PANTALON_NUM = _nums(2, 76, 2)

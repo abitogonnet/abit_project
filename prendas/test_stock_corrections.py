@@ -35,17 +35,17 @@ class StockCorrectionsTests(TestCase):
             "No hay pendientes.",
         )
 
-    def test_lista_camisas_es_unica_y_acepta_hasta_80(self):
+    def test_lista_camisas_incluye_talles_de_ninos_letras_y_adultos(self):
         esperados = [
-            "2", "4", "6", "8", "10", "12", "14", "16",
-            "XS", "S", "M", "L", "XL", "2XL", "3XL",
-            "40", "42", "44", "46", "48", "50", "52", "54", "56",
-            "58", "60", "62", "64", "66", "68", "70", "72", "74",
-            "76", "78", "80",
+            "2", "4", "6", "8", "10", "12", "14", "16", "18", "20",
+            "22", "24", "26", "28", "30", "32", "34", "36", "38", "40", "42",
+            "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL",
+            "44", "46", "48", "50", "52", "54", "56", "58", "60", "62",
+            "64", "66", "68", "70",
         ]
         self.assertEqual(CAMISA_TALLES, esperados)
         self.assertEqual(talle_options_for(Prenda.C_CAMISA, "Abito"), esperados)
-        for talle in ("76", "78", "80"):
+        for talle in ("2", "42", "XS", "4XL", "44", "70"):
             form = PrendaForm(data={
                 "categoria": Prenda.C_CAMISA, "marca": "Abito",
                 "color": "Negro", "talle": talle,
