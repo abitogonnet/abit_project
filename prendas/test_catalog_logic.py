@@ -35,7 +35,13 @@ class CatalogLogicTests(TestCase):
     def test_talles_son_las_listas_solicitadas(self):
         self.assertEqual(PANTALON_NUM, [str(n) for n in range(2, 77, 2)])
         self.assertEqual(ZAPATOS_NUM, [str(n) for n in range(30, 47)])
-        self.assertEqual(CAMISA_SACO_TALLES, ["2", "4", "6", "8", "10", "12", "14", "16", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "50", "52", "54", "56", "58", "60", "62", "64", "66", "68", "70", "72", "74", "76"])
+        self.assertEqual(CAMISA_SACO_TALLES, [
+            "2", "4", "6", "8", "10", "12", "14", "16", "18", "20",
+            "22", "24", "26", "28", "30", "32", "34", "36", "38", "40", "42",
+            "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL",
+            "44", "46", "48", "50", "52", "54", "56", "58", "60", "62",
+            "64", "66", "68", "70", "72", "74", "76",
+        ])
         self.assertEqual(TAM_NINO_ADULTO, ["Niño", "Adulto"])
 
     def test_origen_automatico_no_se_pide_y_sobrescribe_el_post(self):

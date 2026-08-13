@@ -88,7 +88,7 @@ LETRAS_XS_4XL = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
 AIRES_SACO_NUM = _nums(22, 76, 2)
 AIRES_CHAL_NUM = _nums(22, 70, 2)
 
-SACO_TALLES = _nums(2, 16, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(50, 76, 2)
+SACO_TALLES = _nums(2, 42, 2) + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] + _nums(44, 76, 2)
 CAMISA_TALLES = (
     _nums(2, 42, 2)
     + ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
