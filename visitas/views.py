@@ -53,15 +53,16 @@ def _bloqueos_para_fecha(fecha_visita):
     )
 
 
-def _hora_bloqueada(hora, bloqueos):
+def _modulos_bloqueados(hora, bloqueos):
+    total = 0
     for bloqueo in bloqueos:
         if bloqueo.hora_inicio is None or bloqueo.hora_fin is None:
-            return True
+            total += bloqueo.modulos
 
-        if bloqueo.hora_inicio <= hora < bloqueo.hora_fin:
-            return True
+        elif bloqueo.hora_inicio <= hora < bloqueo.hora_fin:
+            total += bloqueo.modulos
 
-    return False
+    return min(total, 2)
 
 
 def _capacidad_por_horario(fecha_visita, visitas_dia=None, bloqueos=None):
@@ -78,10 +79,7 @@ def _capacidad_por_horario(fecha_visita, visitas_dia=None, bloqueos=None):
     if bloqueos is None:
         bloqueos = _bloqueos_para_fecha(fecha_visita)
 
-    capacidad = {
-        hora: 0 if _hora_bloqueada(hora, bloqueos) else 2
-        for hora in HORARIOS_BASE
-    }
+    capacidad = {hora: 2 - _modulos_bloqueados(hora, bloqueos) for hora in HORARIOS_BASE}
 
     for visita in visitas_dia:
         hora = visita.hora_visita

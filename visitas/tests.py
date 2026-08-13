@@ -41,6 +41,17 @@ class CuposTests(TestCase):
         BloqueoAgenda.objects.create(fecha=fecha, hora_inicio=time(18), hora_fin=time(18, 30))
         self.assertEqual(_capacidad_por_horario(fecha)[time(18)], 0)
 
+    def test_bloquear_un_modulo_deja_el_otro_disponible(self):
+        fecha = date.today() + timedelta(days=1)
+        BloqueoAgenda.objects.create(fecha=fecha, hora_inicio=time(18), hora_fin=time(18, 30), modulos=1)
+        self.assertEqual(_capacidad_por_horario(fecha)[time(18)], 1)
+
+    def test_dos_bloqueos_de_un_modulo_completan_el_horario(self):
+        fecha = date.today() + timedelta(days=1)
+        for _ in range(2):
+            BloqueoAgenda.objects.create(fecha=fecha, hora_inicio=time(18), hora_fin=time(18, 30), modulos=1)
+        self.assertEqual(_capacidad_por_horario(fecha)[time(18)], 0)
+
 
 class BloqueosAgendaTests(TestCase):
     def setUp(self):
@@ -60,6 +71,7 @@ class BloqueosAgendaTests(TestCase):
 
         pagina = self.client.get(reverse("visitas:bloqueos"))
         self.assertContains(pagina, "Desbloquear")
+        self.assertContains(pagina, "2 módulos bloqueados")
 
         respuesta = self.client.post(
             reverse("visitas:eliminar_bloqueo", args=[bloqueo.pk]),

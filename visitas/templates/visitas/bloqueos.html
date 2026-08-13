@@ -4,7 +4,7 @@
 <section class="ab-dashboard-grid">
   <div class="ab-section-card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="ab-btn" type="submit">Guardar bloqueo</button></form></div>
   <div class="ab-section-card"><h2 class="ab-mini-title">Bloqueos próximos</h2>
-    {% for b in bloqueos %}<article class="ab-priority-card"><div><strong>{{ b.fecha|date:"d/m/Y" }}</strong><p>{% if b.hora_inicio %}{{ b.hora_inicio|time:"H:i" }}–{{ b.hora_fin|time:"H:i" }}{% else %}Día completo{% endif %} · {{ b.motivo }}</p></div><form method="post" action="{% url 'visitas:eliminar_bloqueo' b.pk %}">{% csrf_token %}<button class="ab-btn2" type="submit">Desbloquear</button></form></article>{% empty %}<div class="ab-empty">Sin bloqueos activos.</div>{% endfor %}
+    {% for b in bloqueos %}<article class="ab-priority-card"><div><strong>{{ b.fecha|date:"d/m/Y" }}</strong><p>{% if b.hora_inicio %}{{ b.hora_inicio|time:"H:i" }}–{{ b.hora_fin|time:"H:i" }}{% else %}Día completo{% endif %} · {{ b.modulos }} módulo{{ b.modulos|pluralize }} bloqueado{{ b.modulos|pluralize }}{% if b.motivo %} · {{ b.motivo }}{% endif %}</p></div><form method="post" action="{% url 'visitas:eliminar_bloqueo' b.pk %}">{% csrf_token %}<button class="ab-btn2" type="submit">Desbloquear</button></form></article>{% empty %}<div class="ab-empty">Sin bloqueos activos.</div>{% endfor %}
   </div>
 </section>
 {% endblock %}

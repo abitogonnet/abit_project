@@ -132,6 +132,7 @@ class BloqueoAgenda(models.Model):
     hora_inicio = models.TimeField(blank=True, null=True)
     hora_fin = models.TimeField(blank=True, null=True)
     motivo = models.CharField(max_length=200, blank=True, default="")
+    modulos = models.PositiveSmallIntegerField(default=2, choices=[(1, "1 módulo"), (2, "2 módulos")])
     activo = models.BooleanField(default=True)
     creado = models.DateTimeField(auto_now_add=True)
 

@@ -307,10 +307,12 @@ class VisitaInternaForm(forms.ModelForm):
 class BloqueoAgendaForm(forms.ModelForm):
     class Meta:
         model = BloqueoAgenda
-        fields = ["fecha", "hora_inicio", "hora_fin", "motivo"]
+        fields = ["fecha", "hora_inicio", "hora_fin", "modulos", "motivo"]
+        labels = {"modulos": "¿Cuántos módulos querés bloquear por horario?"}
         widgets = {
             "fecha": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
             "hora_inicio": forms.TimeInput(attrs={"class": "ab-inp", "type": "time", "step": 1800}),
             "hora_fin": forms.TimeInput(attrs={"class": "ab-inp", "type": "time", "step": 1800}),
+            "modulos": forms.Select(attrs={"class": "ab-sel"}),
             "motivo": forms.TextInput(attrs={"class": "ab-inp"}),
         }
