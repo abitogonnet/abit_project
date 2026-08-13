@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="ab-pagehero ab-pagehero-tight">
-  <div><p class="ab-kicker">Agenda comercial</p><h1 class="ab-title">Próximas visitas</h1><p>Calendario mensual</p></div>
+  <div><p class="ab-kicker">Agenda comercial</p><h1 class="ab-title">Próximas dos semanas</h1><p>Dos módulos disponibles por cada horario</p></div>
   <aside class="ab-pagehero-panel"><strong>Visitas hoy: {{ visitas_hoy }}</strong></aside>
 </section>
 <div class="ab-actions">
@@ -11,23 +11,9 @@
   <a class="ab-btn2" href="{% url 'visitas:bloqueos' %}">Bloquear agenda</a>
 </div>
 <section class="ab-section-card">
-  <div class="ab-calendar-nav">
-    <a class="ab-btn2" href="?mes={{ mes_anterior }}">← Mes anterior</a>
-    <h2 class="ab-mini-title">{{ mes|date:"F Y"|title }}</h2>
-    <a class="ab-btn2" href="?mes={{ mes_siguiente }}">Mes siguiente →</a>
-  </div>
-  <div class="ab-calendar-weekdays" aria-hidden="true">
-    <span>Lunes</span><span>Martes</span><span>Miércoles</span><span>Jueves</span><span>Viernes</span><span>Sábado</span><span>Domingo</span>
-  </div>
-  <div class="ab-calendar-grid">
-    {% for semana in semanas %}{% for dia in semana %}
-      <a class="ab-calendar-day{% if not dia.en_mes %} is-outside{% endif %}{% if dia.es_hoy %} is-today{% endif %}{% if dia.total %} has-visits{% endif %}" href="{% url 'visitas:dia' dia.fecha|date:'Y-m-d' %}">
-        <span class="ab-calendar-mobile-weekday">{{ dia.fecha|date:"D" }}</span>
-        <strong>{{ dia.fecha|date:"d" }}</strong>
-        <span>{{ dia.total }} visita{{ dia.total|pluralize }}</span>
-        {% if dia.bloqueado %}<small>Bloqueado</small>{% endif %}
-      </a>
-    {% endfor %}{% endfor %}
-  </div>
+  <span class="ab-visually-hidden">Lunes Martes Miércoles Jueves Viernes Sábado Domingo</span>
+  <div class="ab-calendar-nav"><a class="ab-btn2" href="?inicio={{ inicio_anterior }}">← 2 semanas</a><h2 class="ab-mini-title">{{ inicio|date:"d/m" }} — {{ fin|date:"d/m/Y" }}</h2><a class="ab-btn2" href="?inicio={{ inicio_siguiente }}">2 semanas →</a></div>
+  <div class="ab-fortnight-grid">{% for dia in dias %}<a class="ab-fortnight-day{% if dia.es_hoy %} is-today{% endif %}" href="{% url 'visitas:dia' dia.fecha|date:'Y-m-d' %}"><header><strong>{{ dia.fecha|date:"D d/m"|title }}</strong><span>{{ dia.total }} visita{{ dia.total|pluralize }}</span></header>{% for fila in dia.filas %}<div class="ab-slot-row"><small>{{ fila.hora|time:"H:i" }}</small><span class="ab-slot-dot is-{{ fila.modulos.0 }}" title="{{ fila.modulos.0 }}"></span><span class="ab-slot-dot is-{{ fila.modulos.1 }}" title="{{ fila.modulos.1 }}"></span></div>{% endfor %}</a>{% endfor %}</div>
+  <div class="ab-slot-legend"><span><i class="ab-slot-dot is-disponible"></i> Disponible</span><span><i class="ab-slot-dot is-ocupado"></i> Ocupado</span><span><i class="ab-slot-dot is-bloqueado"></i> Bloqueado</span></div>
 </section>
 {% endblock %}

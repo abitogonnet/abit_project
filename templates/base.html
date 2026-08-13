@@ -64,6 +64,7 @@
         {% if user.is_authenticated and user.perfil.rol == 'COSTURERA' %}
           <a class="ab-global-btn" href="{{ ruedos_url }}">Ruedos</a>
         {% elif user.is_authenticated %}
+        <div class="ab-client-search" data-client-search><input type="search" placeholder="Buscar cliente" aria-label="Buscar cliente" autocomplete="off"><div class="ab-client-search-results" hidden></div></div>
         <a class="ab-global-btn" href="{{ home_url }}">Volver al menu</a>
         <button class="ab-global-btn secondary" type="button" data-go-back>Atras</button>
           <a class="ab-global-btn secondary" href="{% url 'cuentas:actividad' %}">Registro de actividad</a>
@@ -71,6 +72,7 @@
           <a class="ab-global-btn secondary" href="{% url 'visitas:listar' %}">Visitas</a>
           {% if user.perfil.rol != 'EMPLEADO' %}<a class="ab-global-btn secondary" href="{% url 'catalogo:gestion' %}">Catálogo</a>{% endif %}
           {% if user.perfil.rol == 'PROPIETARIO' %}<a class="ab-global-btn secondary" href="{% url 'cuentas:usuarios' %}">Usuarios</a>{% endif %}
+          <details class="ab-alert-menu"><summary aria-label="Avisos">●{% if avisos_globales_total %}<b>{{ avisos_globales_total }}</b>{% endif %}</summary><div>{% for aviso in avisos_globales %}<a href="{{ aviso.url }}"><span>{{ aviso.label }}</span><strong>{{ aviso.total }}</strong></a>{% empty %}<p>Todo al día.</p>{% endfor %}</div></details>
           <details class="ab-user-menu"><summary>{{ user.perfil.nombre|default:user.username }} ▾</summary><div class="ab-user-dropdown"><a href="{% url 'cuentas:cambiar_password' %}">Modificar contraseña</a><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cambiar usuario</button></form><form method="post" action="{% url 'cuentas:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form></div></details>
         {% endif %}
       </div>

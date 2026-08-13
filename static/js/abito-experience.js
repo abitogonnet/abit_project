@@ -72,4 +72,73 @@
     ripple.addEventListener("animationend", function () { ripple.remove(); });
     window.setTimeout(function () { button.classList.remove("xp-clicked"); }, 720);
   });
+
+  document.querySelectorAll("[data-client-search]").forEach(function (root) {
+    const input = root.querySelector("input");
+    const results = root.querySelector(".ab-client-search-results");
+    let timer;
+    input.addEventListener("input", function () {
+      clearTimeout(timer);
+      const query = input.value.trim();
+      if (query.length < 2) { results.hidden = true; results.innerHTML = ""; return; }
+      timer = setTimeout(async function () {
+        const response = await fetch("/alquileres/api/clientes/buscar/?q=" + encodeURIComponent(query));
+        const data = await response.json();
+        results.innerHTML = (data.resultados || []).map(function (cliente) {
+          return '<article><a href="' + cliente.url + '"><strong>' + cliente.nombre + '</strong><small>DNI ' + cliente.dni + ' · ' + cliente.telefono + '</small></a><div><a href="' + cliente.crear_url + '">Crear alquiler</a>' + (cliente.whatsapp_url ? '<a href="' + cliente.whatsapp_url + '" target="_blank" rel="noopener">WhatsApp</a>' : '') + '</div></article>';
+        }).join("") || '<p>No encontramos clientes.</p>';
+        results.hidden = false;
+      }, 220);
+    });
+    document.addEventListener("pointerdown", function (event) { if (!root.contains(event.target)) results.hidden = true; });
+  });
+
+  const dangerousValues = new Set(["cerrar_alquiler", "cancelar_alquiler", "eliminar"]);
+  const dialog = document.createElement("dialog");
+  dialog.className = "xp-confirm-dialog";
+  dialog.innerHTML = '<form method="dialog"><p class="ab-kicker">Confirmación</p><h2>¿Querés continuar?</h2><p data-confirm-copy>Esta acción modifica información importante.</p><div class="ab-actions"><button class="ab-btn2" value="cancel">Volver</button><button class="ab-btn" value="confirm">Confirmar</button></div></form>';
+  body.appendChild(dialog);
+  document.querySelectorAll('a[href*="cancelar"]').forEach(function (link) {
+    link.removeAttribute("onclick");
+    link.addEventListener("click", function (event) {
+      if (link.dataset.xpConfirmed === "1") return;
+      event.preventDefault();
+      dialog.querySelector("[data-confirm-copy]").textContent = "Vas a cancelar esta visita.";
+      dialog.showModal();
+      dialog.addEventListener("close", function onClose() {
+        dialog.removeEventListener("close", onClose);
+        if (dialog.returnValue !== "confirm") return;
+        link.dataset.xpConfirmed = "1";
+        link.click();
+      });
+    });
+  });
+  document.addEventListener("submit", function (event) {
+    const submitter = event.submitter;
+    const mustConfirm = submitter && (dangerousValues.has(submitter.value) || /desbloquear/i.test(submitter.textContent));
+    if (!mustConfirm || event.target.dataset.xpConfirmed === "1") return;
+    event.preventDefault();
+    dialog.querySelector("[data-confirm-copy]").textContent = "Vas a " + submitter.textContent.trim().toLowerCase() + ".";
+    dialog.showModal();
+    dialog.addEventListener("close", function onClose() {
+      dialog.removeEventListener("close", onClose);
+      if (dialog.returnValue !== "confirm") return;
+      event.target.dataset.xpConfirmed = "1";
+      submitter.click();
+    });
+  }, true);
+
+  const compactable = document.querySelector(".ab-entity-list, .ab-rental-list, .ab-table-wrap, .ab-calendar-grid, .ab-fortnight-grid");
+  if (compactable) {
+    const toggle = document.createElement("button");
+    toggle.type = "button"; toggle.className = "xp-compact-toggle ab-btn2";
+    function syncCompact(active) {
+      body.classList.toggle("xp-compact", active);
+      toggle.textContent = active ? "Vista cómoda" : "Vista compacta";
+      localStorage.setItem("abito-compact", active ? "1" : "0");
+    }
+    toggle.addEventListener("click", function () { syncCompact(!body.classList.contains("xp-compact")); });
+    (document.querySelector(".ab-actions") || compactable.parentElement).prepend(toggle);
+    syncCompact(localStorage.getItem("abito-compact") === "1");
+  }
 })();

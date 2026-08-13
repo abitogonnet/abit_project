@@ -282,3 +282,19 @@ class CalendarioVisitasTests(TestCase):
         self.assertContains(detail, "17:00 — Juan")
         self.assertContains(detail, "18:30 — Pedro")
         self.assertContains(detail, "Crear alquiler", count=2)
+
+    def test_calendario_quincenal_muestra_dos_modulos_con_sus_estados(self):
+        fecha = date(2026, 8, 14)
+        Visita.objects.create(
+            nombre="Ocupado", dni="87654321", telefono="2215555555",
+            cantidad_personas=1, fecha_evento=date(2026, 8, 25),
+            fecha_visita=fecha, hora_visita=time(17),
+        )
+        BloqueoAgenda.objects.create(
+            fecha=fecha, hora_inicio=time(17, 30), hora_fin=time(18), modulos=1,
+        )
+        response = self.client.get(reverse("visitas:calendario"), {"inicio": "2026-08-13"})
+        self.assertContains(response, "Próximas dos semanas")
+        self.assertContains(response, "is-ocupado")
+        self.assertContains(response, "is-bloqueado")
+        self.assertContains(response, "is-disponible")

@@ -1228,6 +1228,15 @@ def crear(request):
             "fecha_entrega": hoy,
             "fecha_devolucion": hoy,
         }
+        dni_inicial = "".join(c for c in request.GET.get("dni", "") if c.isdigit())
+        cliente_inicial = Cliente.objects.filter(dni=dni_inicial).first() if dni_inicial else None
+        if cliente_inicial:
+            initial.update({
+                "cliente_dni": cliente_inicial.dni,
+                "cliente_nombre": cliente_inicial.nombre,
+                "cliente_telefono": cliente_inicial.telefono,
+                "persona1_nombre": cliente_inicial.nombre,
+            })
         if visita_origen:
             initial.update({
                 "cliente_dni": visita_origen.dni,
@@ -1711,6 +1720,7 @@ def clientes(request):
 
 def cliente_detalle(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
+    cliente.whatsapp_url = generar_enlace_whatsapp(cliente.telefono, f"Hola, {cliente.nombre}. Te escribimos de Abito.")
     alquileres = list(cliente.alquileres.prefetch_related("items__prenda").order_by("-fecha_reserva", "-id"))
     _adjuntar_detalle_alquiler(alquileres)
     return render(request, "alquileres/cliente_detalle.html", {"cliente": cliente, "alquileres": alquileres})
@@ -1726,3 +1736,19 @@ def cliente_por_dni(request):
         "saldo_a_favor": str(cliente.saldo_a_favor),
         "recurrente": cliente.alquileres.exists(),
     })
+
+
+def buscar_clientes_api(request):
+    query = (request.GET.get("q") or "").strip()
+    if len(query) < 2:
+        return JsonResponse({"resultados": []})
+    clientes = Cliente.objects.filter(
+        Q(nombre__icontains=query) | Q(dni__icontains=query) | Q(telefono__icontains=query)
+    ).order_by("nombre")[:8]
+    return JsonResponse({"resultados": [{
+        "id": cliente.pk, "nombre": cliente.nombre, "dni": cliente.dni,
+        "telefono": cliente.telefono,
+        "url": reverse("alquileres:cliente_detalle", args=[cliente.pk]),
+        "crear_url": f'{reverse("alquileres:crear")}?dni={cliente.dni}',
+        "whatsapp_url": generar_enlace_whatsapp(cliente.telefono, f"Hola, {cliente.nombre}. Te escribimos de Abito."),
+    } for cliente in clientes]})

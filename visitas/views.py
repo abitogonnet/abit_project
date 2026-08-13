@@ -356,40 +356,44 @@ def _sumar_mes(day, delta):
     return date(month_index // 12, month_index % 12 + 1, 1)
 
 
+def _modulos_visuales(fecha_visita):
+    bloqueos = _bloqueos_para_fecha(fecha_visita)
+    visitas = list(Visita.objects.filter(
+        fecha_visita=fecha_visita, estado=Visita.ESTADO_CONFIRMADA,
+    ).order_by("hora_visita", "pk"))
+    capacidad = _capacidad_por_horario(fecha_visita, visitas, bloqueos)
+    filas = []
+    for hora in HORARIOS_BASE:
+        bloqueados = _modulos_bloqueados(hora, bloqueos)
+        ocupados = max(2 - bloqueados - capacidad[hora], 0)
+        estados = ["bloqueado"] * bloqueados + ["ocupado"] * ocupados
+        estados += ["disponible"] * (2 - len(estados))
+        visitas_hora = [v for v in visitas if v.hora_visita == hora]
+        filas.append({"hora": hora, "modulos": estados[:2], "visitas": visitas_hora})
+    return filas
+
+
 def calendario_visitas(request):
     hoy = timezone.localdate()
-    mes = _mes_calendario(request)
-    mes_siguiente = _sumar_mes(mes, 1)
-    conteos = dict(
-        Visita.objects.exclude(estado=Visita.ESTADO_CANCELADA)
-        .filter(fecha_visita__gte=mes, fecha_visita__lt=mes_siguiente)
-        .values("fecha_visita")
-        .annotate(total=Count("id"))
-        .values_list("fecha_visita", "total")
-    )
-    bloqueos = set(
-        BloqueoAgenda.objects.filter(
-            activo=True, fecha__gte=mes, fecha__lt=mes_siguiente
-        ).values_list("fecha", flat=True)
-    )
-    semanas = []
-    cal = calendar.Calendar(firstweekday=0)
-    for semana in cal.monthdatescalendar(mes.year, mes.month):
-        semanas.append([
-            {
-                "fecha": dia,
-                "en_mes": dia.month == mes.month,
-                "es_hoy": dia == hoy,
-                "total": conteos.get(dia, 0),
-                "bloqueado": dia in bloqueos,
-            }
-            for dia in semana
-        ])
+    try:
+        inicio = datetime.strptime(request.GET.get("inicio", ""), "%Y-%m-%d").date()
+    except ValueError:
+        try:
+            inicio = datetime.strptime(request.GET.get("mes", ""), "%Y-%m").date()
+        except ValueError:
+            inicio = hoy
+    dias = []
+    for offset in range(14):
+        fecha_dia = inicio + timedelta(days=offset)
+        filas = _modulos_visuales(fecha_dia)
+        dias.append({
+            "fecha": fecha_dia, "es_hoy": fecha_dia == hoy, "filas": filas,
+            "total": sum(len(fila["visitas"]) for fila in filas),
+        })
     return render(request, "visitas/calendario.html", {
-        "semanas": semanas,
-        "mes": mes,
-        "mes_anterior": _sumar_mes(mes, -1).strftime("%Y-%m"),
-        "mes_siguiente": mes_siguiente.strftime("%Y-%m"),
+        "dias": dias, "inicio": inicio, "fin": inicio + timedelta(days=13),
+        "inicio_anterior": (inicio - timedelta(days=14)).isoformat(),
+        "inicio_siguiente": (inicio + timedelta(days=14)).isoformat(),
         "visitas_hoy": Visita.objects.filter(
             fecha_visita=hoy, estado=Visita.ESTADO_CONFIRMADA
         ).count(),
@@ -416,6 +420,7 @@ def dia(request, fecha):
         "bloqueos": BloqueoAgenda.objects.filter(
             fecha=fecha_seleccionada, activo=True
         ).order_by("hora_inicio"),
+        "filas_modulos": _modulos_visuales(fecha_seleccionada),
     })
 
 
