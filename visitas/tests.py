@@ -88,7 +88,7 @@ class BloqueosAgendaTests(TestCase):
         fecha = date.today() + timedelta(days=1)
         form = BloqueoAgendaForm(data={
             "fecha": fecha.isoformat(),
-            "bloquear_dia_completo": "on",
+            "tipo_bloqueo": "DIA",
             "hora_inicio": "17:00",
             "hora_fin": "17:30",
             "modulos": "1",
@@ -100,6 +100,14 @@ class BloqueosAgendaTests(TestCase):
         self.assertIsNone(bloqueo.hora_fin)
         self.assertEqual(bloqueo.modulos, 2)
         self.assertTrue(all(cupo == 0 for cupo in _capacidad_por_horario(fecha).values()))
+
+    def test_bloqueo_por_horario_usa_desplegables_de_media_hora(self):
+        form = BloqueoAgendaForm()
+        html = form.as_p()
+        self.assertIn('<select name="hora_inicio"', html)
+        self.assertIn('value="17:30"', html)
+        self.assertIn('value="20:00"', html)
+        self.assertNotIn('type="time"', html)
 
 
 class UbicacionPublicaTests(TestCase):

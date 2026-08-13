@@ -305,33 +305,40 @@ class VisitaInternaForm(forms.ModelForm):
 
 
 class BloqueoAgendaForm(forms.ModelForm):
-    bloquear_dia_completo = forms.BooleanField(
-        required=False,
-        label="Bloquear el día completo (los 2 módulos de cada horario)",
-        widget=forms.CheckboxInput(attrs={"class": "ab-check"}),
+    TIPO_DIA = "DIA"
+    TIPO_HORARIO = "HORARIO"
+    tipo_bloqueo = forms.ChoiceField(
+        choices=[(TIPO_DIA, "Bloquear día"), (TIPO_HORARIO, "Bloquear horario")],
+        initial=TIPO_DIA, widget=forms.RadioSelect, label="¿Qué querés bloquear?",
     )
 
     class Meta:
         model = BloqueoAgenda
-        fields = ["fecha", "bloquear_dia_completo", "hora_inicio", "hora_fin", "modulos", "motivo"]
+        fields = ["fecha", "tipo_bloqueo", "hora_inicio", "hora_fin", "modulos", "motivo"]
         labels = {"modulos": "¿Cuántos módulos querés bloquear por horario?"}
         widgets = {
             "fecha": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
-            "hora_inicio": forms.TimeInput(attrs={"class": "ab-inp", "type": "time", "step": 1800}),
-            "hora_fin": forms.TimeInput(attrs={"class": "ab-inp", "type": "time", "step": 1800}),
+            "hora_inicio": forms.Select(attrs={"class": "ab-sel"}),
+            "hora_fin": forms.Select(attrs={"class": "ab-sel"}),
             "modulos": forms.Select(attrs={"class": "ab-sel"}),
             "motivo": forms.TextInput(attrs={"class": "ab-inp"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        inicios = [time(17, 0), time(17, 30), time(18, 0), time(18, 30), time(19, 0), time(19, 30)]
+        finales = [time(17, 30), time(18, 0), time(18, 30), time(19, 0), time(19, 30), time(20, 0)]
+        self.fields["hora_inicio"].widget.choices = [("", "Elegir hora")] + [(h.strftime("%H:%M"), h.strftime("%H:%M")) for h in inicios]
+        self.fields["hora_fin"].widget.choices = [("", "Elegir hora")] + [(h.strftime("%H:%M"), h.strftime("%H:%M")) for h in finales]
+
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get("bloquear_dia_completo"):
+        if cleaned.get("tipo_bloqueo") == self.TIPO_DIA:
             cleaned["hora_inicio"] = None
             cleaned["hora_fin"] = None
             cleaned["modulos"] = 2
-        elif not cleaned.get("hora_inicio") and not cleaned.get("hora_fin"):
+        elif not cleaned.get("hora_inicio") or not cleaned.get("hora_fin"):
             self.add_error(
-                "bloquear_dia_completo",
-                "Marcá esta opción para bloquear todo el día, o elegí un horario.",
+                "hora_inicio", "Elegí la hora de inicio y la hora de fin.",
             )
         return cleaned
