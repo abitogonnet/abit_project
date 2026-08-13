@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 
 from alquileres.models import Alquiler, Cliente
 from cuentas.models import PerfilUsuario
+from visitas.forms import BloqueoAgendaForm
 from visitas.models import BloqueoAgenda, Visita
 from visitas.views import _capacidad_por_horario, _horario_admite_reserva, _recordatorio_whatsapp
 
@@ -82,6 +83,23 @@ class BloqueosAgendaTests(TestCase):
         self.assertFalse(bloqueo.activo)
         self.assertContains(respuesta, "Turno desbloqueado.")
         self.assertNotContains(respuesta, "Prueba")
+
+    def test_opcion_dia_completo_bloquea_los_dos_modulos_de_todos_los_horarios(self):
+        fecha = date.today() + timedelta(days=1)
+        form = BloqueoAgendaForm(data={
+            "fecha": fecha.isoformat(),
+            "bloquear_dia_completo": "on",
+            "hora_inicio": "17:00",
+            "hora_fin": "17:30",
+            "modulos": "1",
+            "motivo": "Cerrado",
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        bloqueo = form.save()
+        self.assertIsNone(bloqueo.hora_inicio)
+        self.assertIsNone(bloqueo.hora_fin)
+        self.assertEqual(bloqueo.modulos, 2)
+        self.assertTrue(all(cupo == 0 for cupo in _capacidad_por_horario(fecha).values()))
 
 
 class UbicacionPublicaTests(TestCase):

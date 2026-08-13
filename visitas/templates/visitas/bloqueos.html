@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Visitas</p><h1 class="ab-title">Bloquear agenda</h1><p>Dejá las horas vacías para bloquear el día completo.</p></div></section>
+<section class="ab-pagehero ab-pagehero-tight"><div><p class="ab-kicker">Visitas</p><h1 class="ab-title">Bloquear agenda</h1><p>Elegí un horario y sus módulos, o marcá la opción para bloquear el día completo.</p></div></section>
 <section class="ab-dashboard-grid">
   <div class="ab-section-card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="ab-btn" type="submit">Guardar bloqueo</button></form></div>
   <div class="ab-section-card"><h2 class="ab-mini-title">Bloqueos próximos</h2>

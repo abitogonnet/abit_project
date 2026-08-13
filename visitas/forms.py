@@ -305,9 +305,15 @@ class VisitaInternaForm(forms.ModelForm):
 
 
 class BloqueoAgendaForm(forms.ModelForm):
+    bloquear_dia_completo = forms.BooleanField(
+        required=False,
+        label="Bloquear el día completo (los 2 módulos de cada horario)",
+        widget=forms.CheckboxInput(attrs={"class": "ab-check"}),
+    )
+
     class Meta:
         model = BloqueoAgenda
-        fields = ["fecha", "hora_inicio", "hora_fin", "modulos", "motivo"]
+        fields = ["fecha", "bloquear_dia_completo", "hora_inicio", "hora_fin", "modulos", "motivo"]
         labels = {"modulos": "¿Cuántos módulos querés bloquear por horario?"}
         widgets = {
             "fecha": forms.DateInput(attrs={"class": "ab-inp", "type": "date"}),
@@ -316,3 +322,16 @@ class BloqueoAgendaForm(forms.ModelForm):
             "modulos": forms.Select(attrs={"class": "ab-sel"}),
             "motivo": forms.TextInput(attrs={"class": "ab-inp"}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("bloquear_dia_completo"):
+            cleaned["hora_inicio"] = None
+            cleaned["hora_fin"] = None
+            cleaned["modulos"] = 2
+        elif not cleaned.get("hora_inicio") and not cleaned.get("hora_fin"):
+            self.add_error(
+                "bloquear_dia_completo",
+                "Marcá esta opción para bloquear todo el día, o elegí un horario.",
+            )
+        return cleaned
