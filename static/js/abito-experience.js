@@ -54,9 +54,13 @@
     revealNodes.forEach(function (node) { observer.observe(node); });
   }
 
+  const clickTargetSelector = ".ab-btn, .ab-btn2, .ab-state-btn, .ab-global-btn, .ab-home-menu-btn, .ab-mobile-nav-panel a, .ab-mobile-nav-panel button";
   document.addEventListener("pointerdown", function (event) {
-    const button = event.target.closest(".ab-btn, .ab-btn2, .ab-state-btn, .ab-global-btn");
+    const button = event.target.closest(clickTargetSelector);
     if (!button || reduced) return;
+    button.classList.remove("xp-clicked");
+    void button.offsetWidth;
+    button.classList.add("xp-clicked");
     const rect = button.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
     const ripple = document.createElement("span");
@@ -66,5 +70,6 @@
     ripple.style.top = (event.clientY - rect.top - size / 2) + "px";
     button.appendChild(ripple);
     ripple.addEventListener("animationend", function () { ripple.remove(); });
+    window.setTimeout(function () { button.classList.remove("xp-clicked"); }, 720);
   });
 })();
