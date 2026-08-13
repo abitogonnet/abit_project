@@ -456,7 +456,10 @@ def bloqueos(request):
         return redirect("visitas:bloqueos")
     return render(request, "visitas/bloqueos.html", {
         "form": form,
-        "bloqueos": BloqueoAgenda.objects.filter(fecha__gte=timezone.localdate()).order_by("fecha", "hora_inicio"),
+        "bloqueos": BloqueoAgenda.objects.filter(
+            fecha__gte=timezone.localdate(),
+            activo=True,
+        ).order_by("fecha", "hora_inicio"),
     })
 
 
@@ -465,5 +468,6 @@ def eliminar_bloqueo(request, pk):
     if request.method == "POST":
         bloqueo.activo = False
         bloqueo.save(update_fields=["activo"])
-        messages.success(request, "Bloqueo desactivado.")
+        registrar_actividad(request, "Desbloqueó agenda", Actividad.ALQUILER, objeto=bloqueo)
+        messages.success(request, "Turno desbloqueado.")
     return redirect("visitas:bloqueos")

@@ -42,6 +42,36 @@ class CuposTests(TestCase):
         self.assertEqual(_capacidad_por_horario(fecha)[time(18)], 0)
 
 
+class BloqueosAgendaTests(TestCase):
+    def setUp(self):
+        user = User.objects.create_user("bloqueos", password="test")
+        PerfilUsuario.objects.create(
+            user=user, nombre="Bloqueos", rol=PerfilUsuario.EMPLEADO,
+            debe_cambiar_password=False,
+        )
+        self.client.force_login(user)
+
+    def test_turno_bloqueado_se_desbloquea_con_un_boton(self):
+        bloqueo = BloqueoAgenda.objects.create(
+            fecha=date.today() + timedelta(days=1),
+            hora_inicio=time(18), hora_fin=time(18, 30),
+            motivo="Prueba",
+        )
+
+        pagina = self.client.get(reverse("visitas:bloqueos"))
+        self.assertContains(pagina, "Desbloquear")
+
+        respuesta = self.client.post(
+            reverse("visitas:eliminar_bloqueo", args=[bloqueo.pk]),
+            follow=True,
+        )
+
+        bloqueo.refresh_from_db()
+        self.assertFalse(bloqueo.activo)
+        self.assertContains(respuesta, "Turno desbloqueado.")
+        self.assertNotContains(respuesta, "Prueba")
+
+
 class UbicacionPublicaTests(TestCase):
     def test_reserva_abre_directamente_en_el_formulario(self):
         reserva = self.client.get(reverse("visitas:reservar"))
