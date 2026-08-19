@@ -94,6 +94,9 @@
   });
 
   const dangerousValues = new Set(["cerrar_alquiler", "cancelar_alquiler", "eliminar"]);
+  document.querySelectorAll('button[onclick*="confirm"], input[onclick*="confirm"]').forEach(function (control) {
+    control.removeAttribute("onclick");
+  });
   const dialog = document.createElement("dialog");
   dialog.className = "xp-confirm-dialog";
   dialog.innerHTML = '<form method="dialog"><p class="ab-kicker">Confirmación</p><h2>¿Querés continuar?</h2><p data-confirm-copy>Esta acción modifica información importante.</p><div class="ab-actions"><button class="ab-btn2" value="cancel">Volver</button><button class="ab-btn" value="confirm">Confirmar</button></div></form>';
@@ -118,13 +121,14 @@
     const mustConfirm = submitter && (dangerousValues.has(submitter.value) || /desbloquear/i.test(submitter.textContent));
     if (!mustConfirm || event.target.dataset.xpConfirmed === "1") return;
     event.preventDefault();
+    event.stopImmediatePropagation();
     dialog.querySelector("[data-confirm-copy]").textContent = "Vas a " + submitter.textContent.trim().toLowerCase() + ".";
     dialog.showModal();
     dialog.addEventListener("close", function onClose() {
       dialog.removeEventListener("close", onClose);
       if (dialog.returnValue !== "confirm") return;
       event.target.dataset.xpConfirmed = "1";
-      submitter.click();
+      event.target.requestSubmit(submitter);
     });
   }, true);
 

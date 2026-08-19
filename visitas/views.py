@@ -31,13 +31,14 @@ HORARIOS_INDEX = {hora: idx for idx, hora in enumerate(HORARIOS_BASE)}
 
 
 def _recordatorio_whatsapp(visita):
-    if visita.fecha_visita != timezone.localdate() or not visita.hora_visita:
+    if not visita.hora_visita:
         return ""
     horario = visita.hora_visita.strftime("%H:%M")
-    mensaje = (
-        f"Hola, te hablo de Abito para confirmar el turno de hoy a las {horario}. "
-        "Recordá asistir de manera puntual."
-    )
+    if visita.fecha_visita == timezone.localdate():
+        momento = f"hoy a las {horario}"
+    else:
+        momento = f"el {visita.fecha_visita.strftime('%d/%m/%Y')} a las {horario}"
+    mensaje = f"Hola, te hablo de Abito para confirmar el turno {momento}. Recordá asistir de manera puntual."
     return generar_enlace_whatsapp(visita.telefono, mensaje)
 
 
@@ -358,18 +359,30 @@ def _sumar_mes(day, delta):
 
 def _modulos_visuales(fecha_visita):
     bloqueos = _bloqueos_para_fecha(fecha_visita)
-    visitas = list(Visita.objects.filter(
+    visitas = list(Visita.objects.prefetch_related("preferencias_ambos").filter(
         fecha_visita=fecha_visita, estado=Visita.ESTADO_CONFIRMADA,
     ).order_by("hora_visita", "pk"))
-    capacidad = _capacidad_por_horario(fecha_visita, visitas, bloqueos)
+    for visita in visitas:
+        visita.recordatorio_whatsapp_url = _recordatorio_whatsapp(visita)
+    propietarios = {hora: [] for hora in HORARIOS_BASE}
+    for visita in visitas:
+        if visita.hora_visita not in propietarios:
+            continue
+        consumo = 1 if visita.cantidad_personas == 1 else 2
+        propietarios[visita.hora_visita].extend([visita] * consumo)
+        if visita.cantidad_personas == 3:
+            indice = HORARIOS_INDEX[visita.hora_visita]
+            if indice + 1 < len(HORARIOS_BASE):
+                propietarios[HORARIOS_BASE[indice + 1]].append(visita)
     filas = []
     for hora in HORARIOS_BASE:
         bloqueados = _modulos_bloqueados(hora, bloqueos)
-        ocupados = max(2 - bloqueados - capacidad[hora], 0)
-        estados = ["bloqueado"] * bloqueados + ["ocupado"] * ocupados
-        estados += ["disponible"] * (2 - len(estados))
+        modulos = [{"estado": "bloqueado", "visita": None} for _ in range(bloqueados)]
+        for visita in propietarios[hora][:max(2 - bloqueados, 0)]:
+            modulos.append({"estado": "ocupado", "visita": visita})
+        modulos += [{"estado": "disponible", "visita": None}] * (2 - len(modulos))
         visitas_hora = [v for v in visitas if v.hora_visita == hora]
-        filas.append({"hora": hora, "modulos": estados[:2], "visitas": visitas_hora})
+        filas.append({"hora": hora, "modulos": modulos[:2], "visitas": visitas_hora})
     return filas
 
 

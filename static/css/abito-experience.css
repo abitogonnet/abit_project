@@ -405,6 +405,14 @@ textarea:focus {
 .ab-day-slot-grid { display: grid; gap: 10px; }
 .ab-day-slot-row { display: grid; grid-template-columns: 80px 1fr 1fr; align-items: center; gap: 10px; }
 .ab-slot-bubble { padding: 12px; border-radius: 999px; text-align: center; font-weight: 900; }
+.ab-day-slot-row button.ab-slot-bubble { width: 100%; border: 0; font: inherit; cursor: pointer; transition: transform .2s var(--xp-spring), box-shadow .2s; }
+.ab-day-slot-row button.ab-slot-bubble:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(229,138,53,.3); }
+.ab-slot-dialog { width: min(560px, calc(100% - 30px)); border: 1px solid rgba(8,127,115,.2); border-radius: 24px; padding: 24px; color: var(--xp-ink); background: #fffdf8; box-shadow: 0 35px 100px rgba(18,43,37,.35); }
+.ab-slot-dialog::backdrop { background: rgba(15,27,24,.48); backdrop-filter: blur(5px); }
+.ab-slot-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.ab-slot-dialog-body { display: grid; gap: 10px; margin: 18px 0; }
+.ab-slot-seen { display: grid; gap: 4px; padding: 13px; border-radius: 14px; background: rgba(8,127,115,.07); }
+.ab-slot-seen small { color: var(--muted); }
 
 .xp-confirm-dialog { width: min(430px, calc(100% - 32px)); border: 1px solid rgba(8,127,115,.2); border-radius: 24px; padding: 0; color: var(--xp-ink); background: rgba(255,253,248,.96); box-shadow: 0 35px 100px rgba(18,43,37,.35); backdrop-filter: blur(24px); }
 .xp-confirm-dialog::backdrop { background: rgba(15,27,24,.48); backdrop-filter: blur(5px); }

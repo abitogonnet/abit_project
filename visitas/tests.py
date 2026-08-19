@@ -298,3 +298,16 @@ class CalendarioVisitasTests(TestCase):
         self.assertContains(response, "is-ocupado")
         self.assertContains(response, "is-bloqueado")
         self.assertContains(response, "is-disponible")
+
+    def test_modulo_ocupado_abre_detalle_y_recordatorio_de_whatsapp(self):
+        fecha = date.today() + timedelta(days=1)
+        visita = Visita.objects.create(
+            nombre="Ana Cliente", dni="22333444", telefono="2215555555",
+            cantidad_personas=2, fecha_evento=fecha + timedelta(days=10),
+            fecha_visita=fecha, hora_visita=time(17),
+        )
+        response = self.client.get(reverse("visitas:dia", args=[fecha.isoformat()]))
+        self.assertContains(response, "Ana Cliente")
+        self.assertContains(response, "2 personas")
+        self.assertContains(response, "Enviar recordatorio")
+        self.assertContains(response, "wa.me/5492215555555")
