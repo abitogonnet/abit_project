@@ -281,7 +281,7 @@ class CalendarioVisitasTests(TestCase):
         detail = self.client.get(reverse("visitas:dia", args=["2026-08-06"]))
         self.assertContains(detail, "17:00 — Juan")
         self.assertContains(detail, "18:30 — Pedro")
-        self.assertContains(detail, "Crear alquiler", count=2)
+        self.assertContains(detail, "Crear alquiler", count=4)
 
     def test_calendario_quincenal_muestra_dos_modulos_con_sus_estados(self):
         fecha = date(2026, 8, 14)
@@ -311,3 +311,29 @@ class CalendarioVisitasTests(TestCase):
         self.assertContains(response, "2 personas")
         self.assertContains(response, "Enviar recordatorio")
         self.assertContains(response, "wa.me/5492215555555")
+        self.assertContains(response, reverse("visitas:crear_alquiler", args=[visita.pk]))
+
+    def test_crear_alquiler_desde_modulo_precarga_cliente_y_detecta_recurrencia(self):
+        cliente = Cliente.objects.create(
+            nombre="Cliente Recurrente", dni="33444555", telefono="2214445555",
+        )
+        Alquiler.objects.create(
+            cliente=cliente, cliente_nombre=cliente.nombre,
+            cliente_telefono=cliente.telefono,
+            fecha_reserva=date.today(), fecha_entrega=date.today(),
+            fecha_devolucion=date.today() + timedelta(days=1),
+            fecha_visita=date.today(),
+        )
+        visita = Visita.objects.create(
+            cliente=cliente, nombre=cliente.nombre, dni=cliente.dni,
+            telefono=cliente.telefono, cantidad_personas=1,
+            fecha_evento=date.today() + timedelta(days=10),
+            fecha_visita=date.today() + timedelta(days=1), hora_visita=time(17),
+        )
+        response = self.client.get(
+            reverse("visitas:crear_alquiler", args=[visita.pk]), follow=True,
+        )
+        self.assertEqual(response.context["form"]["cliente_dni"].value(), cliente.dni)
+        self.assertEqual(response.context["form"]["cliente_nombre"].value(), cliente.nombre)
+        self.assertEqual(response.context["form"]["cliente_telefono"].value(), cliente.telefono)
+        self.assertContains(response, "Este cliente ya alquiló anteriormente")

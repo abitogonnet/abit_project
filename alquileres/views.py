@@ -1231,25 +1231,29 @@ def crear(request):
         dni_inicial = "".join(c for c in request.GET.get("dni", "") if c.isdigit())
         cliente_inicial = Cliente.objects.filter(dni=dni_inicial).first() if dni_inicial else None
         if cliente_inicial:
+            limpiar_borrador = True
             initial.update({
                 "cliente_dni": cliente_inicial.dni,
                 "cliente_nombre": cliente_inicial.nombre,
                 "cliente_telefono": cliente_inicial.telefono,
                 "persona1_nombre": cliente_inicial.nombre,
             })
+            cliente_recurrente = cliente_inicial.alquileres.exclude(
+                estado_alquiler=Alquiler.EST_CANCELADO,
+            ).exists()
         if visita_origen:
+            limpiar_borrador = True
             initial.update({
                 "cliente_dni": visita_origen.dni,
                 "cliente_nombre": visita_origen.nombre,
                 "cliente_telefono": visita_origen.telefono,
-                "fecha_reserva": visita_origen.fecha_evento,
-                "fecha_entrega": visita_origen.fecha_evento,
-                "fecha_devolucion": visita_origen.fecha_evento,
                 "persona1_nombre": visita_origen.nombre,
-                "personas_visibles": visita_origen.cantidad_personas,
             })
-            for numero in range(2, visita_origen.cantidad_personas + 1):
-                initial[f"persona{numero}_nombre"] = f"Persona {numero}"
+            cliente_visita = visita_origen.cliente or Cliente.objects.filter(dni=visita_origen.dni).first()
+            if cliente_visita:
+                cliente_recurrente = cliente_visita.alquileres.exclude(
+                    estado_alquiler=Alquiler.EST_CANCELADO,
+                ).exists()
         form = AlquilerForm(
             disponibles=disponibles,
             initial=initial,
