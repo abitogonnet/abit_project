@@ -388,36 +388,33 @@
         hidden.value = submitter.value;
       }
 
-      const guardedForms = Array.from(document.querySelectorAll("#alqForm, .js-alq-edit-form"));
-      guardedForms.forEach(function (form) {
-        let dirty = false, submitting = false;
-        form.addEventListener("input", function () { dirty = true; });
-        form.addEventListener("change", function () { dirty = true; });
-        form.addEventListener("submit", function (event) {
-          if (submitting) { event.preventDefault(); return; }
-          preserveSubmitter(form, event);
-          submitting = true; dirty = false;
-          const closing = event.submitter && event.submitter.value === "cerrar_alquiler";
-          form.querySelectorAll("button[type='submit']").forEach(function (button) {
-            button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = closing ? "Cerrando…" : "Guardando…";
-          });
-        });
-        window.addEventListener("beforeunload", function (event) {
-          if (!dirty || submitting) return;
-          event.preventDefault(); event.returnValue = "";
+      let alquilerDirty = false;
+      document.addEventListener("input", function (event) {
+        if (event.target.closest("#alqForm, .js-alq-edit-form")) alquilerDirty = true;
+      });
+      document.addEventListener("change", function (event) {
+        if (event.target.closest("#alqForm, .js-alq-edit-form")) alquilerDirty = true;
+      });
+      document.addEventListener("submit", function (event) {
+        const form = event.target;
+        if (form.method === "dialog" || form.dataset.submitGuard === "off") return;
+        if (form.dataset.abSubmitting === "1") {
+          event.preventDefault();
+          return;
+        }
+        preserveSubmitter(form, event);
+        form.dataset.abSubmitting = "1";
+        alquilerDirty = false;
+        const closing = event.submitter && event.submitter.value === "cerrar_alquiler";
+        form.querySelectorAll("button[type='submit']").forEach(function (button) {
+          button.disabled = true;
+          if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
+          button.textContent = closing ? "Cerrando…" : "Guardando…";
         });
       });
-      document.querySelectorAll("form").forEach(function (form) {
-        if (guardedForms.includes(form) || form.dataset.submitGuard === "off") return;
-        form.addEventListener("submit", function (event) {
-          preserveSubmitter(form, event);
-          const closing = event.submitter && event.submitter.value === "cerrar_alquiler";
-          form.querySelectorAll("button[type='submit']").forEach(function (button) {
-            button.disabled = true;
-            if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
-            button.textContent = closing ? "Cerrando…" : "Guardando…";
-          });
-        }, {once: true});
+      window.addEventListener("beforeunload", function (event) {
+        if (!alquilerDirty) return;
+        event.preventDefault(); event.returnValue = "";
       });
       document.querySelectorAll(".ab-flash-stack .ab-msg").forEach(function (node) {
         setTimeout(function () { node.hidden = true; }, 6000);

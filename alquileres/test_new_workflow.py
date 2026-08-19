@@ -78,6 +78,14 @@ class NewWorkflowTests(TestCase):
         self.assertEqual(Cliente.objects.count(), 1)
         self.assertEqual(Cliente.objects.get().nombre, "Juan Manuel Pérez")
 
+    def test_boton_guardar_alquiler_envia_la_accion_en_un_solo_toque(self):
+        response = self.client.get(reverse("alquileres:crear"))
+        self.assertContains(
+            response,
+            '<button class="ab-btn" type="submit" name="accion" value="crear_alquiler">Guardar alquiler</button>',
+            html=True,
+        )
+
     def test_alquiler_historico_no_crea_cliente(self):
         alquiler = self.alquiler()
         self.assertIsNone(alquiler.cliente)

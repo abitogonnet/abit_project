@@ -203,6 +203,7 @@ body.ab-page::after {
   overflow: hidden;
   transform: translateZ(0);
   transition: transform .22s var(--xp-spring), box-shadow .22s, filter .22s !important;
+  touch-action: manipulation;
 }
 .ab-btn:hover,
 .ab-btn2:hover,
