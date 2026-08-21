@@ -142,11 +142,12 @@
 
             <div class="ab-prenda-grid">
               {% for row in section.prenda_rows %}
-                <article class="ab-prenda-card">
-                  <div class="ab-prenda-card-head">
+                <details class="ab-prenda-card ab-prenda-picker" {% if row.numero.errors or row.select.errors or row.ruedo_valor.errors or row.ruedo_tipo.errors %}open{% endif %}>
+                  <summary class="ab-prenda-card-head">
                     <strong>{{ row.label }}</strong>
-                    <span class="ab-pill">{{ row.prefix }}-</span>
-                  </div>
+                    <span class="ab-pill">{{ row.prefix }}- · Tocar para cargar</span>
+                  </summary>
+                  <div class="ab-prenda-picker-body">
                   <div class="ab-field">
                     <label class="ab-lab" for="{{ row.numero.id_for_label }}">Codigo</label>
                     {{ row.numero }}
@@ -171,7 +172,8 @@
                       </div>
                     </div>
                   {% endif %}
-                </article>
+                  </div>
+                </details>
               {% endfor %}
             </div>
             </div>

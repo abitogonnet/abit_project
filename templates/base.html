@@ -18,8 +18,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ABITO</title>
-  <link rel="stylesheet" href="{% static 'css/abito.css' %}">
-  <link rel="stylesheet" href="{% static 'css/abito-experience.css' %}">
+  <link rel="stylesheet" href="{% static 'css/abito.css' %}?v=20260821-2">
+  <link rel="stylesheet" href="{% static 'css/abito-experience.css' %}?v=20260821-2">
 </head>
 <body class="ab-page">
   <div class="ab-app" data-app-shell>
@@ -81,7 +81,7 @@
     </main>
   </div>
 
-  <script src="{% static 'js/abito-experience.js' %}" defer></script>
+  <script src="{% static 'js/abito-experience.js' %}?v=20260821-2" defer></script>
   <script>
     (function () {
       const availableNode = document.getElementById("ab-available-prendas");
@@ -327,13 +327,16 @@
         if (!url) return;
 
         panel.dataset.loading = "1";
-        panel.innerHTML = '<div class="ab-small">Cargando...</div>';
+        panel.innerHTML = '<div class="ab-panel-loading"><span></span><strong>Abriendo alquiler…</strong></div>';
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(function () { controller.abort(); }, 12000);
 
         try {
           const response = await fetch(url, {
             headers: {
               "X-Requested-With": "XMLHttpRequest",
             },
+            signal: controller.signal,
           });
           if (!response.ok) {
             throw new Error("No se pudo abrir el panel");
@@ -343,8 +346,11 @@
           panel.dataset.loaded = "1";
           enhanceEditForms(panel);
         } catch (_error) {
-          panel.innerHTML = '<div class="ab-msg err">No se pudo cargar este panel ahora.</div>';
+          panel.innerHTML = '<div class="ab-panel-retry"><strong>No pudimos abrir el alquiler.</strong><button class="ab-btn2" type="button" data-retry-panel>Reintentar</button></div>';
+          const retry = panel.querySelector("[data-retry-panel]");
+          if (retry) retry.addEventListener("click", function () { panel.dataset.loading = "0"; loadRemotePanel(panel); });
         } finally {
+          window.clearTimeout(timeoutId);
           panel.dataset.loading = "0";
         }
       }

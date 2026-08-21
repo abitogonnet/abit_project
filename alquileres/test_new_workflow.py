@@ -85,6 +85,8 @@ class NewWorkflowTests(TestCase):
             '<button class="ab-btn" type="submit" name="accion" value="crear_alquiler">Guardar alquiler</button>',
             html=True,
         )
+        self.assertContains(response, 'class="ab-prenda-card ab-prenda-picker"', html=False)
+        self.assertContains(response, "Tocar para cargar")
 
     def test_ver_alquileres_y_panel_detallado_abren_correctamente(self):
         alquiler = self.alquiler()
