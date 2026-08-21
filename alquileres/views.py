@@ -1589,6 +1589,52 @@ def ver(request):
         alquiler = get_object_or_404(Alquiler, id=alquiler_id)
         accion = request.POST.get("accion", "actualizar")
 
+        if accion == "editar_fechas":
+            try:
+                fecha_reserva = date.fromisoformat(request.POST.get("fecha_reserva", ""))
+                fecha_entrega = date.fromisoformat(request.POST.get("fecha_entrega", ""))
+                fecha_devolucion = date.fromisoformat(request.POST.get("fecha_devolucion", ""))
+            except ValueError:
+                messages.error(request, "Completá las tres fechas correctamente.")
+            else:
+                if fecha_reserva > fecha_entrega:
+                    messages.error(request, "La entrega no puede ser anterior a la reserva.")
+                elif fecha_entrega > fecha_devolucion:
+                    messages.error(request, "La devolución no puede ser anterior a la entrega.")
+                else:
+                    conflicto = None
+                    if alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS:
+                        conflicto = (
+                            AlquilerItem.objects.select_related("alquiler", "prenda")
+                            .filter(
+                                prenda_id__in=alquiler.items.values_list("prenda_id", flat=True),
+                                alquiler__estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS,
+                                alquiler__fecha_entrega__lte=fecha_devolucion,
+                                alquiler__fecha_devolucion__gte=fecha_entrega,
+                            )
+                            .exclude(alquiler=alquiler)
+                            .first()
+                        )
+                    if conflicto:
+                        messages.error(
+                            request,
+                            f"La prenda {conflicto.prenda.codigo} ya está reservada en esas fechas.",
+                        )
+                    else:
+                        alquiler.fecha_reserva = fecha_reserva
+                        alquiler.fecha_entrega = fecha_entrega
+                        alquiler.fecha_devolucion = fecha_devolucion
+                        alquiler.save(update_fields=["fecha_reserva", "fecha_entrega", "fecha_devolucion"])
+                        registrar_actividad(
+                            request, "Modificó fechas del alquiler", Actividad.ALQUILER,
+                            objeto=alquiler, referencia=f"Alquiler #{alquiler.id}",
+                            detalle=f"Entrega {fecha_entrega:%d/%m/%Y} · Devolución {fecha_devolucion:%d/%m/%Y}",
+                        )
+                        messages.success(request, f"Fechas del alquiler #{alquiler.id} actualizadas.")
+            return redirect(
+                f"{reverse('alquileres:ver')}?detalle={alquiler.id}#alquiler-{alquiler.id}"
+            )
+
         if accion == "eliminar":
             with transaction.atomic():
                 prenda_ids = list(alquiler.items.values_list("prenda_id", flat=True))

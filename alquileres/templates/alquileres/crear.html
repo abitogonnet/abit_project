@@ -6,27 +6,7 @@
     <p class="ab-kicker">Alquileres</p>
     <h1 class="ab-title">Crear alquiler</h1>
   </div>
-  <aside class="ab-pagehero-panel">
-    <span class="ab-spec-label">Pasos</span>
-    <div class="ab-stepper">
-      <button class="ab-step is-active" type="button" data-step-target="paso-cliente">
-        <span>1</span>
-        <strong>Cliente y fechas</strong>
-      </button>
-      <button class="ab-step" type="button" data-step-target="paso-look">
-        <span>2</span>
-        <strong>Personas y prendas</strong>
-      </button>
-      <button class="ab-step" type="button" data-step-target="paso-pago">
-        <span>3</span>
-        <strong>Pago</strong>
-      </button>
-      <button class="ab-step" type="button" data-step-target="paso-cierre">
-        <span>4</span>
-        <strong>Confirmacion</strong>
-      </button>
-    </div>
-  </aside>
+  <p class="ab-small">Cliente, prendas y pago. Sólo tres pasos.</p>
 </section>
 
 {% if mensaje_cliente %}
@@ -237,70 +217,13 @@
           {% if form.monto_saldo_a_favor.errors %}<div class="ab-field-errors">{{ form.monto_saldo_a_favor.errors }}</div>{% endif %}
         </div>
       </div>
-    </section>
-
-    <section class="ab-section-card" id="paso-cierre" data-step-card>
-      <div class="ab-section-head">
-        <div>
-          <span class="ab-section-number">4</span>
-          <div>
-            <h2>Guardar</h2>
-          </div>
-        </div>
-      </div>
-
-      <div class="ab-actions">
+      <div class="ab-create-savebar">
         <button class="ab-btn" type="submit" name="accion" value="crear_alquiler">Guardar alquiler</button>
-        <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver alquileres</a>
+        <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Cancelar</a>
       </div>
       <div class="ab-msg warn" data-ruedo-warning hidden>ATENCIÓN: este alquiler tiene al menos una prenda con ruedo y la entrega es en 3 días o menos. Avisar al cliente que la entrega podría demorarse hasta 1 día adicional por el trabajo de costura.</div>
     </section>
   </div>
-
-  <aside class="ab-create-aside">
-    <div class="ab-summary-panel">
-      <span class="ab-spec-label">Resumen en vivo</span>
-      <div class="ab-summary-list">
-        <div>
-          <span>Cliente</span>
-          <strong data-summary-client>Sin completar</strong>
-        </div>
-        <div>
-          <span>Entrega</span>
-          <strong data-summary-delivery>Sin fecha</strong>
-        </div>
-        <div>
-          <span>Devolucion</span>
-          <strong data-summary-return>Sin fecha</strong>
-        </div>
-        <div>
-          <span>Personas activas</span>
-          <strong data-summary-personas>1 activa</strong>
-        </div>
-        <div>
-          <span>Prendas cargadas</span>
-          <strong data-summary-prendas>0 seleccionadas</strong>
-        </div>
-        <div>
-          <span>Total final</span>
-          <strong data-summary-total>$0.00</strong>
-        </div>
-        <div>
-          <span>Saldo</span>
-          <strong data-summary-saldo>$0.00</strong>
-        </div>
-      </div>
-    </div>
-
-    <div class="ab-summary-panel">
-      <span class="ab-spec-label">Atajos</span>
-      <div class="ab-stack">
-        <a class="ab-btn2" href="{% url 'prendas:stock' %}">Revisar stock</a>
-        <a class="ab-btn2" href="{% url 'prendas:buscar_prenda' %}" target="_blank" rel="noopener">Buscar prenda</a>
-        <a class="ab-btn2" href="{% url 'alquileres:entregas' %}">Entregas</a>
-      </div>
-    </div>
-  </aside>
 </form>
 
 <dialog class="ab-prenda-dialog" data-prenda-dialog>

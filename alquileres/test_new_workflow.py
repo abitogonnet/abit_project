@@ -158,8 +158,25 @@ class NewWorkflowTests(TestCase):
         alquiler = self.alquiler()
         response = self.client.get(reverse("alquileres:panel", args=[alquiler.id, "edit"]))
         self.assertContains(response, "Cambiar fechas")
-        self.assertContains(response, f'name="alq-edit-{alquiler.id}-fecha_entrega"', html=False)
-        self.assertNotContains(response, f'name="alq-edit-{alquiler.id}-fecha_entrega" type="hidden"', html=False)
+        self.assertContains(response, 'name="fecha_entrega"', html=False)
+        self.assertContains(response, "Guardar fechas")
+
+    def test_editar_fechas_es_independiente_y_guarda_el_primer_toque(self):
+        alquiler = self.alquiler()
+        hoy = timezone.localdate()
+        nuevas = {
+            "alq_id": alquiler.id,
+            "accion": "editar_fechas",
+            "fecha_reserva": hoy.isoformat(),
+            "fecha_entrega": (hoy + timedelta(days=4)).isoformat(),
+            "fecha_devolucion": (hoy + timedelta(days=7)).isoformat(),
+        }
+        response = self.client.post(reverse("alquileres:ver"), nuevas)
+        self.assertEqual(response.status_code, 302)
+        alquiler.refresh_from_db()
+        self.assertEqual(alquiler.fecha_entrega, hoy + timedelta(days=4))
+        self.assertEqual(alquiler.fecha_devolucion, hoy + timedelta(days=7))
+        self.assertTrue(Actividad.objects.filter(accion="Modificó fechas del alquiler").exists())
 
     def test_unifica_clientes_con_el_mismo_dni_normalizado_y_conserva_alquileres(self):
         cliente_con_historial = Cliente.objects.create(
