@@ -69,7 +69,7 @@
 
     <div class="ab-entity-list">
       {% for a in alquileres %}
-        {% include "alquileres/_alquiler_card.html" with a=a enable_update_form=True show_detail_toggle=True show_edit_toggle=True delivery_mode=True filter_hidden_fields=filter_hidden_fields %}
+        {% include "alquileres/_alquiler_card.html" with a=a enable_update_form=True show_detail_toggle=True show_edit_toggle=True show_full_rental_link=True delivery_mode=True filter_hidden_fields=filter_hidden_fields %}
       {% empty %}
         <div class="ab-empty">No hay entregas en ese periodo.</div>
       {% endfor %}

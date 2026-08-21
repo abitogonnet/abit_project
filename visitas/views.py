@@ -455,6 +455,23 @@ def detalle(request, pk):
     return render(request, "visitas/detalle.html", {"visita": visita, "form": form})
 
 
+def eliminar_visita(request, pk):
+    visita = get_object_or_404(Visita, pk=pk)
+    if request.method == "POST":
+        nombre = visita.nombre
+        fecha = visita.fecha_visita
+        registrar_actividad(
+            request, "Eliminó visita", Actividad.ALQUILER,
+            objeto=visita, referencia=f"Visita #{visita.pk} - {nombre}",
+        )
+        visita.delete()
+        messages.success(request, f"Se eliminó la visita de {nombre}.")
+        if request.POST.get("volver") == "dia" and fecha:
+            return redirect("visitas:dia", fecha=fecha.isoformat())
+        return redirect("visitas:listar")
+    return redirect("visitas:detalle", pk=pk)
+
+
 def crear_alquiler(request, pk):
     visita = get_object_or_404(Visita.objects.select_related("cliente", "alquiler"), pk=pk)
     if visita.alquiler_id:

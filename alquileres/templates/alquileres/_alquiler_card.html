@@ -207,7 +207,7 @@
   {% if show_detail_toggle or show_edit_toggle %}
     <div class="ab-detail-actions">
       {% if show_detail_toggle %}
-        <details class="ab-detail-toggle{% if show_edit_toggle %} ab-detail-toggle-split{% endif %}">
+        <details class="ab-detail-toggle{% if show_edit_toggle %} ab-detail-toggle-split{% endif %}"{% if detail_open_id == a.id %} open{% endif %}>
           <summary class="ab-detail-summary">
             <span>Ver detallado</span>
             <span class="ab-small">{{ a.total_prendas_detalle }} prenda{{ a.total_prendas_detalle|pluralize }}</span>
@@ -232,6 +232,9 @@
             {% endif %}
           </div>
         </details>
+      {% endif %}
+      {% if show_full_rental_link %}
+        <a class="ab-btn2 ab-full-rental-link" href="{{ a.ver_url }}">Ver alquiler completo</a>
       {% endif %}
     </div>
   {% endif %}

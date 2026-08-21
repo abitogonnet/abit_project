@@ -122,6 +122,40 @@ class NewWorkflowTests(TestCase):
         expected = reverse("alquileres:panel", args=[alquiler.id, "detalle"])
         self.assertContains(response, f'data-panel-url="{expected}"')
 
+    def test_enlace_directo_abre_detalle_y_conserva_todas_las_acciones(self):
+        alquiler = self.alquiler()
+        response = self.client.get(reverse("alquileres:ver"), {
+            "buscar": alquiler.id, "detalle": alquiler.id,
+        })
+        self.assertContains(response, 'class="ab-detail-toggle ab-detail-toggle-split" open', html=False)
+        self.assertContains(response, "Editar")
+        self.assertContains(response, "Copiar mensaje")
+        self.assertContains(response, "Abrir WhatsApp")
+
+    def test_marcar_entregado_lo_saca_de_entregas_hoy_hasta_la_devolucion(self):
+        hoy = timezone.localdate()
+        alquiler = self.alquiler(fecha_entrega=hoy, fecha_devolucion=hoy + timedelta(days=2))
+        response = self.client.get(reverse("alquileres:home"))
+        self.assertIn(alquiler, response.context["entregas_hoy_lista"])
+
+        self.client.post(reverse("alquileres:home"), {
+            "alq_id": alquiler.id, "accion": "marcar_entregado",
+        })
+        response = self.client.get(reverse("alquileres:home"))
+        self.assertNotIn(alquiler, response.context["entregas_hoy_lista"])
+        self.assertNotIn(alquiler, response.context["devoluciones_hoy_lista"])
+
+    def test_listado_muestra_todos_y_agrupa_reservas_antes_que_finalizados(self):
+        hoy = timezone.localdate()
+        reservado_cercano = self.alquiler(cliente_nombre="Reserva cercana", fecha_entrega=hoy + timedelta(days=1))
+        reservado_lejano = self.alquiler(cliente_nombre="Reserva lejana", fecha_entrega=hoy + timedelta(days=8))
+        entregado = self.alquiler(cliente_nombre="Ya entregado", fecha_entrega=hoy - timedelta(days=3), estado_alquiler=Alquiler.EST_ENTREGADO)
+        cerrado = self.alquiler(cliente_nombre="Ya cerrado", fecha_entrega=hoy - timedelta(days=10), estado_alquiler=Alquiler.EST_CERRADO)
+
+        response = self.client.get(reverse("alquileres:ver"))
+        ids = [alquiler.id for alquiler in response.context["alquileres"]]
+        self.assertEqual(ids, [reservado_cercano.id, reservado_lejano.id, cerrado.id, entregado.id])
+
     def test_alquiler_historico_no_crea_cliente(self):
         alquiler = self.alquiler()
         self.assertIsNone(alquiler.cliente)

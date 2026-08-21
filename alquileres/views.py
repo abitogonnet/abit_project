@@ -46,6 +46,23 @@ RUEDOS_MESSAGE_LABELS = {
 logger = logging.getLogger(__name__)
 
 
+def _restar_dias_habiles(fecha, cantidad):
+    resultado = fecha
+    restantes = cantidad
+    while restantes:
+        resultado -= timedelta(days=1)
+        if resultado.weekday() < 5:
+            restantes -= 1
+    return resultado
+
+
+def _primer_dia_habil_posterior(fecha):
+    resultado = fecha + timedelta(days=1)
+    while resultado.weekday() > 4:
+        resultado += timedelta(days=1)
+    return resultado
+
+
 def home(request):
     if request.method == "POST":
         alquiler_id = request.POST.get("alq_id")
@@ -65,7 +82,7 @@ def home(request):
         .filter(estado_alquiler__in=Alquiler.ESTADOS_ALQUILER_ACTIVOS)
     )
     entregas_hoy_lista = list(
-        Alquiler.objects.filter(estado_alquiler__in=[Alquiler.EST_RESERVADO, Alquiler.EST_ENTREGADO], fecha_entrega=hoy)
+        Alquiler.objects.filter(estado_alquiler=Alquiler.EST_RESERVADO, fecha_entrega=hoy)
         .prefetch_related("items__prenda").order_by("id")
     )
     entregas_hoy = len(entregas_hoy_lista)
@@ -490,11 +507,11 @@ def _badge_estado_prenda(value: str) -> str:
 
 
 def _orden_entrega_key(alquiler: Alquiler, hoy):
-    delta_dias = (alquiler.fecha_entrega - hoy).days
+    # Las reservas que todavía requieren una entrega van primero. Dentro de
+    # cada grupo, lo más antiguo/cercano queda arriba y lo más lejano abajo.
+    pendiente_entrega = alquiler.estado_alquiler == Alquiler.EST_RESERVADO
     return (
-        alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_FINALES,
-        abs(delta_dias),
-        delta_dias < 0,
+        0 if pendiente_entrega else 1,
         alquiler.fecha_entrega,
         alquiler.fecha_devolucion,
         alquiler.id,
@@ -681,7 +698,10 @@ def _adjuntar_detalle_alquiler(alquileres):
         alquiler.mensaje_cliente = _armar_mensaje_cliente_con_items(alquiler, items)
         alquiler.whatsapp_url = generar_enlace_whatsapp(alquiler.cliente_telefono, alquiler.mensaje_cliente)
         alquiler.recordatorio_whatsapp_url = generar_enlace_whatsapp(alquiler.cliente_telefono, mensaje_recordatorio(alquiler))
-        alquiler.ver_url = f"{reverse('alquileres:ver')}#alquiler-{alquiler.id}"
+        alquiler.ver_url = (
+            f"{reverse('alquileres:ver')}?buscar={alquiler.id}"
+            f"&detalle={alquiler.id}#alquiler-{alquiler.id}"
+        )
         alquiler.esta_finalizado = alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_FINALES
         alquiler.puede_marcar_entregado = alquiler.estado_alquiler == Alquiler.EST_RESERVADO
         alquiler.puede_cerrar = alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS
@@ -1248,6 +1268,8 @@ def crear(request):
                 "cliente_nombre": visita_origen.nombre,
                 "cliente_telefono": visita_origen.telefono,
                 "persona1_nombre": visita_origen.nombre,
+                "fecha_entrega": _restar_dias_habiles(visita_origen.fecha_evento, 2),
+                "fecha_devolucion": _primer_dia_habil_posterior(visita_origen.fecha_evento),
             })
             cliente_visita = visita_origen.cliente or Cliente.objects.filter(dni=visita_origen.dni).first()
             if cliente_visita:
@@ -1302,7 +1324,7 @@ def _redirect_entregas_con_filtro(request):
     return redirect(url)
 
 
-def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=None):
+def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=None, detail_open_id=None):
     disponibles = _disponibles_por_categoria()
     form_por_alquiler_id = form_por_alquiler_id or {}
     filtros_form = VerAlquileresFiltroForm(data or None)
@@ -1379,6 +1401,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         "filtros_activos": filtros_activos,
         "buscar": filtros_form["buscar"].value() or "",
         "edit_open_id": edit_open_id,
+        "detail_open_id": detail_open_id,
         "filter_hidden_fields": hidden_fields,
         "disponibles_json": _disponibles_payload(disponibles),
     }
@@ -1631,7 +1654,13 @@ def ver(request):
 
         return _redirect_ver_con_filtros(request)
 
-    return render(request, "alquileres/ver.html", _contexto_ver_alquileres(request.GET or None))
+    detail_open_id = request.GET.get("detalle", "")
+    detail_open_id = int(detail_open_id) if detail_open_id.isdigit() else None
+    return render(
+        request,
+        "alquileres/ver.html",
+        _contexto_ver_alquileres(request.GET or None, detail_open_id=detail_open_id),
+    )
 
 
 def entregas(request):

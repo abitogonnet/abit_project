@@ -17,6 +17,7 @@
         <a class="ab-btn2" href="{% url 'visitas:detalle' visita.pk %}">Ver visita</a>
         {% if visita.alquiler_id %}<a class="ab-btn" href="{% url 'alquileres:ver' %}?buscar={{ visita.alquiler_id }}">Ver alquiler</a>{% else %}<a class="ab-btn" href="{% url 'visitas:crear_alquiler' visita.pk %}">Crear alquiler</a>{% endif %}
         {% if visita.recordatorio_whatsapp_url %}<a class="ab-btn2" href="{{ visita.recordatorio_whatsapp_url }}" target="_blank" rel="noopener">Enviar recordatorio</a>{% endif %}
+        <form method="post" action="{% url 'visitas:eliminar' visita.pk %}" onsubmit="return confirm('Se eliminará solamente esta visita. ¿Continuar?');">{% csrf_token %}<input type="hidden" name="volver" value="dia"><button class="ab-btn-danger" type="submit">Eliminar</button></form>
       </div>
     </article>
   {% empty %}<div class="ab-empty">No hay visitas para este día.</div>{% endfor %}

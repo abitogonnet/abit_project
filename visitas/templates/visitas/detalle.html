@@ -16,6 +16,9 @@
     {% if visita.recordatorio_whatsapp_url %}
       <a class="ab-btn2" href="{{ visita.recordatorio_whatsapp_url }}" target="_blank" rel="noopener">Enviar recordatorio</a>
     {% endif %}
+    <form method="post" action="{% url 'visitas:eliminar' visita.pk %}" style="margin-top:12px" onsubmit="return confirm('Se eliminará solamente esta visita. ¿Continuar?');">
+      {% csrf_token %}<button class="ab-btn-danger" type="submit">Eliminar visita</button>
+    </form>
   </div>
   <div class="ab-section-card">
     <h2 class="ab-mini-title">Referencia del catálogo</h2>

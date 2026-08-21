@@ -337,3 +337,29 @@ class CalendarioVisitasTests(TestCase):
         self.assertEqual(response.context["form"]["cliente_nombre"].value(), cliente.nombre)
         self.assertEqual(response.context["form"]["cliente_telefono"].value(), cliente.telefono)
         self.assertContains(response, "Este cliente ya alquiló anteriormente")
+
+    def test_crear_alquiler_desde_visita_calcula_fechas_habiles_del_evento(self):
+        visita = Visita.objects.create(
+            nombre="Fechas Evento", dni="30111222", telefono="2214445555",
+            cantidad_personas=1, fecha_evento=date(2026, 8, 24),  # lunes
+            fecha_visita=date(2026, 8, 20), hora_visita=time(17),
+        )
+        response = self.client.get(
+            reverse("visitas:crear_alquiler", args=[visita.pk]), follow=True,
+        )
+        self.assertEqual(response.context["form"]["fecha_entrega"].value(), date(2026, 8, 20))
+        self.assertEqual(response.context["form"]["fecha_devolucion"].value(), date(2026, 8, 25))
+
+    def test_se_puede_eliminar_una_visita_puntual(self):
+        fecha = date(2026, 8, 26)
+        visita = Visita.objects.create(
+            nombre="Visita a borrar", dni="30999888", telefono="2214445555",
+            cantidad_personas=1, fecha_evento=fecha + timedelta(days=7),
+            fecha_visita=fecha, hora_visita=time(17),
+        )
+        response = self.client.post(
+            reverse("visitas:eliminar", args=[visita.pk]),
+            {"volver": "dia"},
+        )
+        self.assertRedirects(response, reverse("visitas:dia", args=[fecha.isoformat()]))
+        self.assertFalse(Visita.objects.filter(pk=visita.pk).exists())
