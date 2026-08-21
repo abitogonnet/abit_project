@@ -46,6 +46,22 @@ class AccesoTests(TestCase):
         self.assertIn("Operó stock", content)
         self.assertNotIn("Creó gasto", content)
 
+    def test_registro_actividad_busca_y_tolera_fecha_invalida(self):
+        empleado = self.crear_usuario("registro", PerfilUsuario.EMPLEADO)
+        self.client.force_login(empleado)
+        Actividad.objects.create(
+            usuario=empleado, usuario_nombre="Registro", accion="Modificó alquiler",
+            categoria=Actividad.ALQUILER, referencia="Alquiler #321",
+        )
+        response = self.client.get(reverse("cuentas:actividad"), {"buscar": "321"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Modificó alquiler")
+        self.assertContains(response, "1 movimientos")
+
+        response = self.client.get(reverse("cuentas:actividad"), {"desde": "fecha-mala"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "La fecha del filtro no es válida")
+
     def test_admin_finanzas_pero_no_usuarios(self):
         admin = self.crear_usuario("tadeo", PerfilUsuario.ADMINISTRADOR)
         self.client.force_login(admin)

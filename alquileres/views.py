@@ -3,6 +3,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 import logging
 import secrets
+import unicodedata
 
 from django.contrib import messages
 from django.db import DatabaseError, IntegrityError, transaction
@@ -826,13 +827,42 @@ def _armar_mensaje_cliente(alq: Alquiler) -> str:
     return _armar_mensaje_cliente_con_items(alq, items)
 
 
+def _solo_digitos(value):
+    return "".join(char for char in (value or "") if char.isdigit())
+
+
+def _texto_cliente_normalizado(value):
+    texto = unicodedata.normalize("NFKD", (value or "").strip().casefold())
+    return " ".join("".join(char for char in texto if not unicodedata.combining(char)).split())
+
+
+def _unificar_clientes(canonico, duplicados):
+    for duplicado in duplicados:
+        if duplicado.pk == canonico.pk:
+            continue
+        Alquiler.objects.filter(cliente=duplicado).update(cliente=canonico)
+        if Visita is not None:
+            Visita.objects.filter(cliente=duplicado).update(cliente=canonico)
+        if duplicado.saldo_a_favor:
+            canonico.saldo_a_favor += duplicado.saldo_a_favor
+            canonico.save(update_fields=["saldo_a_favor", "actualizado_en"])
+        duplicado.delete()
+
+
 def _vincular_cliente(alquiler, dni):
-    cliente = Cliente.objects.filter(dni=dni).first()
-    recurrente = bool(
-        cliente and cliente.alquileres.exclude(
-            estado_alquiler=Alquiler.EST_CANCELADO
-        ).exists()
+    dni = _solo_digitos(dni)
+    coincidencias = [
+        cliente for cliente in Cliente.objects.all()
+        if _solo_digitos(cliente.dni) == dni
+    ]
+    coincidencias.sort(
+        key=lambda cliente: (
+            cliente.alquileres.exclude(estado_alquiler=Alquiler.EST_CANCELADO).count(),
+            -cliente.pk,
+        ),
+        reverse=True,
     )
+    cliente = coincidencias[0] if coincidencias else None
     if cliente is None:
         try:
             with transaction.atomic():
@@ -843,10 +873,8 @@ def _vincular_cliente(alquiler, dni):
                 )
         except IntegrityError:
             cliente = Cliente.objects.get(dni=dni)
-            recurrente = cliente.alquileres.exclude(
-                estado_alquiler=Alquiler.EST_CANCELADO
-            ).exists()
     else:
+        _unificar_clientes(cliente, coincidencias[1:])
         cambios = []
         if cliente.nombre != alquiler.cliente_nombre:
             cliente.nombre = alquiler.cliente_nombre
@@ -857,6 +885,22 @@ def _vincular_cliente(alquiler, dni):
         if cambios:
             cambios.append("actualizado_en")
             cliente.save(update_fields=cambios)
+
+    nombre_normalizado = _texto_cliente_normalizado(alquiler.cliente_nombre)
+    telefono_normalizado = _solo_digitos(alquiler.cliente_telefono)
+    if nombre_normalizado and telefono_normalizado:
+        alquileres_sin_cliente = Alquiler.objects.filter(cliente__isnull=True).exclude(pk=alquiler.pk)
+        ids_coincidentes = [
+            historico.pk for historico in alquileres_sin_cliente
+            if _texto_cliente_normalizado(historico.cliente_nombre) == nombre_normalizado
+            and _solo_digitos(historico.cliente_telefono) == telefono_normalizado
+        ]
+        if ids_coincidentes:
+            Alquiler.objects.filter(pk__in=ids_coincidentes).update(cliente=cliente)
+
+    recurrente = cliente.alquileres.exclude(
+        estado_alquiler=Alquiler.EST_CANCELADO,
+    ).exclude(pk=alquiler.pk).exists()
     alquiler.cliente = cliente
     return recurrente
 

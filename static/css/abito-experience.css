@@ -183,6 +183,16 @@ body.ab-page::after {
 .ab-rental-card-compact > .ab-entity-columns { display: none; }
 .ab-rental-card-compact > .ab-rental-actions-form { order: 4; }
 .ab-rental-card-compact > .ab-actions { order: 5; }
+.ab-edit-dates { margin: 14px 0; padding: 14px; border: 1px solid rgba(8,127,115,.18); border-radius: 16px; background: rgba(8,127,115,.045); }
+.ab-edit-dates > summary { cursor: pointer; display: flex; justify-content: space-between; gap: 12px; align-items: center; color: var(--xp-teal); }
+.ab-edit-dates[open] > summary { margin-bottom: 14px; }
+.ab-activity-list { display: grid; gap: 10px; }
+.ab-activity-item { display: flex; justify-content: space-between; gap: 18px; padding: 14px 16px; border: 1px solid rgba(67,91,83,.12); border-radius: 15px; background: rgba(255,255,255,.58); }
+.ab-activity-main { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ab-activity-main > span:last-child { flex-basis: 100%; color: var(--xp-muted); }
+.ab-activity-meta { display: grid; align-content: center; text-align: right; white-space: nowrap; }
+.ab-activity-meta span { color: var(--xp-muted); font-size: .86rem; }
+@media (max-width: 720px) { .ab-activity-item { flex-direction: column; } .ab-activity-meta { text-align: left; } }
 
 @media (max-width: 720px) {
   .ab-rental-finder { top: 68px; padding: 14px !important; }

@@ -8,6 +8,7 @@ from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -127,12 +128,31 @@ def usuario_estado(request, pk):
 def actividad(request):
     qs = Actividad.objects.select_related("usuario", "usuario__perfil")
     if not puede_finanzas(request.user): qs = qs.filter(es_financiera=False)
-    uid, categoria, desde, hasta = (request.GET.get(k, "") for k in ("usuario", "categoria", "desde", "hasta"))
+    uid, categoria, desde, hasta = (request.GET.get(k, "").strip() for k in ("usuario", "categoria", "desde", "hasta"))
+    buscar = request.GET.get("buscar", "").strip()
     if uid.isdigit(): qs = qs.filter(usuario_id=int(uid))
-    if categoria: qs = qs.filter(categoria=categoria)
-    if desde: qs = qs.filter(creado_en__date__gte=desde)
-    if hasta: qs = qs.filter(creado_en__date__lte=hasta)
-    return render(request, "cuentas/actividad.html", {"actividades": qs[:500], "usuarios": User.objects.filter(actividades__isnull=False).distinct(), "categorias": Actividad.CATEGORIAS, "filtros": request.GET})
+    if categoria in dict(Actividad.CATEGORIAS): qs = qs.filter(categoria=categoria)
+    if buscar:
+        qs = qs.filter(
+            Q(accion__icontains=buscar) | Q(referencia__icontains=buscar)
+            | Q(detalle__icontains=buscar) | Q(usuario_nombre__icontains=buscar)
+        )
+    for valor, lookup in ((desde, "creado_en__date__gte"), (hasta, "creado_en__date__lte")):
+        if valor:
+            try:
+                fecha = datetime.strptime(valor, "%Y-%m-%d").date()
+            except ValueError:
+                messages.error(request, "La fecha del filtro no es válida.")
+            else:
+                qs = qs.filter(**{lookup: fecha})
+    actividades = list(qs[:500])
+    return render(request, "cuentas/actividad.html", {
+        "actividades": actividades,
+        "usuarios": User.objects.filter(actividades__isnull=False).distinct(),
+        "categorias": Actividad.CATEGORIAS,
+        "filtros": request.GET,
+        "total_resultados": len(actividades),
+    })
 
 
 def cambiar_password(request):

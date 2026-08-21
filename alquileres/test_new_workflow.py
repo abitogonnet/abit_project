@@ -156,6 +156,30 @@ class NewWorkflowTests(TestCase):
         ids = [alquiler.id for alquiler in response.context["alquileres"]]
         self.assertEqual(ids, [reservado_cercano.id, reservado_lejano.id, cerrado.id, entregado.id])
 
+    def test_editar_ofrece_fechas_en_seccion_opcional(self):
+        alquiler = self.alquiler()
+        response = self.client.get(reverse("alquileres:panel", args=[alquiler.id, "edit"]))
+        self.assertContains(response, "Cambiar fechas")
+        self.assertContains(response, f'name="alq-edit-{alquiler.id}-fecha_entrega"', html=False)
+        self.assertNotContains(response, f'name="alq-edit-{alquiler.id}-fecha_entrega" type="hidden"', html=False)
+
+    def test_unifica_clientes_con_el_mismo_dni_normalizado_y_conserva_alquileres(self):
+        cliente_con_historial = Cliente.objects.create(
+            nombre="Juan Perez", dni="40.123.456", telefono="2215557788",
+        )
+        historico = self.alquiler(cliente_nombre="Juan Perez", cliente_telefono="2215557788", cliente=cliente_con_historial)
+        duplicado_sin_historial = Cliente.objects.create(
+            nombre="Juan Perez", dni="40123456", telefono="2215557788",
+        )
+        nuevo = self.alquiler(cliente_nombre="Juan Perez", cliente_telefono="2215557788", cliente=duplicado_sin_historial)
+
+        self.assertTrue(_vincular_cliente(nuevo, "40 123 456"))
+        nuevo.save(update_fields=["cliente"])
+
+        self.assertEqual(Cliente.objects.count(), 1)
+        self.assertEqual(nuevo.cliente_id, cliente_con_historial.id)
+        self.assertEqual(historico.cliente_id, cliente_con_historial.id)
+
     def test_alquiler_historico_no_crea_cliente(self):
         alquiler = self.alquiler()
         self.assertIsNone(alquiler.cliente)

@@ -2,9 +2,6 @@
   {% csrf_token %}
   <input type="hidden" name="alq_id" value="{{ alquiler.id }}">
   {{ alquiler.edit_form.personas_visibles }}
-  {{ alquiler.edit_form.fecha_reserva.as_hidden }}
-  {{ alquiler.edit_form.fecha_entrega.as_hidden }}
-  {{ alquiler.edit_form.fecha_devolucion.as_hidden }}
   {% for field_name, field_value in alquiler.edit_hidden_fields %}
     <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
   {% endfor %}
@@ -28,6 +25,27 @@
   {% if alquiler.edit_form.non_field_errors %}
     <div class="ab-msg err">{{ alquiler.edit_form.non_field_errors }}</div>
   {% endif %}
+
+  <details class="ab-edit-dates"{% if alquiler.edit_form.fecha_reserva.errors or alquiler.edit_form.fecha_entrega.errors or alquiler.edit_form.fecha_devolucion.errors %} open{% endif %}>
+    <summary>
+      <strong>Cambiar fechas</strong>
+      <span class="ab-small">Opcional: si no abrís esta sección se mantienen las actuales.</span>
+    </summary>
+    <div class="ab-grid">
+      <div class="col-4 ab-field">
+        <label class="ab-lab">Reserva</label>{{ alquiler.edit_form.fecha_reserva }}
+        {% if alquiler.edit_form.fecha_reserva.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_reserva.errors }}</div>{% endif %}
+      </div>
+      <div class="col-4 ab-field">
+        <label class="ab-lab">Entrega</label>{{ alquiler.edit_form.fecha_entrega }}
+        {% if alquiler.edit_form.fecha_entrega.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_entrega.errors }}</div>{% endif %}
+      </div>
+      <div class="col-4 ab-field">
+        <label class="ab-lab">Devolución</label>{{ alquiler.edit_form.fecha_devolucion }}
+        {% if alquiler.edit_form.fecha_devolucion.errors %}<div class="ab-field-errors">{{ alquiler.edit_form.fecha_devolucion.errors }}</div>{% endif %}
+      </div>
+    </div>
+  </details>
 
   <div class="ab-edit-grid-modern ab-edit-grid-modern-full">
     <div class="ab-stack">

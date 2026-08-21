@@ -1,3 +1,38 @@
-{% extends "base.html" %}{% block content %}<section class="ab-card"><h1>Registro de actividad</h1>
-<form method="get" class="ab-filter-grid"><label>Usuario<select name="usuario"><option value="">Todos</option>{% for u in usuarios %}<option value="{{ u.pk }}" {% if filtros.usuario == u.pk|stringformat:'s' %}selected{% endif %}>{{ u.perfil.nombre|default:u.username }}</option>{% endfor %}</select></label><label>Tipo<select name="categoria"><option value="">Todos</option>{% for value,label in categorias %}<option value="{{ value }}" {% if filtros.categoria == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><label>Desde<input type="date" name="desde" value="{{ filtros.desde }}"></label><label>Hasta<input type="date" name="hasta" value="{{ filtros.hasta }}"></label><button class="ab-btn" type="submit">Filtrar</button></form>
-<div class="ab-table-wrap"><table class="ab-table"><thead><tr><th>Fecha/Hora</th><th>Usuario</th><th>Acción</th><th>Referencia/Detalle</th></tr></thead><tbody>{% for a in actividades %}<tr><td>{{ a.creado_en|date:'d/m/Y H:i' }}</td><td>{{ a.usuario_nombre|default:'Usuario histórico' }}</td><td>{{ a.accion }}</td><td>{{ a.referencia }}{% if a.detalle %}<br><small>{{ a.detalle }}</small>{% endif %}</td></tr>{% empty %}<tr><td colspan="4">No hay actividad para estos filtros.</td></tr>{% endfor %}</tbody></table></div></section>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<section class="ab-pagehero ab-pagehero-tight">
+  <div class="ab-pagehero-copy">
+    <p class="ab-kicker">Control interno</p>
+    <h1 class="ab-title">Registro de actividad</h1>
+    <div class="ab-chip-row"><span class="ab-chip">{{ total_resultados }} movimientos</span><span class="ab-chip">Últimos 500</span></div>
+  </div>
+</section>
+
+<div class="ab-page-stack">
+  <section class="ab-section-card">
+    <form method="get" class="ab-filter-grid">
+      <label>Buscar<input class="ab-inp" type="search" name="buscar" value="{{ filtros.buscar }}" placeholder="Acción, cliente, alquiler o detalle"></label>
+      <label>Usuario<select class="ab-sel" name="usuario"><option value="">Todos</option>{% for u in usuarios %}<option value="{{ u.pk }}"{% if filtros.usuario == u.pk|stringformat:'s' %} selected{% endif %}>{{ u.perfil.nombre|default:u.username }}</option>{% endfor %}</select></label>
+      <label>Tipo<select class="ab-sel" name="categoria"><option value="">Todos</option>{% for value,label in categorias %}<option value="{{ value }}"{% if filtros.categoria == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label>Desde<input class="ab-inp" type="date" name="desde" value="{{ filtros.desde }}"></label>
+      <label>Hasta<input class="ab-inp" type="date" name="hasta" value="{{ filtros.hasta }}"></label>
+      <div class="ab-actions"><button class="ab-btn" type="submit">Filtrar</button><a class="ab-btn2" href="{% url 'cuentas:actividad' %}">Limpiar</a></div>
+    </form>
+  </section>
+
+  <section class="ab-section-card">
+    <div class="ab-activity-list">
+      {% for a in actividades %}
+        <article class="ab-activity-item">
+          <div class="ab-activity-main">
+            <span class="ab-badge secondary">{{ a.get_categoria_display }}</span>
+            <strong>{{ a.accion }}</strong>
+            <span>{{ a.referencia|default:"Sin referencia" }}{% if a.detalle %} · {{ a.detalle }}{% endif %}</span>
+          </div>
+          <div class="ab-activity-meta"><strong>{{ a.usuario_nombre|default:"Usuario histórico" }}</strong><span>{{ a.creado_en|date:'d/m/Y H:i' }}</span></div>
+        </article>
+      {% empty %}<div class="ab-empty">No hay actividad para esos filtros.</div>{% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
