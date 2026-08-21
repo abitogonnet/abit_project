@@ -504,7 +504,10 @@ class AlquilerForm(forms.ModelForm):
 
 class VerAlquileresFiltroForm(forms.Form):
     buscar = forms.CharField(required=False, widget=forms.TextInput(attrs={
-        "class": "ab-inp", "placeholder": "Nombre, DNI o número de alquiler",
+        "class": "ab-inp ab-rental-search-input",
+        "placeholder": "Nombre, DNI, teléfono, prenda o N° de alquiler",
+        "autocomplete": "off",
+        "inputmode": "search",
     }))
     fecha_desde = forms.DateField(
         required=False,

@@ -1283,7 +1283,7 @@ def _sync_prendas_por_estado(alquiler: Alquiler):
 
 def _redirect_ver_con_filtros(request):
     params = {}
-    for key in ["fecha_desde", "fecha_hasta"]:
+    for key in ["buscar", "fecha_desde", "fecha_hasta"]:
         value = (request.POST.get(key) or "").strip()
         if value:
             params[key] = value
@@ -1326,10 +1326,18 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
             filtros_activos = True
         buscar = (filtros_form.cleaned_data.get("buscar") or "").strip()
         if buscar:
-            query = Q(cliente_nombre__icontains=buscar) | Q(cliente__dni__icontains=buscar)
-            if buscar.isdigit():
-                query |= Q(id=int(buscar))
-            alquileres = alquileres.filter(query)
+            numero = buscar.lstrip("#").strip()
+            query = (
+                Q(cliente_nombre__icontains=buscar)
+                | Q(cliente_telefono__icontains=buscar)
+                | Q(cliente__nombre__icontains=buscar)
+                | Q(cliente__dni__icontains=buscar)
+                | Q(cliente__telefono__icontains=buscar)
+                | Q(items__prenda__codigo__icontains=buscar)
+            )
+            if numero.isdigit():
+                query |= Q(id=int(numero))
+            alquileres = alquileres.filter(query).distinct()
             filtros_activos = True
 
     alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
@@ -1342,13 +1350,15 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
     _adjuntar_detalle_alquiler(alquileres)
 
     hidden_fields = _hidden_field_pairs({
+        "buscar": filtros_form["buscar"].value() or "",
         "fecha_desde": filtros_form["fecha_desde"].value() or "",
         "fecha_hasta": filtros_form["fecha_hasta"].value() or "",
-    }, ["fecha_desde", "fecha_hasta"])
+    }, ["buscar", "fecha_desde", "fecha_hasta"])
 
     alquileres_por_id = {}
     for alquiler in alquileres:
         alquiler.edit_panel_url = _panel_url(alquiler.id, "edit", hidden_fields)
+        alquiler.detail_panel_url = _panel_url(alquiler.id, "detalle")
         alquileres_por_id[alquiler.id] = alquiler
 
     if edit_open_id in alquileres_por_id:

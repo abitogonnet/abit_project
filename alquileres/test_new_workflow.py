@@ -104,6 +104,24 @@ class NewWorkflowTests(TestCase):
         self.assertEqual(detalle.status_code, 200)
         self.assertContains(detalle, alquiler.cliente_nombre)
 
+    def test_buscador_de_alquileres_encuentra_todos_los_datos_utiles(self):
+        cliente = Cliente.objects.create(nombre="María Soto", dni="33222111", telefono="2215558899")
+        alquiler = self.alquiler(cliente_nombre="María Soto", cliente_telefono="2215558899", cliente=cliente)
+        prenda = Prenda.objects.create(codigo="SA-BUS-77", categoria=Prenda.C_SACO, marca="Abito", color="Azul", talle="50", origen=Prenda.O_NAC)
+        AlquilerItem.objects.create(alquiler=alquiler, persona_num=1, prenda=prenda)
+
+        for termino in ("María", "33222111", "2215558899", "SA-BUS-77", f"#{alquiler.id}"):
+            with self.subTest(termino=termino):
+                response = self.client.get(reverse("alquileres:ver"), {"buscar": termino})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "María Soto")
+
+    def test_listado_entrega_url_real_para_ver_detallado(self):
+        alquiler = self.alquiler()
+        response = self.client.get(reverse("alquileres:ver"))
+        expected = reverse("alquileres:panel", args=[alquiler.id, "detalle"])
+        self.assertContains(response, f'data-panel-url="{expected}"')
+
     def test_alquiler_historico_no_crea_cliente(self):
         alquiler = self.alquiler()
         self.assertIsNone(alquiler.cliente)

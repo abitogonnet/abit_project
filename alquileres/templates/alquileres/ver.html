@@ -30,34 +30,33 @@
 </section>
 
 <div class="ab-page-stack">
-  <section class="ab-section-card">
-    <div class="ab-section-head">
-      <div>
-        <p class="ab-kicker">Filtro</p>
-        <h2 class="ab-mini-title">Fecha de entrega</h2>
-      </div>
-    </div>
-
-    <form method="get" class="ab-inline-form-grid">
-      <div class="ab-field">
-        <label class="ab-lab" for="{{ filtros_form.buscar.id_for_label }}">Cliente o DNI</label>
-        {{ filtros_form.buscar }}
-      </div>
-      <div class="ab-field">
-        <label class="ab-lab" for="{{ filtros_form.fecha_desde.id_for_label }}">Desde</label>
-        {{ filtros_form.fecha_desde }}
-      </div>
-      <div class="ab-field">
-        <label class="ab-lab" for="{{ filtros_form.fecha_hasta.id_for_label }}">Hasta</label>
-        {{ filtros_form.fecha_hasta }}
-      </div>
-      <div class="ab-field">
-        <label class="ab-lab">&nbsp;</label>
+  <section class="ab-section-card ab-rental-finder">
+    <form method="get">
+      <div class="ab-rental-search-row">
+        <div class="ab-field ab-rental-search-field">
+          <label class="ab-lab" for="{{ filtros_form.buscar.id_for_label }}">Buscar cualquier alquiler</label>
+          {{ filtros_form.buscar }}
+          <span class="ab-small">Nombre, DNI, teléfono, código de prenda o número de alquiler.</span>
+        </div>
         <div class="ab-actions">
           <button class="ab-btn" type="submit">Buscar</button>
-          <a class="ab-btn2" href="{% url 'alquileres:ver' %}">Limpiar</a>
+          {% if filtros_activos %}<a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver todos</a>{% endif %}
         </div>
       </div>
+
+      <details class="ab-rental-advanced"{% if filtros_form.fecha_desde.value or filtros_form.fecha_hasta.value or filtros_form.errors %} open{% endif %}>
+        <summary>Filtrar también por fecha de entrega</summary>
+        <div class="ab-rental-date-grid">
+          <div class="ab-field">
+            <label class="ab-lab" for="{{ filtros_form.fecha_desde.id_for_label }}">Desde</label>
+            {{ filtros_form.fecha_desde }}
+          </div>
+          <div class="ab-field">
+            <label class="ab-lab" for="{{ filtros_form.fecha_hasta.id_for_label }}">Hasta</label>
+            {{ filtros_form.fecha_hasta }}
+          </div>
+        </div>
+      </details>
     </form>
 
     {% if filtros_form.errors %}
@@ -69,18 +68,18 @@
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Listado</p>
-        <h2 class="ab-mini-title">Alquileres</h2>
+        <h2 class="ab-mini-title">{% if buscar %}Resultados para “{{ buscar }}”{% else %}Todos los alquileres{% endif %}</h2>
       </div>
       <span class="ab-pill">{{ alquileres|length }} registro{{ alquileres|length|pluralize }}</span>
     </div>
 
     <div class="ab-entity-list">
       {% for a in alquileres %}
-        {% include "alquileres/_alquiler_card.html" with a=a enable_update_form=True show_detail_toggle=True show_edit_toggle=True show_copy_message=True filter_hidden_fields=filter_hidden_fields %}
+        {% include "alquileres/_alquiler_card.html" with a=a enable_update_form=True show_detail_toggle=True show_edit_toggle=True show_copy_message=True compact_list_mode=True filter_hidden_fields=filter_hidden_fields %}
       {% empty %}
         <div class="ab-empty">
           {% if filtros_activos %}
-            No hay alquileres dentro de ese rango de fechas.
+            No encontramos alquileres. Probá con el nombre, DNI, teléfono, código de prenda o número sin el #.
           {% else %}
             No hay alquileres cargados.
           {% endif %}
