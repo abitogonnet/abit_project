@@ -86,6 +86,22 @@ class NewWorkflowTests(TestCase):
             html=True,
         )
 
+    def test_ver_alquileres_y_panel_detallado_abren_correctamente(self):
+        alquiler = self.alquiler()
+        listado = self.client.get(reverse("alquileres:ver"))
+        self.assertEqual(listado.status_code, 200)
+        self.assertContains(listado, "Ver detallado")
+        self.assertContains(listado, "Editar")
+
+        panel = self.client.get(reverse("alquileres:panel", args=[alquiler.pk, "edit"]))
+        self.assertEqual(panel.status_code, 200)
+        self.assertContains(panel, "Guardar cambios")
+        self.assertContains(panel, alquiler.cliente_nombre)
+
+        detalle = self.client.get(reverse("alquileres:panel", args=[alquiler.pk, "detalle"]))
+        self.assertEqual(detalle.status_code, 200)
+        self.assertContains(detalle, alquiler.cliente_nombre)
+
     def test_alquiler_historico_no_crea_cliente(self):
         alquiler = self.alquiler()
         self.assertIsNone(alquiler.cliente)

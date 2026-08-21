@@ -76,7 +76,7 @@
 
     <div class="ab-entity-list">
       {% for a in alquileres %}
-        {% include "alquileres/_alquiler_card.html" with a=a enable_update_form=True show_detail_toggle=False show_edit_toggle=True show_copy_message=True filter_hidden_fields=filter_hidden_fields %}
+        {% include "alquileres/_alquiler_card.html" with a=a enable_update_form=True show_detail_toggle=True show_edit_toggle=True show_copy_message=True filter_hidden_fields=filter_hidden_fields %}
       {% empty %}
         <div class="ab-empty">
           {% if filtros_activos %}
