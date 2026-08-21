@@ -312,6 +312,8 @@ class CalendarioVisitasTests(TestCase):
         self.assertContains(response, "Enviar recordatorio")
         self.assertContains(response, "wa.me/5492215555555")
         self.assertContains(response, reverse("visitas:crear_alquiler", args=[visita.pk]))
+        self.assertContains(response, "Eliminar esta visita")
+        self.assertContains(response, f'action="{reverse("visitas:eliminar", args=[visita.pk])}"', html=False)
 
     def test_crear_alquiler_desde_modulo_precarga_cliente_y_detecta_recurrencia(self):
         cliente = Cliente.objects.create(

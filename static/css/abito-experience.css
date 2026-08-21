@@ -456,11 +456,6 @@ textarea:focus {
 .xp-confirm-dialog h2 { margin-top: 8px; }
 .xp-confirm-dialog p:not(.ab-kicker) { color: var(--muted); }
 
-.xp-compact .ab-entity-list, .xp-compact .ab-rental-list { gap: 7px !important; }
-.xp-compact .ab-entity-card, .xp-compact .ab-rental-card, .xp-compact .ab-priority-card { padding: 10px 13px !important; border-radius: 13px !important; }
-.xp-compact .ab-persona-summary-list { display: none; }
-.xp-compact .ab-rental-card .ab-detail-toggle { display: block; }
-.xp-compact .ab-table th, .xp-compact .ab-table td { padding-top: 7px !important; padding-bottom: 7px !important; }
 
 @keyframes xp-drift { to { transform: translate3d(45px, 25px, 0) scale(1.12); } }
 @keyframes xp-green-horizontal {

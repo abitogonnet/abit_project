@@ -132,17 +132,4 @@
     });
   }, true);
 
-  const compactable = document.querySelector(".ab-entity-list, .ab-rental-list, .ab-table-wrap, .ab-calendar-grid, .ab-fortnight-grid");
-  if (compactable) {
-    const toggle = document.createElement("button");
-    toggle.type = "button"; toggle.className = "xp-compact-toggle ab-btn2";
-    function syncCompact(active) {
-      body.classList.toggle("xp-compact", active);
-      toggle.textContent = active ? "Vista cómoda" : "Vista compacta";
-      localStorage.setItem("abito-compact", active ? "1" : "0");
-    }
-    toggle.addEventListener("click", function () { syncCompact(!body.classList.contains("xp-compact")); });
-    (document.querySelector(".ab-actions") || compactable.parentElement).prepend(toggle);
-    syncCompact(localStorage.getItem("abito-compact") === "1");
-  }
 })();
