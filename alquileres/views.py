@@ -1371,40 +1371,13 @@ def _redirect_entregas_con_filtro(request):
 def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=None, detail_open_id=None):
     disponibles = _disponibles_por_categoria()
     form_por_alquiler_id = form_por_alquiler_id or {}
-    filtros_form = VerAlquileresFiltroForm(data or None)
+    filtros_form = VerAlquileresFiltroForm()
     hoy = timezone.localdate()
     alquileres = (
         Alquiler.objects
         .all()
         .prefetch_related("items__prenda")
     )
-
-    filtros_activos = False
-    if filtros_form.is_bound and filtros_form.is_valid():
-        fecha_desde = filtros_form.cleaned_data.get("fecha_desde")
-        fecha_hasta = filtros_form.cleaned_data.get("fecha_hasta")
-
-        if fecha_desde:
-            alquileres = alquileres.filter(fecha_entrega__gte=fecha_desde)
-            filtros_activos = True
-        if fecha_hasta:
-            alquileres = alquileres.filter(fecha_entrega__lte=fecha_hasta)
-            filtros_activos = True
-        buscar = (filtros_form.cleaned_data.get("buscar") or "").strip()
-        if buscar:
-            numero = buscar.lstrip("#").strip()
-            query = (
-                Q(cliente_nombre__icontains=buscar)
-                | Q(cliente_telefono__icontains=buscar)
-                | Q(cliente__nombre__icontains=buscar)
-                | Q(cliente__dni__icontains=buscar)
-                | Q(cliente__telefono__icontains=buscar)
-                | Q(items__prenda__codigo__icontains=buscar)
-            )
-            if numero.isdigit():
-                query |= Q(id=int(numero))
-            alquileres = alquileres.filter(query).distinct()
-            filtros_activos = True
 
     alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
     resumen = [
@@ -1415,11 +1388,7 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
     ]
     _adjuntar_detalle_alquiler(alquileres)
 
-    hidden_fields = _hidden_field_pairs({
-        "buscar": filtros_form["buscar"].value() or "",
-        "fecha_desde": filtros_form["fecha_desde"].value() or "",
-        "fecha_hasta": filtros_form["fecha_hasta"].value() or "",
-    }, ["buscar", "fecha_desde", "fecha_hasta"])
+    hidden_fields = []
 
     alquileres_por_id = {}
     for alquiler in alquileres:
@@ -1442,8 +1411,8 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         "metodos_pago": Alquiler.METODOS_PAGO,
         "resumen": resumen,
         "filtros_form": filtros_form,
-        "filtros_activos": filtros_activos,
-        "buscar": filtros_form["buscar"].value() or "",
+        "filtros_activos": False,
+        "buscar": "",
         "edit_open_id": edit_open_id,
         "detail_open_id": detail_open_id,
         "filter_hidden_fields": hidden_fields,

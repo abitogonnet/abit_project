@@ -165,17 +165,6 @@ body.ab-page::after {
   box-shadow: 0 28px 70px rgba(37,58,50,.13), inset 0 1px rgba(255,255,255,.95) !important;
 }
 
-/* La búsqueda principal queda siempre a mano; las fechas son un filtro opcional. */
-.ab-rental-finder { position: sticky; top: 82px; z-index: 12; }
-.ab-rental-search-row { display: flex; align-items: flex-end; gap: 14px; }
-.ab-rental-search-field { flex: 1 1 560px; }
-.ab-rental-search-input { min-height: 54px !important; font-size: 1.05rem !important; }
-.ab-rental-advanced { margin-top: 14px; border-top: 1px solid rgba(67,91,83,.12); padding-top: 12px; }
-.ab-rental-advanced > summary { color: var(--xp-teal); cursor: pointer; font-weight: 800; list-style: none; }
-.ab-rental-advanced > summary::-webkit-details-marker { display: none; }
-.ab-rental-advanced > summary::before { content: "+"; display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: rgba(8,127,115,.1); }
-.ab-rental-advanced[open] > summary::before { content: "−"; }
-.ab-rental-date-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; max-width: 620px; }
 .ab-rental-card-compact { display: flex; flex-direction: column; }
 .ab-rental-card-compact > .ab-entity-card-head { order: 1; }
 .ab-rental-card-compact > .ab-detail-actions { order: 2; margin-top: 14px; }
@@ -195,12 +184,6 @@ body.ab-page::after {
 @media (max-width: 720px) { .ab-activity-item { flex-direction: column; } .ab-activity-meta { text-align: left; } }
 
 @media (max-width: 720px) {
-  .ab-rental-finder { top: 68px; padding: 14px !important; }
-  .ab-rental-search-row { align-items: stretch; flex-direction: column; gap: 9px; }
-  .ab-rental-search-field { flex-basis: auto; }
-  .ab-rental-search-row .ab-actions { display: grid; grid-template-columns: 1fr 1fr; }
-  .ab-rental-search-row .ab-actions > :only-child { grid-column: 1 / -1; }
-  .ab-rental-date-grid { grid-template-columns: 1fr; }
 }
 
 .ab-home-menu-btn,
