@@ -367,9 +367,9 @@ textarea:focus {
 .ab-flash-stack { position: relative; z-index: 90; }
 
 [data-xp-reveal] {
-  opacity: 0;
-  transform: translateY(18px) scale(.985);
-  filter: blur(4px);
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 [data-xp-reveal].is-visible {
   opacity: 1;

@@ -152,7 +152,7 @@ class NewWorkflowTests(TestCase):
 
         response = self.client.get(reverse("alquileres:ver"))
         ids = [alquiler.id for alquiler in response.context["alquileres"]]
-        self.assertEqual(ids, [reservado_cercano.id, reservado_lejano.id, cerrado.id, entregado.id])
+        self.assertEqual(ids, [reservado_cercano.id, entregado.id, reservado_lejano.id, cerrado.id])
 
     def test_editar_ofrece_fechas_en_seccion_opcional(self):
         alquiler = self.alquiler()

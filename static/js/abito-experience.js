@@ -39,6 +39,7 @@
   const revealNodes = document.querySelectorAll(".ab-pagehero, .ab-section-card, .ab-card, .ab-rental-card, .ab-entity-card");
   revealNodes.forEach(function (node, index) {
     node.dataset.xpReveal = "";
+    node.classList.add("is-visible");
     node.style.setProperty("--xp-delay", Math.min(index % 6, 5) * 65 + "ms");
   });
   if (reduced || !("IntersectionObserver" in window)) {

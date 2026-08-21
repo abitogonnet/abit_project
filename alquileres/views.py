@@ -508,15 +508,11 @@ def _badge_estado_prenda(value: str) -> str:
 
 
 def _orden_entrega_key(alquiler: Alquiler, hoy):
-    # Las reservas que todavía requieren una entrega van primero. Dentro de
-    # cada grupo, lo más antiguo/cercano queda arriba y lo más lejano abajo.
-    pendiente_entrega = alquiler.estado_alquiler == Alquiler.EST_RESERVADO
-    return (
-        0 if pendiente_entrega else 1,
-        alquiler.fecha_entrega,
-        alquiler.fecha_devolucion,
-        alquiler.id,
-    )
+    if alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS:
+        # Cambia día a día: cuanto más cerca está la entrega de hoy, más arriba.
+        return (0, abs((alquiler.fecha_entrega - hoy).days), alquiler.fecha_entrega, alquiler.id)
+    # Cerrados/cancelados debajo, de los más viejos a los más nuevos.
+    return (1, alquiler.fecha_entrega.toordinal(), alquiler.fecha_entrega, alquiler.id)
 
 
 def _ordenar_alquileres_por_entrega(alquileres, hoy):
