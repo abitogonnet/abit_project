@@ -1377,6 +1377,14 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         .prefetch_related("items__prenda")
     )
 
+    buscar = ""
+    filtros_activos = False
+    if data is not None and (data.get("origen") or "").strip() == "inicio":
+        buscar = (data.get("buscar") or "").strip()
+        if buscar:
+            alquileres = alquileres.filter(cliente_nombre__icontains=buscar)
+            filtros_activos = True
+
     alquileres = _ordenar_alquileres_por_entrega(list(alquileres), hoy)
     resumen = [
         {"label": "Activos", "valor": sum(1 for alquiler in alquileres if alquiler.estado_alquiler in Alquiler.ESTADOS_ALQUILER_ACTIVOS)},
@@ -1409,8 +1417,8 @@ def _contexto_ver_alquileres(data=None, form_por_alquiler_id=None, edit_open_id=
         "metodos_pago": Alquiler.METODOS_PAGO,
         "resumen": resumen,
         "filtros_form": filtros_form,
-        "filtros_activos": False,
-        "buscar": "",
+        "filtros_activos": filtros_activos,
+        "buscar": buscar,
         "edit_open_id": edit_open_id,
         "detail_open_id": detail_open_id,
         "filter_hidden_fields": hidden_fields,

@@ -124,6 +124,21 @@ class NewWorkflowTests(TestCase):
         self.assertContains(response, primero.cliente_nombre)
         self.assertContains(response, segundo.cliente_nombre)
 
+    def test_inicio_busca_alquiler_por_nombre_sin_devolver_barra_al_listado(self):
+        buscado = self.alquiler(cliente_nombre="María Especial")
+        otro = self.alquiler(cliente_nombre="Pedro Distinto")
+        inicio = self.client.get(reverse("alquileres:home"))
+        self.assertContains(inicio, "Buscar alquiler por nombre")
+        self.assertContains(inicio, 'name="origen" value="inicio"', html=False)
+
+        resultados = self.client.get(reverse("alquileres:ver"), {
+            "origen": "inicio", "buscar": "María",
+        })
+        self.assertContains(resultados, buscado.cliente_nombre)
+        self.assertNotContains(resultados, otro.cliente_nombre)
+        self.assertNotContains(resultados, "Buscar cualquier alquiler")
+        self.assertContains(resultados, "Ver todos")
+
     def test_listado_entrega_url_real_para_ver_detallado(self):
         alquiler = self.alquiler()
         response = self.client.get(reverse("alquileres:ver"))

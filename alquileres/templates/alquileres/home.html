@@ -34,6 +34,17 @@
   </aside>
 </section>
 
+<section class="ab-home-rental-search">
+  <form method="get" action="{% url 'alquileres:ver' %}" class="ab-home-rental-search-form">
+    <input type="hidden" name="origen" value="inicio">
+    <label class="ab-lab" for="home-rental-search">Buscar alquiler por nombre</label>
+    <div class="ab-home-rental-search-row">
+      <input class="ab-inp" id="home-rental-search" type="search" name="buscar" placeholder="Escribí el nombre del cliente" autocomplete="off" required>
+      <button class="ab-btn" type="submit">Buscar alquiler</button>
+    </div>
+  </form>
+</section>
+
 <section class="ab-home-top-grid">
   <div class="ab-section-card ab-home-primary-card">
     <div class="ab-section-head"><div><h2 class="ab-mini-title">Visitas</h2></div></div>

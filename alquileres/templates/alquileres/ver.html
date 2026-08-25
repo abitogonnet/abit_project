@@ -34,9 +34,10 @@
     <div class="ab-section-head">
       <div>
         <p class="ab-kicker">Listado</p>
-        <h2 class="ab-mini-title">Todos los alquileres</h2>
+        <h2 class="ab-mini-title">{% if filtros_activos %}Alquileres de “{{ buscar }}”{% else %}Todos los alquileres{% endif %}</h2>
       </div>
       <span class="ab-pill">{{ alquileres|length }} registro{{ alquileres|length|pluralize }}</span>
+      {% if filtros_activos %}<a class="ab-btn2" href="{% url 'alquileres:ver' %}">Ver todos</a>{% endif %}
     </div>
 
     <div class="ab-entity-list">
@@ -44,7 +45,7 @@
         {% include "alquileres/_alquiler_card.html" with a=a enable_update_form=True show_detail_toggle=True show_edit_toggle=True show_copy_message=True compact_list_mode=True filter_hidden_fields=filter_hidden_fields %}
       {% empty %}
         <div class="ab-empty">
-          No hay alquileres cargados.
+          {% if filtros_activos %}No encontramos alquileres con ese nombre.{% else %}No hay alquileres cargados.{% endif %}
         </div>
       {% endfor %}
     </div>
