@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from cuentas.models import Actividad, PerfilUsuario
+from gastos.models import MovimientoFinanciero
 from prendas.models import Prenda
 
 from .models import Alquiler, AlquilerItem, Cliente
@@ -69,8 +70,17 @@ class NewWorkflowTests(TestCase):
         response = self.client.post(reverse("alquileres:crear"), self.create_payload(primera))
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("alquileres:ver"), response.url)
+        self.assertIn("detalle=", response.url)
         self.assertEqual(Cliente.objects.count(), 1)
-        self.assertIsNotNone(Alquiler.objects.get().cliente_id)
+        alquiler_creado = Alquiler.objects.get()
+        self.assertIsNotNone(alquiler_creado.cliente_id)
+        self.assertEqual(alquiler_creado.total_final, Decimal("100000.00"))
+        self.assertEqual(alquiler_creado.saldo, Decimal("80000.00"))
+        self.assertTrue(AlquilerItem.objects.filter(alquiler=alquiler_creado, prenda=primera).exists())
+        primera.refresh_from_db()
+        self.assertEqual(primera.estado, Prenda.E_RES)
+        self.assertTrue(MovimientoFinanciero.objects.filter(clave=f"alquiler:{alquiler_creado.id}:sena").exists())
+        self.assertTrue(Actividad.objects.filter(accion="Creó alquiler", objeto_id=str(alquiler_creado.id)).exists())
         segunda = Prenda.objects.create(codigo="SA-911", categoria=Prenda.C_SACO, marca="Abito", color="Negro", talle="52", origen=Prenda.O_NAC)
         self.client.post(reverse("alquileres:crear"), self.create_payload(segunda, cliente_nombre="Juan Manuel Pérez"))
         response = self.client.get(reverse("alquileres:crear"))

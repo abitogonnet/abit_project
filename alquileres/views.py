@@ -1278,7 +1278,9 @@ def crear(request):
             registrar_actividad(request, "Creó alquiler", Actividad.ALQUILER, objeto=alquiler, referencia=f"Alquiler #{alquiler.id}", detalle=f"Seña: ${alquiler.sena}")
 
             messages.success(request, "Alquiler creado correctamente.")
-            return redirect(f"{reverse('alquileres:ver')}?buscar={alquiler.id}")
+            return redirect(
+                f"{reverse('alquileres:ver')}?detalle={alquiler.id}#alquiler-{alquiler.id}"
+            )
 
         messages.error(request, "Revisa los campos del formulario.")
     else:

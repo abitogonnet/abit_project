@@ -32,6 +32,12 @@
   {{ form.personas_visibles }}
 
   <div class="ab-create-main">
+    {% if form.errors %}
+      <div class="ab-msg err" data-create-errors>
+        <strong>El alquiler todavía no se guardó.</strong>
+        Revisá los campos marcados y volvé a tocar “Guardar alquiler”.
+      </div>
+    {% endif %}
     {% if form.non_field_errors %}
       <div class="ab-msg err">{{ form.non_field_errors }}</div>
     {% endif %}
@@ -235,6 +241,13 @@
   (function () {
     const form = document.getElementById("alqForm");
     if (!form) return;
+
+    const firstError = form.querySelector("[data-create-errors], .ab-field-errors");
+    if (firstError) {
+      window.requestAnimationFrame(function () {
+        firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
 
     const draftKey = "abito:alquiler:create-draft";
     const visiblePeopleField = document.getElementById("id_personas_visibles");
